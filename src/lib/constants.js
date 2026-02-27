@@ -153,6 +153,7 @@ export const CIRCLES = [
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
   { id: 'signals', name: 'Signals', icon: 'Radio', route: '/signals' },
   { id: 'layers', name: 'Layers', icon: 'BarChart3', route: '/layers' },
+  { id: 'portfolio', name: 'Portfolio', icon: 'PieChart', route: '/portfolio' },
   { id: 'f6', name: 'F6', icon: 'Target', route: '/f6' },
   { id: 'intel', name: 'Intel', icon: 'Search', route: '/intel' },
   { id: 'g7', name: 'G7', icon: 'Globe', route: '/g7' },

@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, FileText, Shield, Radio, BarChart3, Target, Search, Globe } from 'lucide-react';
+import { LayoutDashboard, FileText, Shield, Radio, BarChart3, Target, Search, Globe, PieChart } from 'lucide-react';
 import { CIRCLES } from '@/lib/constants';
 import { useCircleNotifications } from '@/hooks/useCircleNotifications';
 
@@ -13,6 +13,7 @@ const ICON_MAP = {
   Target,
   Search,
   Globe,
+  PieChart,
 };
 
 export default function CircleNav({ currentPage, onNavigate, dashboard }) {
@@ -24,7 +25,7 @@ export default function CircleNav({ currentPage, onNavigate, dashboard }) {
         const Icon = ICON_MAP[circle.icon];
         const isActive = currentPage === circle.id;
         const notification = notifications[circle.id];
-        const circleRoute = circle.id; // We use IDs as page keys
+        const circleRoute = circle.id;
 
         return (
           <button
@@ -34,11 +35,9 @@ export default function CircleNav({ currentPage, onNavigate, dashboard }) {
             aria-label={circle.name}
             aria-current={isActive ? 'page' : undefined}
           >
-            {/* Circle with icon */}
             <div className={`circle-item relative ${isActive ? 'active' : ''}`}>
               <Icon size={20} />
 
-              {/* Notification Dot */}
               {notification && (
                 <span
                   className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full animate-pulse-dot"
@@ -48,7 +47,6 @@ export default function CircleNav({ currentPage, onNavigate, dashboard }) {
               )}
             </div>
 
-            {/* Label */}
             <span className={`text-caption leading-none ${
               isActive ? 'text-ice-white' : 'text-muted-blue'
             }`}>

@@ -3,7 +3,7 @@
 import GlassCard from '@/components/shared/GlassCard';
 import { getDrawdownColor, COLORS } from '@/lib/constants';
 
-export default function PortfolioCard({ dashboard }) {
+export default function PortfolioCard({ dashboard, onNavigate }) {
   const v16 = dashboard.v16 || {};
   const f6 = dashboard.f6 || {};
   const top5 = v16.top_5_weights || [];
@@ -11,12 +11,11 @@ export default function PortfolioCard({ dashboard }) {
   const stripeColor = getDrawdownColor(dd);
 
   return (
-    <GlassCard variant="standard" stripeColor={stripeColor}>
+    <GlassCard variant="standard" stripeColor={stripeColor} onClick={() => onNavigate('portfolio')}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-label uppercase tracking-wider text-muted-blue">📊 Portfolio</span>
       </div>
 
-      {/* DD + ENB */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <span className="text-caption text-muted-blue block">DD</span>
@@ -30,7 +29,6 @@ export default function PortfolioCard({ dashboard }) {
         </div>
       </div>
 
-      {/* Top 5 Weights */}
       <p className="text-caption text-muted-blue mb-2">TOP 5 GEWICHTE</p>
       <div className="space-y-1.5 mb-3">
         {top5.map(({ ticker, weight }) => (
@@ -47,7 +45,6 @@ export default function PortfolioCard({ dashboard }) {
         ))}
       </div>
 
-      {/* F6 Summary */}
       <div className="border-t border-white/5 pt-2">
         <p className="text-caption text-muted-blue">
           F6: {f6.portfolio_summary?.positions_count || 0} Positionen, {f6.portfolio_summary?.total_exposure_pct || 0}% Exposure
@@ -56,6 +53,8 @@ export default function PortfolioCard({ dashboard }) {
           CC Coverage: {f6.portfolio_summary?.cc_coverage_pct || 0}%
         </p>
       </div>
+
+      <p className="text-caption text-muted-blue text-right mt-2">Details →</p>
     </GlassCard>
   );
 }

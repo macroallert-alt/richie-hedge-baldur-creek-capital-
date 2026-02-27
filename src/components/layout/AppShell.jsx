@@ -11,6 +11,7 @@ import CIODetail from '@/components/detail/CIODetail';
 import RiskDetail from '@/components/detail/RiskDetail';
 import SignalsDetail from '@/components/detail/SignalsDetail';
 import LayersDetail from '@/components/detail/LayersDetail';
+import PortfolioDetail from '@/components/detail/PortfolioDetail';
 import F6Detail from '@/components/detail/F6Detail';
 import IntelDetail from '@/components/detail/IntelDetail';
 import G7Detail from '@/components/detail/G7Detail';
@@ -27,6 +28,7 @@ const PAGE_COMPONENTS = {
   risk: RiskDetail,
   signals: SignalsDetail,
   layers: LayersDetail,
+  portfolio: PortfolioDetail,
   f6: F6Detail,
   intel: IntelDetail,
   g7: G7Detail,
@@ -38,12 +40,10 @@ export default function AppShell() {
   const [agentROpen, setAgentROpen] = useState(false);
   const { dashboard, loading, error, isStale, toastVisible, refresh } = useDashboardContext();
 
-  // Loading state
   if (loading && !dashboard) {
     return <LoadingScreen />;
   }
 
-  // Error state with no cached data
   if (error && !dashboard) {
     return <ErrorScreen error={error} onRetry={refresh} />;
   }
@@ -54,39 +54,24 @@ export default function AppShell() {
     <div className={`min-h-screen bg-navy-deep transition-all duration-300 ${
       agentROpen ? 'lg:mr-[38%]' : ''
     }`}>
-      {/* Stale Warning Banner (z-70) */}
       {isStale && <StaleWarning dashboard={dashboard} />}
-
-      {/* Toast Notification (z-60) */}
       {toastVisible && <ToastNotification message="Daten aktualisiert" />}
-
-      {/* Topbar (z-40, sticky) */}
       <Topbar onSettingsClick={() => setCurrentPage('settings')} />
-
-      {/* Circle Navigation (z-20, sticky) */}
       <CircleNav
         currentPage={currentPage}
         onNavigate={setCurrentPage}
         dashboard={dashboard}
       />
-
-      {/* Timestamp Bar (z-30, sticky) */}
       <TimestampBar dashboard={dashboard} />
-
-      {/* Page Content */}
       <main className="px-4 pb-24 max-w-app mx-auto">
         <PageComponent dashboard={dashboard} onNavigate={setCurrentPage} />
       </main>
-
-      {/* Agent R Bubble (z-45, fixed) */}
       {!agentROpen && (
         <AgentRBubble
           dashboard={dashboard}
           onClick={() => setAgentROpen(true)}
         />
       )}
-
-      {/* Agent R Panel (z-50) */}
       {agentROpen && (
         <AgentRPanel
           dashboard={dashboard}

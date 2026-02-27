@@ -15,23 +15,14 @@ export default function DashboardHub({ dashboard, onNavigate }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 pt-3">
-      {/* Row 1: Primary Cards */}
       <SystemStatusCard dashboard={dashboard} />
       <ActionItemsCard dashboard={dashboard} onNavigate={onNavigate} />
-
-      {/* Row 2: Standard Cards */}
       <CIODigestCard dashboard={dashboard} onNavigate={onNavigate} />
       <RiskCard dashboard={dashboard} onNavigate={onNavigate} />
-
-      {/* Row 3 */}
-      <PortfolioCard dashboard={dashboard} />
+      <PortfolioCard dashboard={dashboard} onNavigate={onNavigate} />
       <SignalsCard dashboard={dashboard} onNavigate={onNavigate} />
-
-      {/* Row 4 */}
       <LayerScoresCard dashboard={dashboard} onNavigate={onNavigate} />
       <IntelCard dashboard={dashboard} onNavigate={onNavigate} />
-
-      {/* Row 5: G7 full width */}
       <div className="lg:col-span-2">
         <G7Card dashboard={dashboard} onNavigate={onNavigate} />
       </div>
