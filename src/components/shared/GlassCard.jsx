@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * GlassCard Component - 3 variants per Spec §1.6
+ * GlassCard Component - 3 variants per Spec 1.6
  * @param {string} variant - 'primary' | 'standard' | 'secondary'
  * @param {string} stripeColor - CSS color for left stripe
  * @param {function} onClick - Click handler (drill-down)
@@ -24,7 +24,7 @@ export default function GlassCard({
 
   return (
     <Component
-      className={`relative w-full text-left ${cardClass} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative w-full text-left overflow-hidden ${cardClass} ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
       style={stripeColor ? { '--stripe-color': stripeColor } : undefined}
     >
