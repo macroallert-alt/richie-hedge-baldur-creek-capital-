@@ -38,7 +38,7 @@ export default function CIODetail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">CIO Memo</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">CIO Memo</h1>
 
       {/* Digest Summary */}
       <div className="glass-card p-4">

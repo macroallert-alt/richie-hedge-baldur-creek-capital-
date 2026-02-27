@@ -19,7 +19,7 @@ export default function F6Detail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">F6 Stock Picker</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">F6 Stock Picker</h1>
 
       {/* Portfolio Summary */}
       <div className="glass-card-primary p-4">

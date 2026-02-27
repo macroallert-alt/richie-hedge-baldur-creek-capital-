@@ -13,7 +13,7 @@ export default function IntelDetail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">Intelligence Center</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">Intelligence Center</h1>
 
       {/* Consensus Overview */}
       <div className="glass-card p-4">

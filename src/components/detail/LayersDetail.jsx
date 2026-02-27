@@ -12,7 +12,7 @@ export default function LayersDetail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">Layer Scores</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">Layer Scores</h1>
 
       {/* Overview */}
       <div className="glass-card-primary p-4">

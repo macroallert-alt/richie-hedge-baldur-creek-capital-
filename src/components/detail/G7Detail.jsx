@@ -16,7 +16,7 @@ export default function G7Detail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">G7 World Order</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">G7 World Order</h1>
 
       {/* Regime Status */}
       <div className="glass-card-primary p-4 flex flex-col items-center">

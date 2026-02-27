@@ -14,7 +14,7 @@ export default function SignalsDetail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">Signals & Actions</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">Signals & Actions</h1>
 
       {/* Conviction Router */}
       <div className="glass-card p-4">

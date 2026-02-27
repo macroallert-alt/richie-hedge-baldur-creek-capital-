@@ -22,7 +22,7 @@ export default function RiskDetail({ dashboard }) {
 
   return (
     <div className="py-4 space-y-4">
-      <h1 className="text-page-title lg:text-page-title-desktop">Risk Dashboard</h1>
+      <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">Risk Dashboard</h1>
 
       {/* Large Ampel */}
       <div className="glass-card-primary p-6 flex flex-col items-center">

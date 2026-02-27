@@ -15,7 +15,7 @@ export default function PortfolioDetail({ dashboard }) {
 
   return (
     <div className="space-y-3 pt-3">
-      <h1 className="text-page-title text-ice-white">Portfolio</h1>
+      <h1 className="text-page-title text-center text-ice-white">Portfolio</h1>
 
       <GlassCard variant="primary" stripeColor={ddColor}>
         <p className="text-label uppercase tracking-wider text-muted-blue mb-3">PORTFOLIO ÜBERSICHT</p>
