@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "src/app/api/agent-r/route.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/api/agent-r/health/route.js": {
+      "maxDuration": 10,
+      "memory": 256
+    }
+  }
+}

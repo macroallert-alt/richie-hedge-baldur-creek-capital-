@@ -1,0 +1,24 @@
+'use client';
+
+import { createContext, useContext } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const authState = useAuth();
+
+  return (
+    <AuthContext.Provider value={authState}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuthContext() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuthContext must be used within AuthProvider');
+  }
+  return context;
+}

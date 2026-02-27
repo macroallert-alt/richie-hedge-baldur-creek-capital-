@@ -1,0 +1,676 @@
+{
+  "schema_version": "2.0",
+  "date": "2026-02-27",
+  "weekday": "Friday",
+  "generated_at": "2026-02-27T07:05:12Z",
+  "degradation_level": "FULL",
+  "degradation_banner": null,
+
+  "header": {
+    "date": "2026-02-27",
+    "weekday": "Friday",
+    "briefing_type": "WATCH",
+    "system_conviction": "HIGH",
+    "risk_ampel": "YELLOW",
+    "fragility_state": "ELEVATED",
+    "v16_regime": "RISK_ON",
+    "data_quality": "DEGRADED",
+    "pipeline_status": "OK",
+    "f6_positions_count": 3,
+    "alerts_active_count": 2,
+    "divergences_count": 2,
+    "action_items_act_count": 1,
+    "action_items_review_count": 2,
+    "action_items_watch_count": 3,
+    "da_challenges_total": 3,
+    "da_accepted": 1,
+    "da_noted": 1,
+    "da_rejected": 1,
+    "fact_check_corrections": 0,
+    "is_draft_fallback": false
+  },
+
+  "digest": {
+    "line_1_type_and_delta": "WATCH — V16 Regime stabil, 1 neue CRITICAL Alert",
+    "line_2_actions": "1 ACT (TODAY): Sector Concentration Tech 42%. 2 REVIEW, 3 WATCH.",
+    "line_3_confidence": "HIGH Conviction. DQ: DEGRADED (4 stale). 2 IC-Divergenzen. DA: 1 ACCEPTED."
+  },
+
+  "deltas": {
+    "has_yesterday": true,
+    "regime_transition": null,
+    "risk_ampel_change": null,
+    "briefing_type_change": {
+      "from": "ROUTINE",
+      "to": "WATCH"
+    },
+    "conviction_change": null,
+    "new_alerts": [
+      {"id": "RA-2026-02-27-001", "severity": "CRITICAL", "check_name": "SECTOR_CONCENTRATION", "tag": "NEU"}
+    ],
+    "new_alerts_count": 1,
+    "highest_new_alert": {"severity": "CRITICAL", "check_name": "SECTOR_CONCENTRATION"},
+    "resolved_alerts": [],
+    "escalated_items": [],
+    "escalated_items_count": 0,
+    "new_divergences": [],
+    "resolved_divergences": [],
+    "layer_movements": [
+      {"layer": "L1_global_liquidity", "yesterday": 6.8, "today": 7.2, "delta": 0.4, "significant": false},
+      {"layer": "L4_equity_internals", "yesterday": 5.5, "today": 4.8, "delta": -0.7, "significant": false},
+      {"layer": "L7_intermarket", "yesterday": 6.5, "today": 7.0, "delta": 0.5, "significant": false},
+      {"layer": "L8_sentiment_positioning", "yesterday": 5.1, "today": 4.5, "delta": -0.6, "significant": false}
+    ],
+    "significant_layer_movements_count": 0,
+    "v16_weight_deltas": {
+      "top_increases": [
+        {"ticker": "QQQ", "yesterday": 0.12, "today": 0.15, "delta": 0.03},
+        {"ticker": "SPY", "yesterday": 0.18, "today": 0.20, "delta": 0.02}
+      ],
+      "top_decreases": [
+        {"ticker": "SHY", "yesterday": 0.15, "today": 0.10, "delta": -0.05},
+        {"ticker": "GLD", "yesterday": 0.09, "today": 0.08, "delta": -0.01}
+      ]
+    },
+    "f6_changes": {
+      "new_positions": [],
+      "closed_positions": [],
+      "new_pending_signals": [{"ticker": "UNH", "sector": "Healthcare"}],
+      "expired_signals": []
+    }
+  },
+
+  "regime_context": {
+    "layout_mode": "STANDARD",
+    "panel_priorities": {
+      "dd_protect": "LOW",
+      "f6_cc_expiry": "MEDIUM",
+      "router_proximity": "HIGH",
+      "divergences": "MEDIUM",
+      "ic_consensus": "MEDIUM",
+      "layer_heatmap": "MEDIUM",
+      "f6_positions": "HIGH",
+      "operative_details": "LOW"
+    },
+    "auto_expand": ["digest", "deltas", "action_items", "briefing"],
+    "auto_minimize": ["pipeline_health"],
+    "show_operative_details": false
+  },
+
+  "consistency_flags": [
+    {
+      "id": "DQ_CONVICTION_MISMATCH",
+      "description": "HIGH Conviction trotz DEGRADED Datenqualitaet",
+      "agent_a": "CIO Final",
+      "value_a": "HIGH",
+      "agent_b": "Data Collector",
+      "value_b": "DEGRADED",
+      "severity": "NOTABLE"
+    }
+  ],
+
+  "overconfidence": {
+    "flag": false,
+    "message": null,
+    "da_prominence": "NORMAL",
+    "confidence_saturation": null
+  },
+
+  "briefing": {
+    "status": "AVAILABLE",
+    "source": "FINAL_MEMO",
+    "full_text": "",
+    "sections": {
+      "S1_delta": "Regime RISK_ON bleibt stabil — sechster Tag in Folge. L1 Global Liquidity verbessert sich weiter auf 7.2 (von 6.8). Entscheidend: CrossBorder Capital Global Liquidity Index zeigt anhaltende Expansion. L4 Equity Internals schwaechen sich leicht ab (4.8 von 5.5), was auf nachlassende Marktbreite hindeutet. Neue CRITICAL Alert: Sector Concentration Technology bei 42% — ueber dem 40%-Threshold. Der FOMC-Entscheid naechste Woche koennte die Regime-Stabilitaet testen.",
+      "S2_catalysts": "Primaere Katalysatoren diese Woche: CPI Release morgen (28. Feb) — Konsens 2.8% YoY, jede Ueberraschung nach oben koennte die Fed-Erwartungen verschieben. ISM Manufacturing am Montag. FOMC Decision am 5. Maerz — aktuell 78% Wahrscheinlichkeit fuer Hold. Sekundaer: Earnings Season ausklingend, aber NVDA Guidance-Revision erwartet. G7-Interim zeigt keine neuen Trigger seit letztem Full Run.",
+      "S3_risk": "Risk Ampel YELLOW — angemessen gegeben die Sector Concentration und FOMC-Naehe. Kill Switches alle CLEAR. Zwei aktive Alerts: SECTOR_CONCENTRATION (CRITICAL, NEU) und CORRELATION_RISING (WARNING, seit 4 Tagen). DD-Protect bei -1.2% weit vom Threshold (-10%) entfernt. Die Kombination aus erhoeher Konzentration und bevorstehendem FOMC erfordert erhoehte Wachsamkeit, nicht aber Aenderungen am Portfolio.",
+      "S4_patterns": "Dominantes Pattern: Liquidity-getriebene Rally bei nachlassender Marktbreite. L1 (7.2) und L7 Intermarket (7.0) stuetzen den Risk-On Case. L4 Equity Internals (4.8) und L8 Sentiment (4.5) zeigen erste Ermuedungserscheinungen. Historischer Kontext: Aehnliche Konstellationen (starke Liquiditaet + schwache Internals) dauerten in der Vergangenheit 2-6 Wochen bevor eine Korrektur einsetzte. Die Frage ist nicht OB, sondern WANN die Internals das Regime kippen.",
+      "S5_intelligence": "IC Konsens mehrheitlich BULLISH (6 von 8 Quellen). Zwei bemerkenswerte Divergenzen: (1) FED_POLICY — IC Sources dovisher als Market Pricing (FedWatch). (2) EQUITY_VALUATION — breite Skepsis bei Bewertungsniveaus, aber kein kurzfristiger Katalysator identifiziert. High Novelty Claim: Macro Alf meldet erstmals seit 2022 negative Real Yields — bullish fuer Gold und Risk Assets. CrossBorder Capital bestaetigt Liquiditaets-Expansion.",
+      "S6_portfolio": "V16 Risk-On mit stabilen Gewichten. Top 5: SPY 20%, QQQ 15%, XLK 12%, SHY 10%, GLD 8%. Drawdown -1.2% — komfortabel. F6 haelt 3 Positionen (NVDA, AMAT, MSFT) mit 12.5% Exposure. Covered Call Coverage 100%. Pending Signal: UNH Drift Day 2 — morgen moeglicherweise Bestaetigung. CC Expiry Warning: NVDA CC DTE 5 — Roll-Decision steht an.",
+      "S7_actions": "ACT (TODAY): Sector Concentration Tech 42% pruefen — F6 NVDA CC Position bewerten, RSP-Substitution fuer SPY-Anteil erwaegen. REVIEW: EM_BROAD Router Proximity 0.65 naehert sich Threshold. REVIEW: Correlation Rising 30d bei 0.72. WATCH: CPI morgen — keine Aktion noetig, aber Ergebnis monitoren. WATCH: FOMC naechste Woche. WATCH: UNH Drift Bestaetigung morgen."
+    },
+    "section_word_counts": {
+      "S1": 95,
+      "S2": 82,
+      "S3": 78,
+      "S4": 88,
+      "S5": 76,
+      "S6": 72,
+      "S7": 65
+    },
+    "da_markers": [
+      {
+        "section": "S4",
+        "marker_type": "ACCEPTED",
+        "challenge_summary": "Alternative Narrative: Liquiditaets-Expansion koennte temporaer sein, getrieben von Jahresend-Rebalancing Nachwirkungen",
+        "cio_response": "Accepted — S4 um temporaeren Charakter der Liquiditaet ergaenzt"
+      },
+      {
+        "section": "S3",
+        "marker_type": "NOTED",
+        "challenge_summary": "Risk Assessment unterschaetzt potentielle Korrelationskrise bei gleichzeitigem CPI-Schock und FOMC-Ueberraschung",
+        "cio_response": "Noted — valider Punkt, aber Wahrscheinlichkeit gering. Kill Switch Correlation wuerde greifen."
+      },
+      {
+        "section": "S1",
+        "marker_type": "REJECTED",
+        "challenge_summary": "Regime sollte als TRANSITION klassifiziert werden wegen L4 und L8 Schwaeche",
+        "cio_response": "Rejected — 75% der Layers stuetzen Risk-On, L4/L8 allein reichen nicht fuer Regime-Wechsel"
+      }
+    ],
+    "da_resolution_summary": {
+      "total": 3,
+      "accepted": 1,
+      "noted": 1,
+      "rejected": 1,
+      "details": [
+        {
+          "challenge_id": "DA-2026-02-27-001",
+          "type": "ALTERNATIVE_NARRATIVE",
+          "section": "S4",
+          "resolution": "ACCEPTED",
+          "summary": "Liquiditaets-Expansion koennte temporaer sein"
+        },
+        {
+          "challenge_id": "DA-2026-02-27-002",
+          "type": "RISK_UNDERESTIMATE",
+          "section": "S3",
+          "resolution": "NOTED",
+          "summary": "Korrelationskrise bei CPI+FOMC Combo unterschaetzt"
+        },
+        {
+          "challenge_id": "DA-2026-02-27-003",
+          "type": "CLASSIFICATION_CHALLENGE",
+          "section": "S1",
+          "resolution": "REJECTED",
+          "summary": "Regime sollte TRANSITION sein"
+        }
+      ]
+    },
+    "key_assumptions": [
+      {
+        "assumption": "Fed bleibt on hold bis Q3 2026",
+        "basis": "FedWatch 78%, IC Konsens, Forward Guidance Analysis",
+        "vulnerability": "Ueberraschend starke CPI-Daten morgen"
+      },
+      {
+        "assumption": "Liquiditaets-Expansion haelt mindestens 4 weitere Wochen",
+        "basis": "CrossBorder Capital Index, L1 Score 7.2 steigend",
+        "vulnerability": "Ploetzlicher BoJ Policy Shift oder Fed Balance Sheet Reduktion"
+      },
+      {
+        "assumption": "Tech-Konzentration korrigiert sich organisch durch Rotation",
+        "basis": "Historisches Pattern bei 40%+ Concentration",
+        "vulnerability": "NVDA Guidance Enttaeuschung als Trigger fuer sektorweite Korrektur"
+      }
+    ],
+    "confidence_markers": [
+      {"section": "S1", "claim": "Regime RISK_ON bleibt stabil", "confidence": "HIGH", "basis": "6/8 Layers aligned, L1 steigend"},
+      {"section": "S3", "claim": "Kill Switches bleiben CLEAR", "confidence": "HIGH", "basis": "DD weit vom Threshold, keine Korrelationskrise"},
+      {"section": "S4", "claim": "Internals-Schwaeche fuehrt nicht sofort zu Regime-Wechsel", "confidence": "MEDIUM", "basis": "Historisch 2-6 Wochen Vorlauf"}
+    ]
+  },
+
+  "action_items": {
+    "summary": {
+      "act_count": 1,
+      "review_count": 2,
+      "watch_count": 3,
+      "total": 6,
+      "escalated_today": 0,
+      "new_today": 1,
+      "resolved_today": 0
+    },
+    "prominent": [
+      {
+        "id": "AI-2026-02-27-001",
+        "type": "ACT",
+        "urgency": "TODAY",
+        "target": "EXP_SECTOR_CONCENTRATION",
+        "context": "Tech 42%, Schwelle 40%, FOMC in 7 Tagen",
+        "suggested_actions": [
+          "Pruefe F6 NVDA CC Position — Roll oder Expiry?",
+          "Erwaege RSP-Substitution fuer Teil des SPY-Anteils"
+        ],
+        "state": "NEW",
+        "days_open": 1,
+        "delta_tag": "NEU",
+        "resolution": null,
+        "market_outcome_after_5d": null
+      },
+      {
+        "id": "AI-2026-02-25-003",
+        "type": "REVIEW",
+        "urgency": "THIS_WEEK",
+        "target": "ROUTER_EM_PROXIMITY",
+        "context": "EM_BROAD Proximity 0.65, Threshold 0.80, steigend",
+        "suggested_actions": [
+          "Monitor EM ETF Flows",
+          "Bei 0.75+ Router-Allokation vorbereiten"
+        ],
+        "state": "OPEN",
+        "days_open": 3,
+        "delta_tag": null,
+        "resolution": null,
+        "market_outcome_after_5d": null
+      },
+      {
+        "id": "AI-2026-02-26-002",
+        "type": "REVIEW",
+        "urgency": "THIS_WEEK",
+        "target": "CORRELATION_RISING",
+        "context": "30d Korrelation 0.72, Schwelle 0.65, seit 4 Tagen",
+        "suggested_actions": [
+          "VIX Term Structure beobachten",
+          "Bei 0.78+ Hedging erwaegen"
+        ],
+        "state": "OPEN",
+        "days_open": 2,
+        "delta_tag": null,
+        "resolution": null,
+        "market_outcome_after_5d": null
+      }
+    ],
+    "aggregated": {
+      "count": 3,
+      "items": [
+        {"id": "AI-2026-02-24-004", "type": "WATCH", "target": "CPI_RELEASE", "state": "OPEN", "days_open": 4, "delta_tag": null},
+        {"id": "AI-2026-02-23-005", "type": "WATCH", "target": "FOMC_UPCOMING", "state": "OPEN", "days_open": 5, "delta_tag": null},
+        {"id": "AI-2026-02-26-006", "type": "WATCH", "target": "UNH_DRIFT_CONFIRM", "state": "NEW", "days_open": 1, "delta_tag": "NEU"}
+      ]
+    },
+    "ongoing_conditions": [
+      {"condition": "VIX elevated >20", "days_active": 12, "severity": "MONITOR", "compressed": true, "trend": "STABLE"},
+      {"condition": "Yield curve inverted 2s10s", "days_active": 45, "severity": "MONITOR", "compressed": true, "trend": "STABLE"}
+    ]
+  },
+
+  "layers": {
+    "status": "AVAILABLE",
+    "system_regime": "BROAD_RISK_ON",
+    "regime_stability_pct": 75.0,
+    "fragility_state": "ELEVATED",
+    "fragility_data": {
+      "hhi": 0.08,
+      "breadth": 0.72,
+      "spy_rsp_delta": 0.03
+    },
+    "layer_scores": {
+      "L1_global_liquidity":      {"score": 7.2, "direction": "IMPROVING", "conviction": "HIGH"},
+      "L2_us_monetary":           {"score": 5.8, "direction": "STABLE", "conviction": "MEDIUM"},
+      "L3_credit_spreads":        {"score": 6.1, "direction": "STABLE", "conviction": "HIGH"},
+      "L4_equity_internals":      {"score": 4.8, "direction": "DETERIORATING", "conviction": "MEDIUM"},
+      "L5_macro_leading":         {"score": 6.5, "direction": "IMPROVING", "conviction": "MEDIUM"},
+      "L6_volatility_regime":     {"score": 5.2, "direction": "STABLE", "conviction": "LOW"},
+      "L7_intermarket":           {"score": 7.0, "direction": "IMPROVING", "conviction": "HIGH"},
+      "L8_sentiment_positioning": {"score": 4.5, "direction": "DETERIORATING", "conviction": "MEDIUM"}
+    }
+  },
+
+  "v16": {
+    "status": "AVAILABLE",
+    "regime": "RISK_ON",
+    "regime_confidence": 0.78,
+    "dd_protect_status": "INACTIVE",
+    "current_drawdown": -1.2,
+    "dd_protect_threshold": -10.0,
+    "dd_protect_distance_pct": 88.0,
+    "last_rebalance_date": "2026-02-20",
+    "current_weights": {
+      "SPY": 0.20, "QQQ": 0.15, "XLK": 0.12, "SHY": 0.10, "GLD": 0.08,
+      "TLT": 0.06, "EFA": 0.05, "VGK": 0.04, "EEM": 0.04, "XLE": 0.03,
+      "XLF": 0.03, "IWM": 0.02, "HYG": 0.02, "LQD": 0.02, "DBC": 0.01,
+      "SLV": 0.01, "UUP": 0.01, "BTC-USD": 0.01
+    },
+    "top_5_weights": [
+      {"ticker": "SPY", "weight": 0.20},
+      {"ticker": "QQQ", "weight": 0.15},
+      {"ticker": "XLK", "weight": 0.12},
+      {"ticker": "SHY", "weight": 0.10},
+      {"ticker": "GLD", "weight": 0.08}
+    ],
+    "weight_deltas": {
+      "top_increases": [
+        {"ticker": "QQQ", "yesterday": 0.12, "today": 0.15, "delta": 0.03},
+        {"ticker": "SPY", "yesterday": 0.18, "today": 0.20, "delta": 0.02}
+      ],
+      "top_decreases": [
+        {"ticker": "SHY", "yesterday": 0.15, "today": 0.10, "delta": -0.05},
+        {"ticker": "GLD", "yesterday": 0.09, "today": 0.08, "delta": -0.01}
+      ]
+    }
+  },
+
+  "f6": {
+    "status": "AVAILABLE",
+    "portfolio_summary": {
+      "positions_count": 3,
+      "pending_signals_count": 1,
+      "total_exposure_pct": 12.5,
+      "avg_holding_days": 11.3,
+      "cc_coverage_pct": 100.0
+    },
+    "active_positions": [
+      {
+        "ticker": "NVDA",
+        "sector": "Technology",
+        "entry_date": "2026-02-10",
+        "holding_day": 17,
+        "pnl_pct": 4.3,
+        "cc_strike": 870.0,
+        "cc_dte": 5,
+        "cc_status": "NEAR_EXPIRY",
+        "drift_status": "CONFIRMED"
+      },
+      {
+        "ticker": "AMAT",
+        "sector": "Technology",
+        "entry_date": "2026-02-15",
+        "holding_day": 12,
+        "pnl_pct": -1.4,
+        "cc_strike": 195.0,
+        "cc_dte": 22,
+        "cc_status": "OK",
+        "drift_status": "CONFIRMED"
+      },
+      {
+        "ticker": "MSFT",
+        "sector": "Technology",
+        "entry_date": "2026-02-05",
+        "holding_day": 22,
+        "pnl_pct": 5.8,
+        "cc_strike": 420.0,
+        "cc_dte": 37,
+        "cc_status": "OK",
+        "drift_status": "CONFIRMED"
+      }
+    ],
+    "pending_signals": [
+      {
+        "ticker": "UNH",
+        "sector": "Healthcare",
+        "signal_date": "2026-02-25",
+        "drift_day": 2,
+        "drift_status": "PENDING_DAY_2",
+        "sector_rarity": 0.018,
+        "heat": 1.8,
+        "note": "Morgen Drift-Bestaetigung moeglich — wird Position wenn Drift haelt"
+      }
+    ],
+    "cc_expiry_warnings": [
+      {"ticker": "NVDA", "cc_dte": 5, "urgency": "NEAR_EXPIRY"}
+    ]
+  },
+
+  "signals": {
+    "status": "AVAILABLE",
+    "trade_count": 14,
+    "router_status": {
+      "EM_BROAD":        {"proximity": 0.65, "trend": "RISING",  "state": "MONITORING"},
+      "CHINA_STIMULUS":  {"proximity": 0.32, "trend": "STABLE",  "state": "INACTIVE"},
+      "COMMODITY_SUPER": {"proximity": 0.18, "trend": "STABLE",  "state": "INACTIVE"}
+    },
+    "effective_concentration": 0.08,
+    "permopt_status": {
+      "budget_pct": 0.05,
+      "active": true,
+      "positions_count": 0
+    }
+  },
+
+  "risk": {
+    "status": "AVAILABLE",
+    "portfolio_status": "YELLOW",
+    "alerts": [
+      {
+        "id": "RA-2026-02-27-001",
+        "check_name": "SECTOR_CONCENTRATION",
+        "severity": "CRITICAL",
+        "message": "Technology sector 42%, threshold 40%",
+        "current_value": 0.42,
+        "threshold": 0.40,
+        "trend": "WORSENING",
+        "delta_tag": "NEU",
+        "days_active": 1
+      },
+      {
+        "id": "RA-2026-02-24-002",
+        "check_name": "CORRELATION_RISING",
+        "severity": "WARNING",
+        "message": "30d rolling correlation 0.72, threshold 0.65",
+        "current_value": 0.72,
+        "threshold": 0.65,
+        "trend": "STABLE",
+        "delta_tag": null,
+        "days_active": 4
+      }
+    ],
+    "emergency_triggers": {
+      "max_drawdown_breach": false,
+      "correlation_crisis": false,
+      "liquidity_crisis": false,
+      "regime_forced": false
+    },
+    "ongoing_conditions_count": 2,
+    "ongoing_conditions": [
+      {"condition": "VIX elevated >20", "days_active": 12, "severity": "MONITOR", "trend": "STABLE"},
+      {"condition": "Yield curve inverted 2s10s", "days_active": 45, "severity": "MONITOR", "trend": "STABLE"}
+    ]
+  },
+
+  "intelligence": {
+    "status": "AVAILABLE",
+    "consensus": {
+      "LIQUIDITY":         {"score": 4.2, "direction": "BULLISH", "sources": 5, "confidence": 0.82},
+      "FED_POLICY":        {"score": 2.1, "direction": "BULLISH", "sources": 4, "confidence": 0.71},
+      "CREDIT":            {"score": 1.5, "direction": "BULLISH", "sources": 3, "confidence": 0.65},
+      "INFLATION":         {"score": -1.2, "direction": "BEARISH", "sources": 3, "confidence": 0.58},
+      "GROWTH":            {"score": 0.8, "direction": "NEUTRAL", "sources": 2, "confidence": 0.45},
+      "EQUITY_VALUATION":  {"score": -2.8, "direction": "BEARISH", "sources": 2, "confidence": 0.60},
+      "CHINA_EM":          {"score": 1.0, "direction": "NEUTRAL", "sources": 2, "confidence": 0.40},
+      "TECH_AI":           {"score": 3.5, "direction": "BULLISH", "sources": 4, "confidence": 0.75}
+    },
+    "divergences": [
+      {
+        "theme": "FED_POLICY",
+        "divergence_type": "IC_BULLISH_DC_BEARISH",
+        "magnitude": 0.65,
+        "ic_signal": 2.1,
+        "dc_signal": -0.8,
+        "ic_top_contributors": ["Forward Guidance Weekly", "Macro Alf"],
+        "dc_source_field": "fedwatch_cut_probability",
+        "dc_confidence": 0.90,
+        "interpretation_hint": "IC Sources dovisher als Market Pricing — moeglicherweise vorauslaufend"
+      },
+      {
+        "theme": "EQUITY_VALUATION",
+        "divergence_type": "IC_BEARISH_DC_NEUTRAL",
+        "magnitude": 0.45,
+        "ic_signal": -2.8,
+        "dc_signal": 0.2,
+        "ic_top_contributors": ["GMO Quarterly", "Hussman Weekly"],
+        "dc_source_field": "cape_ratio",
+        "dc_confidence": 0.85,
+        "interpretation_hint": "IC deutlich skeptischer als Markt-Bewertungsmetriken"
+      }
+    ],
+    "divergences_count": 2,
+    "high_novelty_claims": [
+      {
+        "source": "Macro Alf",
+        "claim": "Real yields erstmals seit 2022 negativ — historisch bullish fuer Gold und Risk Assets",
+        "novelty": 7,
+        "signal": 0.8,
+        "theme": "INFLATION"
+      },
+      {
+        "source": "CrossBorder Capital",
+        "claim": "Global Liquidity Index erreicht neues 18-Monats-Hoch, getrieben von PBoC und BoJ",
+        "novelty": 6,
+        "signal": 1.2,
+        "theme": "LIQUIDITY"
+      }
+    ],
+    "catalyst_timeline": [
+      {"event": "CPI Release", "date": "2026-02-28", "days_until": 1, "impact": "HIGH", "themes": ["INFLATION", "FED_POLICY"]},
+      {"event": "ISM Manufacturing", "date": "2026-03-01", "days_until": 2, "impact": "MEDIUM", "themes": ["GROWTH"]},
+      {"event": "FOMC Decision", "date": "2026-03-05", "days_until": 6, "impact": "HIGH", "themes": ["FED_POLICY", "LIQUIDITY"]},
+      {"event": "Nonfarm Payrolls", "date": "2026-03-06", "days_until": 7, "impact": "HIGH", "themes": ["GROWTH", "FED_POLICY"]},
+      {"event": "ECB Rate Decision", "date": "2026-03-12", "days_until": 13, "impact": "MEDIUM", "themes": ["LIQUIDITY"]}
+    ]
+  },
+
+  "g7_summary": {
+    "active_regime": "R2",
+    "regime_label": "MANAGED RIVALRY",
+    "ewi_score": 42,
+    "ewi_label": "MODERATE",
+    "last_full_run_date": "2026-01-01",
+    "last_interim_date": "2026-02-27",
+    "attention_flags": [
+      "US-China Tech Decoupling beschleunigt sich — neue Export-Restriktionen erwartet Q2",
+      "EU Energy-Diversifizierung von russischem Gas zu 78% abgeschlossen"
+    ],
+    "scenarios": [
+      {"name": "Managed Competition", "probability": 0.45, "description": "Kontrollierte Rivalitaet mit regelbasiertem Handel. Tech-Decoupling schreitet voran aber ohne Eskalation. Status quo plus."},
+      {"name": "Fragmented Blocs", "probability": 0.30, "description": "Bildung klarer Handelsblöcke: US-EU-JP vs. China-Russia-Global South. Fragmentierung der Lieferketten beschleunigt sich."},
+      {"name": "Cooperative Reset", "probability": 0.15, "description": "Ueberraschendes diplomatisches Engagement. Handel normalisiert sich. Globalisierung 2.0 mit neuen Regeln."},
+      {"name": "Systemic Crisis", "probability": 0.10, "description": "Taiwan-Krise oder Finanzmarkt-Schock als Katalysator. Schnelle Eskalation zu Systemstress. Safe Haven Rally."}
+    ],
+    "regions": [
+      {"name": "USA", "flag": "🇺🇸", "score": 78, "trend": "STABLE"},
+      {"name": "China", "flag": "🇨🇳", "score": 65, "trend": "RISING"},
+      {"name": "EU", "flag": "🇪🇺", "score": 52, "trend": "FALLING"},
+      {"name": "Japan", "flag": "🇯🇵", "score": 48, "trend": "STABLE"},
+      {"name": "UK", "flag": "🇬🇧", "score": 44, "trend": "STABLE"},
+      {"name": "India", "flag": "🇮🇳", "score": 41, "trend": "RISING"},
+      {"name": "Russia", "flag": "🇷🇺", "score": 28, "trend": "FALLING"}
+    ]
+  },
+
+  "pipeline_health": {
+    "overall_status": "OK",
+    "steps": {
+      "step_0a_dc":           {"status": "OK", "completed_at": "05:38Z", "duration_s": 287, "summary": "52/58 fields OK"},
+      "step_0b_ic":           {"status": "OK", "completed_at": "05:58Z", "duration_s": 340, "summary": "8/10 sources OK"},
+      "step_1_market_analyst":{"status": "OK", "completed_at": "06:02Z", "duration_s": 12,  "summary": "8 layers computed"},
+      "step_2_signal_gen":    {"status": "OK", "completed_at": "06:03Z", "duration_s": 4,   "summary": "14 trades compiled"},
+      "step_3_risk_officer":  {"status": "OK", "completed_at": "06:04Z", "duration_s": 8,   "summary": "2 alerts active"},
+      "step_4_cio_draft":     {"status": "OK", "completed_at": "06:18Z", "duration_s": 14,  "summary": "556 words"},
+      "step_5_da":            {"status": "OK", "completed_at": "06:32Z", "duration_s": 11,  "summary": "3 challenges"},
+      "step_6_cio_final":     {"status": "OK", "completed_at": "06:44Z", "duration_s": 12,  "summary": "3 DA resolutions"},
+      "step_7_writer":        {"status": "OK", "completed_at": "07:05Z", "duration_s": 6,   "summary": "JSON + Sheet + CSV"}
+    },
+    "dc_data_quality": {
+      "level": "DEGRADED",
+      "fields_ok": 52,
+      "fields_total": 58,
+      "fields_stale": 4,
+      "fields_failed": 2,
+      "alerts": ["AAII website unreachable — using 7-day-old value", "CFTC COT data delayed — using last week"]
+    },
+    "ic_extraction": {
+      "claims_total": 34,
+      "sources_ok": 8,
+      "sources_failed": 2,
+      "sources_failed_names": ["The Macro Compass", "Crescat Capital"]
+    },
+    "llm_costs_today": {
+      "total_usd": 0.14,
+      "breakdown": {"haiku": 0.05, "sonnet": 0.09}
+    }
+  },
+
+  "known_unknowns": [
+    {"gap": "CRYPTO_INTELLIGENCE", "reason": "no_ic_sources_for_crypto", "permanent": true},
+    {"gap": "INTRADAY_MOVES", "reason": "daily_batch_only", "permanent": true},
+    {"gap": "CHINA_INTERBANK_DETAIL", "reason": "no_dc_field", "permanent": true},
+    {"gap": "FRESH_CORRELATIONS", "reason": "weekly_update_only", "stale_days": 4, "permanent": false}
+  ],
+
+  "temporal_map": {
+    "market_data_as_of": "2026-02-26T21:00:00Z",
+    "ic_extraction_as_of": "2026-02-27T05:58:00Z",
+    "ic_source_articles_range": "2026-02-25 to 2026-02-26",
+    "v16_regime_based_on": "2026-02-26 close",
+    "cio_briefing_written_at": "2026-02-27T06:44:00Z",
+    "dashboard_rendered_at": "2026-02-27T07:05:12Z",
+    "hours_since_market_data": 10.1,
+    "hours_since_briefing": 0.35,
+    "timing_classes": {
+      "market_data": "PREV_CLOSE",
+      "ic_claims": "MORNING",
+      "v16_regime": "PREV_CLOSE",
+      "layer_scores": "MIXED",
+      "cio_briefing": "FRESH",
+      "risk_alerts": "FRESH"
+    }
+  },
+
+  "agent_r_context": {
+    "date": "2026-02-27",
+    "briefing_type": "WATCH",
+    "regime": "RISK_ON",
+    "regime_transition": false,
+    "conviction": "HIGH",
+    "risk_ampel": "YELLOW",
+    "data_quality": "DEGRADED",
+    "top_risk": "Sector concentration Tech 42%",
+    "action_items_act": ["Pruefe F6 NVDA CC Position — Sector Concentration"],
+    "action_items_review": ["EM_BROAD Proximity 0.65", "Correlation Rising 0.72"],
+    "divergences": ["FED_POLICY: IC bullish (+2.1), DC bearish (-0.8)", "EQUITY_VALUATION: IC bearish (-2.8), DC neutral"],
+    "consistency_flags": ["DQ_CONVICTION_MISMATCH"],
+    "f6_pending": ["UNH Drift Day 2 — morgen Bestaetigung"],
+    "cc_expiry_warnings": ["NVDA CC DTE 5"],
+    "regime_stability_pct": 75.0
+  },
+
+  "agent_r_queue": [
+    {
+      "item_id": "AI-2026-02-27-001",
+      "type": "ACT",
+      "target": "EXP_SECTOR_CONCENTRATION",
+      "context": "Tech 42%, Schwelle 40%, FOMC in 7 Tagen",
+      "suggested_actions": ["Pruefe F6 NVDA CC Position", "Pruefe RSP-Substitution"],
+      "relevant_data": {
+        "current_tech_weight": 0.42,
+        "f6_tech_positions": ["NVDA", "AMAT", "MSFT"],
+        "v16_tech_etfs": ["XLK", "QQQ"],
+        "fomc_days_until": 6
+      }
+    }
+  ],
+
+  "timeseries_row": {
+    "date": "2026-02-27",
+    "regime": "RISK_ON",
+    "conviction": "HIGH",
+    "risk_ampel": "YELLOW",
+    "briefing_type": "WATCH",
+    "fragility": "ELEVATED",
+    "data_quality": "DEGRADED",
+    "divergence_count": 2,
+    "alerts_active": 2,
+    "action_items_open": 6,
+    "f6_positions": 3,
+    "ic_claims_total": 34,
+    "ic_sources_ok": 8,
+    "da_challenges": 3,
+    "da_accepted": 1,
+    "da_acceptance_rate": 0.33,
+    "fact_check_corrections": 0,
+    "regime_stability_pct": 75.0,
+    "pipeline_status": "OK",
+    "llm_cost_usd": 0.14,
+    "cio_word_count": 556
+  },
+
+  "validation": {
+    "status": "PASS",
+    "checks_run": 12,
+    "checks_passed": 12,
+    "checks_failed": 0,
+    "warnings": [],
+    "errors": []
+  }
+}

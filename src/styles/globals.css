@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== INTER FONT (Google Fonts CDN) ===== */
+/* Self-hosting preferred for production, CDN for Dummy-App */
+
+/* ===== BASE STYLES ===== */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #0A1628;
+    color: #E2E8F0;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Tabular Numbers for financial data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hide scrollbar for circle nav */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ===== GLASSMORPHISM COMPONENTS ===== */
+@layer components {
+  /* Standard Glass Card (Spec §1.6) */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card:active,
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Primary Glass Card (System Status, Action Items) */
+  .glass-card-primary {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .glass-card-primary:active,
+  .glass-card-primary:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  /* Secondary Glass Card (Intelligence, G7) */
+  .glass-card-secondary {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-card-secondary:active,
+  .glass-card-secondary:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.10);
+  }
+
+  /* Side Stripe (3px left border, Spec §1.4) */
+  .side-stripe {
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .side-stripe::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--stripe-color, #3B82F6);
+  }
+
+  /* Auth Input (Spec §3.2) */
+  .auth-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 12px 16px;
+    width: 280px;
+    color: #E2E8F0;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 200ms ease;
+  }
+
+  .auth-input:focus {
+    border-color: #3B82F6;
+  }
+
+  .auth-input.error {
+    border-color: #EF4444;
+    animation: shake 300ms ease;
+  }
+
+  /* Auth Button */
+  .auth-button {
+    background: #3B82F6;
+    color: #E2E8F0;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    width: 280px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 200ms ease;
+  }
+
+  .auth-button:hover {
+    background: #2563EB;
+  }
+
+  /* Topbar (Spec §3.4) */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(10, 22, 40, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* Circle Nav (Spec §5.1) */
+  .circle-nav {
+    position: sticky;
+    top: 52px;
+    z-index: 20;
+    display: flex;
+    gap: 16px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    background: rgba(10, 22, 40, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .circle-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Circle Item */
+  .circle-item {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #E2E8F0;
+    transition: all 200ms ease;
+    flex-shrink: 0;
+  }
+
+  .circle-item.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+    color: #3B82F6;
+  }
+
+  .circle-item:active {
+    transform: scale(0.95);
+    transition: transform 150ms ease;
+  }
+
+  /* Timestamp Bar (Spec §5.11) */
+  .timestamp-bar {
+    position: sticky;
+    top: 124px;
+    z-index: 30;
+    padding: 4px 16px;
+    font-size: 11px;
+    color: #8B9DC3;
+    background: rgba(10, 22, 40, 0.90);
+    text-align: center;
+  }
+
+  /* Stale Warning (Spec §7.1) */
+  .stale-warning {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #EAB308;
+    padding: 12px 16px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 70;
+  }
+
+  /* Chat Message Bubbles (Spec §6.6) */
+  .message-user {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px 16px 4px 16px;
+    padding: 12px 16px;
+    margin-left: 40px;
+    color: #E2E8F0;
+    font-size: 14px;
+  }
+
+  .message-assistant {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px 16px 16px 4px;
+    padding: 12px 16px;
+    margin-right: 40px;
+    color: #E2E8F0;
+    font-size: 14px;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Respect reduced motion preference (Spec §1.9) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Safe area for iPhone (Spec §6.3) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
