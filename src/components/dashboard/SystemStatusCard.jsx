@@ -17,6 +17,10 @@ export default function SystemStatusCard({ dashboard }) {
   const dqColors = { FULL: COLORS.signalGreen, DEGRADED: COLORS.signalYellow, CRITICAL: COLORS.signalRed };
   const dqColor = dqColors[h.data_quality] || COLORS.mutedBlue;
 
+  // Macro State info
+  const stateNum = v16.macro_state_num;
+  const stateName = v16.macro_state_name?.replace(/_/g, ' ') || '';
+
   return (
     <GlassCard variant="primary" stripeColor={regimeColor}>
       {/* Header */}
@@ -27,14 +31,19 @@ export default function SystemStatusCard({ dashboard }) {
         </span>
       </div>
 
-      {/* Regime */}
+      {/* Regime + Macro State */}
       <div className="flex items-center gap-2 mb-1">
         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: regimeColor }} />
         <span className="text-data-large tabular-nums" style={{ color: regimeColor }}>
           {h.v16_regime?.replace(/_/g, ' ') || '—'}
         </span>
       </div>
-      <p className="text-data-small text-muted-blue mb-4">V16: {v16.regime || h.v16_regime || '—'}</p>
+      <p className="text-data-small text-muted-blue mb-4">
+        {stateNum ? `State ${stateNum}: ${stateName}` : '—'}
+        {' · '}Growth {v16.growth_signal > 0 ? '+' : ''}{v16.growth_signal ?? '—'}
+        {' · '}Liq {v16.liq_direction > 0 ? '+' : ''}{v16.liq_direction ?? '—'}
+        {' · '}Stress {v16.stress_score ?? '—'}
+      </p>
 
       {/* Data Grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
@@ -45,15 +54,15 @@ export default function SystemStatusCard({ dashboard }) {
           </span>
         </div>
         <div>
-          <span className="text-caption text-muted-blue block">ENB</span>
-          <span className="text-data-medium tabular-nums text-ice-white">
-            {v16.regime_confidence != null ? (v16.regime_confidence * 10).toFixed(1) : '—'}
+          <span className="text-caption text-muted-blue block">CAGR</span>
+          <span className="text-data-medium tabular-nums text-signal-green">
+            {v16.performance?.CAGR != null ? `${v16.performance.CAGR}%` : '—'}
           </span>
         </div>
         <div>
-          <span className="text-caption text-muted-blue block">Conv</span>
+          <span className="text-caption text-muted-blue block">Sharpe</span>
           <span className="text-data-medium tabular-nums text-ice-white">
-            {h.system_conviction || '—'}
+            {v16.performance?.Sharpe != null ? v16.performance.Sharpe : '—'}
           </span>
         </div>
         <div>
@@ -66,7 +75,7 @@ export default function SystemStatusCard({ dashboard }) {
 
       {/* Pipeline */}
       <div className="flex items-center gap-2 text-caption text-muted-blue">
-        <span>Pipeline: {h.pipeline_status === 'OK' ? '✅ OK' : h.pipeline_status === 'DEGRADED' ? '⚠️ DEGRADED' : '❌ FAILED'}</span>
+        <span>Pipeline: {h.pipeline_status === 'OK' ? '✅ OK' : h.pipeline_status === 'PHASE_1' ? '🟡 Phase 1' : h.pipeline_status === 'DEGRADED' ? '⚠️ DEGRADED' : '❌ FAILED'}</span>
         <span>│</span>
         <span>{new Date(dashboard.generated_at).toISOString().slice(11, 16)} UTC</span>
       </div>
