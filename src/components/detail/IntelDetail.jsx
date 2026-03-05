@@ -19,25 +19,27 @@ export default function IntelDetail({ dashboard }) {
       <div className="glass-card p-4">
         <h2 className="text-section-title text-ice-white mb-3">IC Konsens</h2>
         <div className="space-y-2">
-          {Object.entries(consensus).map(([theme, data]) => (
+          {Object.entries(consensus).map(([theme, data]) => {
+            const score = data?.score ?? 0;
+            return (
             <div key={theme} className="flex items-center gap-2">
               <span className="text-data-small text-ice-white w-32 truncate">{theme.replace(/_/g, ' ')}</span>
-              <span className="text-data-small tabular-nums w-10 text-right" style={{ color: SCORE_COLOR(data.score) }}>
-                {data.score > 0 ? '+' : ''}{data.score.toFixed(1)}
+              <span className="text-data-small tabular-nums w-10 text-right" style={{ color: SCORE_COLOR(score) }}>
+                {score > 0 ? '+' : ''}{score.toFixed(1)}
               </span>
               <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden relative">
                 <div className="absolute top-0 h-full w-px bg-white/10" style={{ left: '50%' }} />
-                {data.score > 0 ? (
+                {score > 0 ? (
                   <div className="absolute top-0 h-full bg-signal-green/40 rounded-full"
-                    style={{ left: '50%', width: `${Math.min(data.score * 10, 50)}%` }} />
+                    style={{ left: '50%', width: `${Math.min(score * 10, 50)}%` }} />
                 ) : (
                   <div className="absolute top-0 h-full bg-signal-red/40 rounded-full"
-                    style={{ right: '50%', width: `${Math.min(Math.abs(data.score) * 10, 50)}%` }} />
+                    style={{ right: '50%', width: `${Math.min(Math.abs(score) * 10, 50)}%` }} />
                 )}
               </div>
               <span className="text-caption text-muted-blue w-8 text-right">{data.sources}</span>
             </div>
-          ))}
+          )})
         </div>
       </div>
 
@@ -89,6 +91,7 @@ export default function IntelDetail({ dashboard }) {
                 <p className="text-body text-ice-white">{c.claim}</p>
                 <div className="flex items-center gap-3 mt-1 text-caption text-muted-blue">
                   <span>{c.source}</span>
+                  {c.date && <span>{c.date}</span>}
                   <span>Novelty: {c.novelty}</span>
                   <span>Signal: {c.signal > 0 ? '+' : ''}{c.signal}</span>
                   <span>{c.theme}</span>

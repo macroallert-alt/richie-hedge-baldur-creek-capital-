@@ -23,22 +23,24 @@ export default function LayerScoresCard({ dashboard, onNavigate }) {
 
       {/* Layer Rows */}
       <div className="space-y-1.5 mb-3">
-        {Object.entries(scores).map(([key, data]) => {
-          const scoreColor = getScoreColor(data.score);
-          const dir = DIRECTION_DISPLAY[data.direction] || DIRECTION_DISPLAY.STABLE;
+        {Object.entries(scores).map(([key, raw]) => {
+          const score = typeof raw === 'number' ? raw : (raw?.score ?? 0);
+          const direction = typeof raw === 'object' ? raw?.direction : null;
+          const scoreColor = getScoreColor(score);
+          const dir = DIRECTION_DISPLAY[direction] || DIRECTION_DISPLAY.STABLE;
           return (
             <div key={key} className="flex items-center gap-1.5">
               <span className="text-caption text-muted-blue w-24 truncate">
                 {LAYER_SHORT_NAMES[key] || key}
               </span>
               <span className="text-data-small tabular-nums w-8 text-right" style={{ color: scoreColor }}>
-                {data.score.toFixed(1)}
+                {score.toFixed(1)}
               </span>
               <span className="text-caption w-3 text-center" style={{ color: dir.color }}>{dir.arrow}</span>
               <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${data.score * 10}%`, backgroundColor: scoreColor }}
+                  style={{ width: `${Math.abs(score) * 10}%`, backgroundColor: scoreColor }}
                 />
               </div>
             </div>

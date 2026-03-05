@@ -60,16 +60,19 @@ export default function LayersDetail({ dashboard }) {
 
       {/* 8 Layer Cards */}
       <div className="space-y-3">
-        {Object.entries(scores).map(([key, data]) => {
-          const scoreColor = getScoreColor(data.score);
-          const dir = DIRECTION_DISPLAY[data.direction] || DIRECTION_DISPLAY.STABLE;
+        {Object.entries(scores).map(([key, raw]) => {
+          const score = typeof raw === 'number' ? raw : (raw?.score ?? 0);
+          const direction = typeof raw === 'object' ? raw?.direction : null;
+          const conviction = typeof raw === 'object' ? raw?.conviction : null;
+          const scoreColor = getScoreColor(score);
+          const dir = DIRECTION_DISPLAY[direction] || DIRECTION_DISPLAY.STABLE;
 
           return (
             <div key={key} className="glass-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-section-title text-ice-white">{LAYER_FULL_NAMES[key] || key}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-data-medium tabular-nums" style={{ color: scoreColor }}>{data.score.toFixed(1)}</span>
+                  <span className="text-data-medium tabular-nums" style={{ color: scoreColor }}>{score.toFixed(1)}</span>
                   <span className="text-body" style={{ color: dir.color }}>{dir.arrow}</span>
                 </div>
               </div>
@@ -77,12 +80,12 @@ export default function LayersDetail({ dashboard }) {
               {/* Score Bar */}
               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2">
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${data.score * 10}%`, backgroundColor: scoreColor }} />
+                  style={{ width: `${Math.abs(score) * 10}%`, backgroundColor: scoreColor }} />
               </div>
 
               <div className="flex items-center justify-between text-caption">
-                <span className="text-muted-blue">Direction: <span style={{ color: dir.color }}>{data.direction}</span></span>
-                <span className="text-muted-blue">Conviction: {data.conviction}</span>
+                <span className="text-muted-blue">Direction: <span style={{ color: dir.color }}>{direction || '—'}</span></span>
+                <span className="text-muted-blue">Conviction: {conviction || '—'}</span>
               </div>
             </div>
           );
