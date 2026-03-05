@@ -39,7 +39,7 @@ export default function IntelDetail({ dashboard }) {
               </div>
               <span className="text-caption text-muted-blue w-8 text-right">{data.sources}</span>
             </div>
-          )})
+          )})}
         </div>
       </div>
 
