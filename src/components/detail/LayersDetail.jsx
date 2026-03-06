@@ -63,7 +63,8 @@ export default function LayersDetail({ dashboard }) {
         {Object.entries(scores).map(([key, raw]) => {
           const score = typeof raw === 'number' ? raw : (raw?.score ?? 0);
           const direction = typeof raw === 'object' ? raw?.direction : null;
-          const conviction = typeof raw === 'object' ? raw?.conviction : null;
+          const rawConviction = typeof raw === 'object' ? raw?.conviction : null;
+          const conviction = typeof rawConviction === 'object' ? (rawConviction?.composite || rawConviction?.level || '—') : rawConviction;
           const scoreColor = getScoreColor(score);
           const dir = DIRECTION_DISPLAY[direction] || DIRECTION_DISPLAY.STABLE;
 
