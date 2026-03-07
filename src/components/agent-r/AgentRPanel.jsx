@@ -1,34 +1,141 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Loader2, AlertTriangle, RotateCcw } from 'lucide-react';
+import { X, Send, Loader2, AlertTriangle, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useNudges } from '@/hooks/useNudges';
 import { TOOL_LABELS } from '@/lib/constants';
 
+// ===== localStorage Helpers =====
+const STORAGE_KEY = 'agent_r_tabs';
+const ACTIVE_TAB_KEY = 'agent_r_active_tab';
+const MAX_TABS = 20;
+
+function generateId() {
+  return 'ar-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+}
+
+function loadTabs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const tabs = JSON.parse(raw);
+    return Array.isArray(tabs) ? tabs : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTabs(tabs) {
+  try {
+    const trimmed = tabs.slice(-MAX_TABS);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch {
+    try {
+      const trimmed = tabs.slice(-5);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    } catch {
+      // Give up silently
+    }
+  }
+}
+
+function loadActiveTabId() {
+  try {
+    return localStorage.getItem(ACTIVE_TAB_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveActiveTabId(id) {
+  try {
+    localStorage.setItem(ACTIVE_TAB_KEY, id);
+  } catch {
+    // Ignore
+  }
+}
+
+function getTabTitle(messages) {
+  const firstUser = messages.find(m => m.role === 'user');
+  if (!firstUser) return 'Neuer Chat';
+  const text = firstUser.text || '';
+  return text.length > 30 ? text.slice(0, 30) + 'â€¦' : text;
+}
+
+
 export default function AgentRPanel({ dashboard, onClose }) {
   const nudges = useNudges(dashboard);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [tabs, setTabs] = useState([]);
+  const [activeTabId, setActiveTabId] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeTools, setActiveTools] = useState([]);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const tabsContainerRef = useRef(null);
   const agentCtx = dashboard?.agent_r_context || {};
+
+  // Current tab's messages
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const messages = activeTab?.messages || [];
+
+  // ===== Init: Load tabs from localStorage =====
+  useEffect(() => {
+    const savedTabs = loadTabs();
+    const savedActiveId = loadActiveTabId();
+
+    if (savedTabs.length > 0) {
+      setTabs(savedTabs);
+      const validActive = savedTabs.find(t => t.id === savedActiveId);
+      setActiveTabId(validActive ? validActive.id : savedTabs[savedTabs.length - 1].id);
+    } else {
+      const newTab = { id: generateId(), title: 'Neuer Chat', messages: [], created: new Date().toISOString() };
+      setTabs([newTab]);
+      setActiveTabId(newTab.id);
+    }
+  }, []);
+
+  // ===== Persist tabs to localStorage on every change =====
+  useEffect(() => {
+    if (tabs.length > 0) {
+      saveTabs(tabs);
+    }
+  }, [tabs]);
+
+  // ===== Persist active tab ID =====
+  useEffect(() => {
+    if (activeTabId) {
+      saveActiveTabId(activeTabId);
+    }
+  }, [activeTabId]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeTools]);
 
-  // Focus input on mount
+  // Focus input on tab switch
   useEffect(() => {
     if (!isStreaming) inputRef.current?.focus();
-  }, [isStreaming]);
+  }, [isStreaming, activeTabId]);
 
-  // Send message to Agent R API
+  // ===== Update messages in active tab =====
+  const updateActiveMessages = useCallback((updater) => {
+    setTabs(prev => prev.map(tab => {
+      if (tab.id !== activeTabId) return tab;
+      const newMessages = typeof updater === 'function' ? updater(tab.messages) : updater;
+      return {
+        ...tab,
+        messages: newMessages,
+        title: getTabTitle(newMessages),
+      };
+    }));
+  }, [activeTabId]);
+
+  // ===== Send message to Agent R API =====
   const handleSend = useCallback(async (overrideText) => {
     const text = overrideText || input.trim();
     if (!text || isStreaming) return;
@@ -37,13 +144,11 @@ export default function AgentRPanel({ dashboard, onClose }) {
     setError(null);
     setActiveTools([]);
 
-    // Add user message
     const userMsg = { role: 'user', text };
     const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    updateActiveMessages(updatedMessages);
     setIsStreaming(true);
 
-    // Create abort controller for cancellation
     abortRef.current = new AbortController();
 
     try {
@@ -62,15 +167,13 @@ export default function AgentRPanel({ dashboard, onClose }) {
         throw new Error(errData.error || `API Error: ${response.status}`);
       }
 
-      // Parse SSE stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let assistantText = '';
       let currentTools = [];
 
-      // Add empty assistant message that we'll build up
-      setMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
+      updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -88,14 +191,11 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
             if (data.type === 'text_delta') {
               assistantText += data.text;
-              setMessages(prev => {
+              updateActiveMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
                 if (updated[lastIdx]?.role === 'assistant') {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    text: assistantText,
-                  };
+                  updated[lastIdx] = { ...updated[lastIdx], text: assistantText };
                 }
                 return updated;
               });
@@ -104,14 +204,11 @@ export default function AgentRPanel({ dashboard, onClose }) {
             if (data.type === 'tool_call') {
               currentTools = [...currentTools, data.tool];
               setActiveTools([...currentTools]);
-              setMessages(prev => {
+              updateActiveMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
                 if (updated[lastIdx]?.role === 'assistant') {
-                  updated[lastIdx] = {
-                    ...updated[lastIdx],
-                    toolCalls: [...currentTools],
-                  };
+                  updated[lastIdx] = { ...updated[lastIdx], toolCalls: [...currentTools] };
                 }
                 return updated;
               });
@@ -126,61 +223,82 @@ export default function AgentRPanel({ dashboard, onClose }) {
               setActiveTools([]);
             }
           } catch {
-            // Skip unparseable lines
+            // Skip
           }
         }
       }
 
-      // Safety: ensure streaming stops
       setIsStreaming(false);
       setActiveTools([]);
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        // User cancelled
-        setMessages(prev => {
+        updateActiveMessages(prev => {
           const updated = [...prev];
           const lastIdx = updated.length - 1;
-          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) {
-            updated.pop(); // Remove empty assistant message
-          }
+          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
           return updated;
         });
       } else {
         setError(err.message);
-        setMessages(prev => {
+        updateActiveMessages(prev => {
           const updated = [...prev];
           const lastIdx = updated.length - 1;
-          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) {
-            updated.pop();
-          }
+          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
           return updated;
         });
       }
       setIsStreaming(false);
       setActiveTools([]);
     }
-  }, [input, isStreaming, messages, dashboard]);
+  }, [input, isStreaming, messages, dashboard, updateActiveMessages]);
 
-  // Cancel streaming
+  // ===== Tab Management =====
+  const handleNewTab = () => {
+    if (isStreaming) return;
+    const newTab = { id: generateId(), title: 'Neuer Chat', messages: [], created: new Date().toISOString() };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+    setError(null);
+    setActiveTools([]);
+    setInput('');
+    setTimeout(() => {
+      tabsContainerRef.current?.scrollTo({ left: tabsContainerRef.current.scrollWidth, behavior: 'smooth' });
+    }, 50);
+  };
+
+  const handleDeleteTab = (tabId, e) => {
+    e.stopPropagation();
+    if (isStreaming) return;
+
+    const remaining = tabs.filter(t => t.id !== tabId);
+
+    if (remaining.length === 0) {
+      const newTab = { id: generateId(), title: 'Neuer Chat', messages: [], created: new Date().toISOString() };
+      setTabs([newTab]);
+      setActiveTabId(newTab.id);
+    } else {
+      setTabs(remaining);
+      if (activeTabId === tabId) {
+        setActiveTabId(remaining[remaining.length - 1].id);
+      }
+    }
+    setError(null);
+  };
+
+  const handleSwitchTab = (tabId) => {
+    if (isStreaming || tabId === activeTabId) return;
+    setActiveTabId(tabId);
+    setError(null);
+    setActiveTools([]);
+  };
+
   const handleCancel = () => {
     abortRef.current?.abort();
   };
 
-  // New chat
-  const handleNewChat = () => {
-    if (messages.length > 0 && !confirm('Neuen Chat starten? Die aktuelle Konversation geht verloren.')) {
-      return;
-    }
-    setMessages([]);
-    setError(null);
-    setActiveTools([]);
-    setInput('');
-  };
-
-  // Handle nudge click
   const handleNudgeClick = (nudge) => {
-    handleSend(`Erkläre mir: ${nudge.title}`);
+    handleSend(`ErklÃ¤re mir: ${nudge.title}`);
   };
 
   return (
@@ -203,45 +321,77 @@ export default function AgentRPanel({ dashboard, onClose }) {
               V1.0
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            {messages.length > 0 && (
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-muted-blue hover:text-ice-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="flex items-center border-b border-white/5 flex-shrink-0">
+          <div
+            ref={tabsContainerRef}
+            className="flex-1 flex items-center overflow-x-auto"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {tabs.map(tab => (
               <button
-                onClick={handleNewChat}
-                className="w-8 h-8 flex items-center justify-center text-muted-blue hover:text-ice-white"
-                title="Neuer Chat"
+                key={tab.id}
+                onClick={() => handleSwitchTab(tab.id)}
+                className={`flex items-center gap-1 px-3 py-2 text-caption whitespace-nowrap
+                           border-b-2 transition-colors flex-shrink-0 group
+                           ${tab.id === activeTabId
+                             ? 'border-baldur-blue text-ice-white'
+                             : 'border-transparent text-muted-blue hover:text-ice-white hover:border-white/20'
+                           }`}
               >
-                <RotateCcw size={14} />
+                <span className="max-w-[120px] truncate">{tab.title}</span>
+                {tabs.length > 1 && (
+                  <span
+                    onClick={(e) => handleDeleteTab(tab.id, e)}
+                    className="ml-1 w-4 h-4 flex items-center justify-center rounded
+                               opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-opacity"
+                  >
+                    <X size={10} />
+                  </span>
+                )}
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center text-muted-blue hover:text-ice-white"
-            >
-              <X size={18} />
-            </button>
+            ))}
           </div>
+          <button
+            onClick={handleNewTab}
+            disabled={isStreaming}
+            className="flex-shrink-0 w-8 h-8 flex items-center justify-center
+                       text-muted-blue hover:text-ice-white disabled:opacity-30
+                       border-l border-white/5"
+            title="Neuer Chat"
+          >
+            <Plus size={14} />
+          </button>
         </div>
 
         {/* Compact Statusbar */}
         <div className="px-4 py-2 border-b border-white/5 text-caption text-muted-blue flex-shrink-0">
           <p>
-            V16: {agentCtx.regime || dashboard?.v16?.regime || '—'} | DD: {dashboard?.v16?.current_drawdown ?? '—'}% | KS: {
-              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? '⚠️' : '✅'
-            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || '—'}
+            V16: {agentCtx.regime || dashboard?.v16?.regime || 'â€”'} | DD: {dashboard?.v16?.current_drawdown ?? 'â€”'}% | KS: {
+              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? 'âš ï¸' : 'âœ…'
+            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || 'â€”'}
           </p>
           <p>
-            Exec: {dashboard?.execution?.execution_level || '—'} ({dashboard?.execution?.total_score ?? '—'}/{dashboard?.execution?.max_score ?? '—'}) | Stand: {
+            Exec: {dashboard?.execution?.execution_level || 'â€”'} ({dashboard?.execution?.total_score ?? 'â€”'}/{dashboard?.execution?.max_score ?? 'â€”'}) | Stand: {
               dashboard?.generated_at
                 ? new Date(dashboard.generated_at).toISOString().slice(11, 16)
-                : '—'
+                : 'â€”'
             } UTC
           </p>
         </div>
 
-        {/* Nudges — only show when no messages yet */}
+        {/* Nudges â€” only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
-            <p className="text-caption text-muted-blue">PRIORITÄRE HINWEISE</p>
+            <p className="text-caption text-muted-blue">PRIORITÃ„RE HINWEISE</p>
             {nudges.map((n, i) => (
               <button
                 key={i}
@@ -259,10 +409,9 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Empty state */}
           {messages.length === 0 && nudges.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-blue text-center px-4">
-              <p className="text-body mb-2">Agent R — Research Terminal</p>
+              <p className="text-body mb-2">Agent R â€” Research Terminal</p>
               <p className="text-caption">
                 Frag mich zu Regime, Portfolio, Risiko, Einzelaktien, Options, Makro.
                 Bei Trade-Entscheidungen erzwinge ich das Decision Protocol.
@@ -270,7 +419,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
             </div>
           )}
 
-          {/* Message list */}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[90%] ${
@@ -278,13 +426,12 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   ? 'bg-baldur-blue/20 border border-baldur-blue/30 rounded-2xl rounded-br-md px-4 py-2.5'
                   : 'bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-2.5'
               }`}>
-                {/* Tool Call Indicators */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                   <div className="mb-2 space-y-1">
                     {msg.toolCalls.map((tool, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-caption text-muted-blue">
                         <span className={`${i === messages.length - 1 && isStreaming ? 'animate-pulse' : ''}`}>
-                          🔧
+                          ðŸ”§
                         </span>
                         <span>{TOOL_LABELS[tool.name] || tool.name}</span>
                         {tool.input?.ticker && (
@@ -304,7 +451,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   </div>
                 )}
 
-                {/* Message content */}
                 {msg.role === 'user' ? (
                   <p className="text-body text-ice-white">{msg.text}</p>
                 ) : (
@@ -312,7 +458,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
                     {msg.text ? (
                       <ReactMarkdown
                         components={{
-                          // Custom renderers for clean markdown
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                           strong: ({ children }) => <strong className="text-ice-white font-semibold">{children}</strong>,
                           em: ({ children }) => <em className="text-muted-blue">{children}</em>,
@@ -350,7 +495,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
                       </span>
                     ) : null}
 
-                    {/* Streaming cursor */}
                     {isStreaming && i === messages.length - 1 && msg.text && (
                       <span className="inline-block w-1.5 h-4 bg-baldur-blue animate-pulse ml-0.5 align-text-bottom" />
                     )}
@@ -360,7 +504,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
             </div>
           ))}
 
-          {/* Active tool calls indicator (while streaming) */}
           {isStreaming && activeTools.length > 0 && (
             <div className="flex justify-start">
               <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-2.5 space-y-1">
@@ -375,7 +518,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
             </div>
           )}
 
-          {/* Error display */}
           {error && (
             <div className="flex justify-start">
               <div className="bg-signal-red/10 border border-signal-red/30 rounded-2xl px-4 py-2.5
@@ -438,3 +580,4 @@ export default function AgentRPanel({ dashboard, onClose }) {
     </>
   );
 }
+
