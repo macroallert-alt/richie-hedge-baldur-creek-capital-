@@ -585,7 +585,7 @@ async function toolGetLiveSnapshot({ additional_tickers }, dashboard) {
 
   const coreTickers = ['SPY', 'VIX', 'DXY', 'TLT', 'HYG'];
   // DXY is not on FMP, use UUP as proxy
-  const fmpTickers = ['SPY', '^VIX', 'UUP', 'TLT', 'HYG'];
+  const fmpTickers = ['SPY', 'VIXY', 'UUP', 'TLT', 'HYG'];
   const extra = additional_tickers || [];
   const allTickers = [...fmpTickers, ...extra];
 
@@ -598,7 +598,7 @@ async function toolGetLiveSnapshot({ additional_tickers }, dashboard) {
   const quotes = await res.json();
 
   const snapshot = quotes.map(q => ({
-    ticker: q.symbol === '^VIX' ? 'VIX' : q.symbol === 'UUP' ? 'DXY(UUP)' : q.symbol,
+    ticker: q.symbol === 'text-page-title text-center' ? 'VIX' : q.symbol === 'UUP' ? 'DXY(UUP)' : q.symbol,
     price: q.price,
     change_pct: q.changesPercentage ? Math.round(q.changesPercentage * 100) / 100 : null,
     volume: q.volume,
