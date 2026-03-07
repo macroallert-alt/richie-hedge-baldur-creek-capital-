@@ -1,21 +1,131 @@
-// src/app/api/agent-r/route.js
-// Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
-// Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
+﻿// src/app/api/agent-r/route.js
+// Agent R API Route â€” Edge Runtime, Tool-Use-Loop, SSE Streaming
+// V1.1: Dashboard compression + rate limit handling
+// Based on: AGENT_R_TECH_SPEC_TEIL_2.md Â§2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
 import { TOOL_DEFINITIONS, executeTool } from '@/lib/agent-r-tools';
 
 export const runtime = 'edge';
 
-// Max tool-use rounds before forcing final answer (Spec §2.4.1)
-const MAX_TOOL_ROUNDS = 5;
+// Max tool-use rounds before forcing final answer (Spec Â§2.4.1)
+const MAX_TOOL_ROUNDS = 3; // Reduced from 5 to stay within rate limits
 
 // Max messages sent to Claude (keep context manageable)
-const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGES = 10; // Reduced from 20 for token budget
 
-// Claude model (Spec §2.2)
+// Claude model (Spec Â§2.2)
 const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
 const CLAUDE_MAX_TOKENS = 4096;
+
+// Rate limit retry
+const RATE_LIMIT_WAIT_MS = 5000; // 5 seconds
+const MAX_RETRIES = 2;
+
+
+// ===== DASHBOARD COMPRESSION =====
+// Full dashboard.json is ~37KB (~10K tokens) â€” too much for 30K/min rate limit
+// Compress to ~3-5KB (~1-2K tokens) with only what Agent R needs in System Prompt
+// Full dashboard stays available via get_dashboard tool
+
+function compressDashboard(dashboard) {
+  if (!dashboard) return null;
+
+  return {
+    // Timing
+    date: dashboard.date,
+    generated_at: dashboard.generated_at,
+    weekday: dashboard.weekday,
+
+    // Header (compact)
+    header: {
+      briefing_type: dashboard.header?.briefing_type,
+      system_conviction: dashboard.header?.system_conviction,
+      risk_ampel: dashboard.header?.risk_ampel,
+      v16_regime: dashboard.header?.v16_regime,
+      data_quality: dashboard.header?.data_quality,
+    },
+
+    // V16 essentials
+    v16: {
+      regime: dashboard.v16?.regime,
+      current_drawdown: dashboard.v16?.current_drawdown,
+      regime_confidence: dashboard.v16?.regime_confidence,
+      dd_protect_status: dashboard.v16?.dd_protect_status,
+      current_weights: dashboard.v16?.current_weights,
+      top_5_weights: dashboard.v16?.top_5_weights,
+    },
+
+    // Risk essentials
+    risk: {
+      portfolio_status: dashboard.risk?.portfolio_status,
+      emergency_triggers: dashboard.risk?.emergency_triggers,
+      alerts: dashboard.risk?.alerts,
+    },
+
+    // Layers (scores only)
+    layers: {
+      fragility_state: dashboard.layers?.fragility_state,
+      layer_scores: dashboard.layers?.layer_scores,
+    },
+
+    // Execution (compact)
+    execution: {
+      execution_level: dashboard.execution?.execution_level,
+      total_score: dashboard.execution?.total_score,
+      max_score: dashboard.execution?.max_score,
+      veto_applied: dashboard.execution?.veto_applied,
+      confirming_count: dashboard.execution?.confirming_count,
+      conflicting_count: dashboard.execution?.conflicting_count,
+      net_assessment: dashboard.execution?.net_assessment,
+      recommendation_action: dashboard.execution?.recommendation_action,
+      recommendation_short: dashboard.execution?.recommendation_short,
+    },
+
+    // Agent R context (already compact)
+    agent_r_context: dashboard.agent_r_context,
+    agent_r_queue: dashboard.agent_r_queue,
+
+    // Digest (1-liners)
+    digest: dashboard.digest,
+
+    // Action items (summary only)
+    action_items: {
+      summary: dashboard.action_items?.summary,
+      prominent: dashboard.action_items?.prominent,
+    },
+
+    // F6 (status only)
+    f6: { status: dashboard.f6?.status },
+
+    // G7 (compact)
+    g7_summary: {
+      active_regime: dashboard.g7_summary?.active_regime,
+      regime_label: dashboard.g7_summary?.regime_label,
+      ewi_score: dashboard.g7_summary?.ewi_score,
+    },
+
+    // Intelligence (compact)
+    intelligence: {
+      status: dashboard.intelligence?.status,
+      consensus: dashboard.intelligence?.consensus,
+      divergences_count: dashboard.intelligence?.divergences_count,
+    },
+  };
+}
+
+
+// ===== COMPACT TOOL RESULTS =====
+// Truncate large tool results to stay within token budget
+
+function compactToolResult(result) {
+  const str = JSON.stringify(result);
+  // If under 3KB, keep as-is
+  if (str.length < 3000) return str;
+  // Truncate with note
+  return str.slice(0, 3000) + '\n... [truncated â€” use get_dashboard for full data]';
+}
+
 
 export async function POST(request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -45,10 +155,13 @@ export async function POST(request) {
     );
   }
 
-  // Build system prompt (Schicht 1 + Schicht 2 from dashboard)
-  const systemPrompt = buildSystemPrompt(dashboard);
+  // Compress dashboard for System Prompt (full dashboard stays for tool execution)
+  const compressedDashboard = compressDashboard(dashboard);
 
-  // Trim history to MAX_HISTORY_MESSAGES (keep recent, drop old)
+  // Build system prompt with COMPRESSED dashboard
+  const systemPrompt = buildSystemPrompt(compressedDashboard);
+
+  // Trim history to MAX_HISTORY_MESSAGES
   // Convert from frontend format { role, text } to Claude format { role, content }
   const claudeMessages = messages
     .slice(-MAX_HISTORY_MESSAGES)
@@ -66,18 +179,16 @@ export async function POST(request) {
       };
 
       try {
-        // Tool-Use-Loop: non-streaming rounds for tool calls,
-        // then final streaming round for the answer
         let currentMessages = [...claudeMessages];
         let toolRound = 0;
 
         while (toolRound < MAX_TOOL_ROUNDS) {
-          // Call Claude (non-streaming for tool rounds)
-          const response = await callClaude(apiKey, systemPrompt, currentMessages, TOOL_DEFINITIONS, false);
+          // Call Claude with retry on rate limit
+          const response = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, TOOL_DEFINITIONS, false);
 
           if (!response.ok) {
             const errText = await response.text();
-            send({ type: 'error', error: `Claude API Error: ${response.status} — ${errText}` });
+            send({ type: 'error', error: `Claude API Error: ${response.status} â€” ${errText}` });
             send({ type: 'done' });
             controller.close();
             return;
@@ -89,13 +200,12 @@ export async function POST(request) {
           const toolUseBlocks = (result.content || []).filter(b => b.type === 'tool_use');
 
           if (toolUseBlocks.length === 0) {
-            // No tool calls — this is the final answer
-            // Extract text and send as streamed chunks
+            // No tool calls â€” final answer
             const textBlocks = (result.content || []).filter(b => b.type === 'text');
             const fullText = textBlocks.map(b => b.text).join('');
 
-            // Send in chunks to simulate streaming feel
-            const chunkSize = 20; // characters per chunk
+            // Send in chunks to simulate streaming
+            const chunkSize = 20;
             for (let i = 0; i < fullText.length; i += chunkSize) {
               send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
             }
@@ -104,8 +214,7 @@ export async function POST(request) {
             return;
           }
 
-          // Tool calls found — execute them in parallel
-          // Send tool-call indicators to frontend
+          // Tool calls â€” execute in parallel
           for (const block of toolUseBlocks) {
             send({
               type: 'tool_call',
@@ -113,7 +222,7 @@ export async function POST(request) {
             });
           }
 
-          // Execute all tools in parallel (Spec §2.4.2)
+          // Execute tools â€” pass FULL dashboard for tool execution
           const toolResults = await Promise.all(
             toolUseBlocks.map(async (block) => {
               try {
@@ -121,7 +230,7 @@ export async function POST(request) {
                 return {
                   type: 'tool_result',
                   tool_use_id: block.id,
-                  content: JSON.stringify(result),
+                  content: compactToolResult(result),
                 };
               } catch (error) {
                 return {
@@ -134,7 +243,7 @@ export async function POST(request) {
             })
           );
 
-          // Append assistant response + tool results to messages
+          // Append to messages
           currentMessages.push({
             role: 'assistant',
             content: result.content,
@@ -147,8 +256,8 @@ export async function POST(request) {
           toolRound++;
         }
 
-        // Max tool rounds reached — force final answer without tools
-        const finalResponse = await callClaude(apiKey, systemPrompt, currentMessages, [], true);
+        // Max tool rounds reached â€” force final answer
+        const finalResponse = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, [], true);
 
         if (!finalResponse.ok) {
           const errText = await finalResponse.text();
@@ -158,7 +267,6 @@ export async function POST(request) {
           return;
         }
 
-        // Stream the final response
         await streamClaudeResponse(finalResponse, send);
         send({ type: 'done' });
         controller.close();
@@ -181,7 +289,21 @@ export async function POST(request) {
 }
 
 
-// ===== CLAUDE API CALL =====
+// ===== CLAUDE API CALL WITH RETRY =====
+
+async function callClaudeWithRetry(apiKey, systemPrompt, messages, tools, stream) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await callClaude(apiKey, systemPrompt, messages, tools, stream);
+
+    if (response.status === 429 && attempt < MAX_RETRIES) {
+      // Rate limited â€” wait and retry
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WAIT_MS * (attempt + 1)));
+      continue;
+    }
+
+    return response;
+  }
+}
 
 async function callClaude(apiKey, systemPrompt, messages, tools, stream) {
   const body = {
@@ -192,7 +314,6 @@ async function callClaude(apiKey, systemPrompt, messages, tools, stream) {
     stream,
   };
 
-  // Only include tools if we have them
   if (tools && tools.length > 0) {
     body.tools = tools;
   }
@@ -210,7 +331,6 @@ async function callClaude(apiKey, systemPrompt, messages, tools, stream) {
 
 
 // ===== STREAM CLAUDE RESPONSE =====
-// Parses SSE from Claude's streaming API and forwards text deltas
 
 async function streamClaudeResponse(response, send) {
   const reader = response.body.getReader();
@@ -223,9 +343,8 @@ async function streamClaudeResponse(response, send) {
 
     buffer += decoder.decode(value, { stream: true });
 
-    // Process complete SSE lines
     const lines = buffer.split('\n');
-    buffer = lines.pop() || ''; // Keep incomplete line in buffer
+    buffer = lines.pop() || '';
 
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
@@ -249,3 +368,4 @@ async function streamClaudeResponse(response, send) {
     }
   }
 }
+
