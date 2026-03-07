@@ -82,6 +82,30 @@ export const FRAGILITY_COLORS = {
   EXTREME: COLORS.signalRed,
 };
 
+// ===== EXECUTION LEVEL → COLOR (Spec §21.3) =====
+export const EXECUTION_LEVEL_COLORS = {
+  EXECUTE: COLORS.signalGreen,
+  CAUTION: COLORS.signalYellow,
+  WAIT: COLORS.signalOrange,
+  HOLD: COLORS.signalRed,
+};
+
+// ===== EXECUTION LEVEL → BG CLASSES (Spec §21.3) =====
+export const EXECUTION_LEVEL_BG = {
+  EXECUTE: 'bg-signal-green/20 border-signal-green/40',
+  CAUTION: 'bg-signal-yellow/20 border-signal-yellow/40',
+  WAIT: 'bg-signal-orange/20 border-signal-orange/40',
+  HOLD: 'bg-signal-red/20 border-signal-red/40',
+};
+
+// ===== EXECUTION LEVEL → TEXT CLASSES =====
+export const EXECUTION_LEVEL_TEXT = {
+  EXECUTE: 'text-signal-green',
+  CAUTION: 'text-signal-yellow',
+  WAIT: 'text-signal-orange',
+  HOLD: 'text-signal-red',
+};
+
 // ===== SCORE → COLOR (Spec §4.8) =====
 export function getScoreColor(score) {
   if (score > 6.5) return COLORS.signalGreen;
@@ -102,6 +126,20 @@ export function getStabilityColor(pct) {
   if (pct >= 50) return COLORS.signalYellow;
   return COLORS.signalRed;
 }
+
+// ===== DIMENSION SCORE → COLOR (Spec §21.7) =====
+export function getDimensionScoreColor(score) {
+  if (score === 0) return COLORS.signalGreen;
+  if (score === 1) return COLORS.signalYellow;
+  if (score === 2) return COLORS.signalOrange;
+  return COLORS.signalRed;
+}
+
+// ===== EVENT IMPACT → COLOR (Spec §21.8) =====
+export const EVENT_IMPACT_COLORS = {
+  HIGH: COLORS.signalRed,
+  MEDIUM: COLORS.signalYellow,
+};
 
 // ===== LAYER SHORT NAMES (Spec §4.8) =====
 export const LAYER_SHORT_NAMES = {
@@ -125,6 +163,16 @@ export const LAYER_FULL_NAMES = {
   L6_volatility_regime: 'L6 VOLATILITY REGIME',
   L7_intermarket: 'L7 INTERMARKET',
   L8_sentiment_positioning: 'L8 SENTIMENT & POSITIONING',
+};
+
+// ===== DIMENSION SHORT NAMES (Spec §21.7) =====
+export const DIMENSION_SHORT_NAMES = {
+  event_risk: 'Event Risk',
+  positioning_conflict: 'Positioning',
+  liquidity_risk: 'Liquidity',
+  cross_asset_confirmation: 'Cross-Asset',
+  gex_regime: 'GEX Regime',
+  sentiment_extreme: 'Sentiment',
 };
 
 // ===== TOOL CALL LABELS (Spec §6.6) =====
@@ -152,6 +200,7 @@ export const CIRCLES = [
   { id: 'cio', name: 'CIO', icon: 'FileText', route: '/cio' },
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
   { id: 'signals', name: 'Signals', icon: 'Radio', route: '/signals' },
+  { id: 'trading-desk', name: 'Trading', icon: 'Briefcase', route: '/trading-desk' },
   { id: 'layers', name: 'Layers', icon: 'BarChart3', route: '/layers' },
   { id: 'portfolio', name: 'Portfolio', icon: 'PieChart', route: '/portfolio' },
   { id: 'f6', name: 'F6', icon: 'Target', route: '/f6' },

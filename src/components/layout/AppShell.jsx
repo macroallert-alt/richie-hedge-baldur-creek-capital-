@@ -15,6 +15,7 @@ import PortfolioDetail from '@/components/detail/PortfolioDetail';
 import F6Detail from '@/components/detail/F6Detail';
 import IntelDetail from '@/components/detail/IntelDetail';
 import G7Detail from '@/components/detail/G7Detail';
+import TradingDeskDetail from '@/components/detail/TradingDeskDetail';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -27,6 +28,7 @@ const PAGE_COMPONENTS = {
   cio: CIODetail,
   risk: RiskDetail,
   signals: SignalsDetail,
+  'trading-desk': TradingDeskDetail,
   layers: LayersDetail,
   portfolio: PortfolioDetail,
   f6: F6Detail,
