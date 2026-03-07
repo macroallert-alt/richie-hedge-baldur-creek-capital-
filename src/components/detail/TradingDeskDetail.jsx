@@ -81,6 +81,9 @@ export default function TradingDeskDetail({ dashboard }) {
       {/* ===== CARD 1: EXECUTION SIGNAL (Spec §21.3) ===== */}
       <ExecutionSignalCard exec={exec} level={level} levelColor={levelColor} />
 
+      {/* ===== CARD 1b: EXECUTION BRIEFING ===== */}
+      <ExecutionBriefingCard briefingText={exec.briefing_text} />
+
       {/* ===== CARD 2: EVENT RADAR (Spec §21.4) ===== */}
       <EventRadarCard eventWindow={eventWindow} calendarUpcoming={calendarUpcoming} />
 
@@ -169,6 +172,38 @@ function ExecutionSignalCard({ exec, level, levelColor }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// CARD 1b: EXECUTION BRIEFING
+// ────────────────────────────────────────────────────────────────
+function ExecutionBriefingCard({ briefingText }) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (!briefingText) return null;
+
+  return (
+    <div className="glass-card overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full text-left p-4 flex items-center justify-between"
+      >
+        <span className="text-section-title text-ice-white">Execution Briefing</span>
+        <span className="text-muted-blue text-body transition-transform duration-200"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          ▼
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className="px-4 pb-4">
+          <p className="text-body text-ice-white leading-relaxed whitespace-pre-line">
+            {briefingText}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
