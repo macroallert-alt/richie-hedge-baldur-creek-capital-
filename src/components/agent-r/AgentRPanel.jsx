@@ -533,13 +533,17 @@ export default function AgentRPanel({ dashboard, onClose }) {
                             ? <code className="bg-white/10 px-1 py-0.5 rounded text-caption font-mono text-baldur-blue">{children}</code>
                             : <pre className="bg-white/5 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto"><code className="text-caption font-mono">{children}</code></pre>,
                           table: ({ children }) => (
-                            <div className="overflow-x-auto my-2">
-                              <table className="text-caption border-collapse w-full">{children}</table>
+                            <div className="relative my-2">
+                              <div className="overflow-x-auto rounded-lg border border-white/10"
+                                   style={{ WebkitOverflowScrolling: 'touch' }}>
+                                <table className="text-caption border-collapse" style={{ minWidth: '500px' }}>{children}</table>
+                              </div>
+                              <p className="text-center text-faded-blue mt-1 lg:hidden" style={{ fontSize: '10px' }}>{'\u2190'} swipe {'\u2192'}</p>
                             </div>
                           ),
-                          thead: ({ children }) => <thead className="border-b border-white/10">{children}</thead>,
-                          th: ({ children }) => <th className="text-left px-2 py-1 text-muted-blue font-medium">{children}</th>,
-                          td: ({ children }) => <td className="px-2 py-1 text-ice-white border-b border-white/5">{children}</td>,
+                          thead: ({ children }) => <thead className="bg-white/5 border-b border-white/10 sticky top-0">{children}</thead>,
+                          th: ({ children }) => <th className="text-left px-3 py-1.5 text-muted-blue font-medium whitespace-nowrap">{children}</th>,
+                          td: ({ children }) => <td className="px-3 py-1.5 text-ice-white border-b border-white/5" style={{ minWidth: '100px' }}>{children}</td>,
                           blockquote: ({ children }) => (
                             <blockquote className="border-l-2 border-signal-yellow/50 pl-3 my-2 text-muted-blue italic">
                               {children}
