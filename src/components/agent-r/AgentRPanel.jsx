@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, AlertTriangle, Plus } from 'lucide-react';
@@ -60,7 +60,7 @@ function getTabTitle(messages) {
   const firstUser = messages.find(m => m.role === 'user');
   if (!firstUser) return 'Neuer Chat';
   const text = firstUser.text || '';
-  return text.length > 30 ? text.slice(0, 30) + 'â€¦' : text;
+  return text.length > 30 ? text.slice(0, 30) + '…' : text;
 }
 
 
@@ -76,6 +76,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const tabsContainerRef = useRef(null);
+  const panelRef = useRef(null);
   const agentCtx = dashboard?.agent_r_context || {};
 
   // Current tab's messages
@@ -121,6 +122,58 @@ export default function AgentRPanel({ dashboard, onClose }) {
   useEffect(() => {
     if (!isStreaming) inputRef.current?.focus();
   }, [isStreaming, activeTabId]);
+
+  // ===== Mobile Keyboard Fix: visualViewport listener =====
+  // On iOS/Android, when the keyboard opens the visualViewport shrinks.
+  // We resize the panel to match, keeping the input field visible.
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+
+    const handleResize = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+
+      // On mobile (< 1024px / lg breakpoint), adjust panel height
+      if (window.innerWidth < 1024) {
+        // visualViewport.height = visible area without keyboard
+        // visualViewport.offsetTop = how much the viewport shifted down
+        const keyboardVisible = window.innerHeight - vv.height > 100;
+
+        if (keyboardVisible) {
+          // Lock panel to visible viewport height, positioned at viewport top
+          panel.style.height = vv.height + 'px';
+          panel.style.bottom = 'auto';
+          panel.style.top = vv.offsetTop + 'px';
+        } else {
+          // Keyboard closed — restore original 80vh from bottom
+          panel.style.height = '80vh';
+          panel.style.bottom = '0px';
+          panel.style.top = 'auto';
+        }
+      }
+    };
+
+    vv.addEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleResize);
+
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
+  // ===== Auto-resize textarea =====
+  const resizeTextarea = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }, []);
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [input, resizeTextarea]);
 
   // ===== Update messages in active tab =====
   const updateActiveMessages = useCallback((updater) => {
@@ -298,7 +351,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   };
 
   const handleNudgeClick = (nudge) => {
-    handleSend(`ErklÃ¤re mir: ${nudge.title}`);
+    handleSend(`Erkläre mir: ${nudge.title}`);
   };
 
   return (
@@ -307,11 +360,14 @@ export default function AgentRPanel({ dashboard, onClose }) {
       <div className="fixed inset-0 bg-black/50 z-panel lg:hidden" onClick={onClose} />
 
       {/* Panel */}
-      <div className="fixed bottom-0 left-0 right-0 h-[80vh] z-panel
+      <div
+        ref={panelRef}
+        className="fixed bottom-0 left-0 right-0 h-[80vh] z-panel
                       lg:top-0 lg:right-0 lg:left-auto lg:w-[38%] lg:h-full
                       bg-navy-deep border-t lg:border-t-0 lg:border-l border-white/10
                       animate-slide-up lg:animate-slide-right
-                      flex flex-col rounded-t-2xl lg:rounded-none">
+                      flex flex-col rounded-t-2xl lg:rounded-none"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/5 flex-shrink-0">
@@ -375,23 +431,23 @@ export default function AgentRPanel({ dashboard, onClose }) {
         {/* Compact Statusbar */}
         <div className="px-4 py-2 border-b border-white/5 text-caption text-muted-blue flex-shrink-0">
           <p>
-            V16: {agentCtx.regime || dashboard?.v16?.regime || 'â€”'} | DD: {dashboard?.v16?.current_drawdown ?? 'â€”'}% | KS: {
-              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? 'âš ï¸' : 'âœ…'
-            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || 'â€”'}
+            V16: {agentCtx.regime || dashboard?.v16?.regime || '—'} | DD: {dashboard?.v16?.current_drawdown ?? '—'}% | KS: {
+              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? '⚠️' : '✅'
+            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || '—'}
           </p>
           <p>
-            Exec: {dashboard?.execution?.execution_level || 'â€”'} ({dashboard?.execution?.total_score ?? 'â€”'}/{dashboard?.execution?.max_score ?? 'â€”'}) | Stand: {
+            Exec: {dashboard?.execution?.execution_level || '—'} ({dashboard?.execution?.total_score ?? '—'}/{dashboard?.execution?.max_score ?? '—'}) | Stand: {
               dashboard?.generated_at
                 ? new Date(dashboard.generated_at).toISOString().slice(11, 16)
-                : 'â€”'
+                : '—'
             } UTC
           </p>
         </div>
 
-        {/* Nudges â€” only show when no messages in active tab */}
+        {/* Nudges — only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
-            <p className="text-caption text-muted-blue">PRIORITÃ„RE HINWEISE</p>
+            <p className="text-caption text-muted-blue">PRIORITÄRE HINWEISE</p>
             {nudges.map((n, i) => (
               <button
                 key={i}
@@ -411,7 +467,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && nudges.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-blue text-center px-4">
-              <p className="text-body mb-2">Agent R â€” Research Terminal</p>
+              <p className="text-body mb-2">Agent R — Research Terminal</p>
               <p className="text-caption">
                 Frag mich zu Regime, Portfolio, Risiko, Einzelaktien, Options, Makro.
                 Bei Trade-Entscheidungen erzwinge ich das Decision Protocol.
@@ -431,7 +487,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
                     {msg.toolCalls.map((tool, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-caption text-muted-blue">
                         <span className={`${i === messages.length - 1 && isStreaming ? 'animate-pulse' : ''}`}>
-                          ðŸ”§
+                          🔧
                         </span>
                         <span>{TOOL_LABELS[tool.name] || tool.name}</span>
                         {tool.input?.ticker && (
@@ -452,7 +508,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
                 )}
 
                 {msg.role === 'user' ? (
-                  <p className="text-body text-ice-white">{msg.text}</p>
+                  <p className="text-body text-ice-white whitespace-pre-wrap">{msg.text}</p>
                 ) : (
                   <div className="text-body text-ice-white agent-r-markdown">
                     {msg.text ? (
@@ -536,10 +592,10 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
         {/* Input Area */}
         <div className="p-4 border-t border-white/5 safe-area-bottom flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <input
+          <div className="flex items-end gap-2">
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -551,15 +607,17 @@ export default function AgentRPanel({ dashboard, onClose }) {
               placeholder={isStreaming ? 'Agent R antwortet...' : 'Frage an Agent R...'}
               disabled={isStreaming}
               className="flex-1 bg-white/5 border border-white/10 rounded-input px-3 py-2
-                         text-body text-ice-white placeholder:text-faded-blue outline-none
-                         focus:border-baldur-blue transition-colors
+                         text-ice-white placeholder:text-faded-blue outline-none
+                         focus:border-baldur-blue transition-colors resize-none
                          disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontSize: '16px', maxHeight: '120px', overflowY: 'auto' }}
             />
             {isStreaming ? (
               <button
                 onClick={handleCancel}
                 className="w-10 h-10 rounded-full bg-signal-red/20 border border-signal-red/40
-                           flex items-center justify-center hover:bg-signal-red/30 transition-colors"
+                           flex items-center justify-center hover:bg-signal-red/30 transition-colors
+                           flex-shrink-0"
                 title="Abbrechen"
               >
                 <X size={16} className="text-signal-red" />
@@ -569,7 +627,8 @@ export default function AgentRPanel({ dashboard, onClose }) {
                 onClick={() => handleSend()}
                 disabled={!input.trim()}
                 className="w-10 h-10 rounded-full bg-baldur-blue flex items-center justify-center
-                           disabled:opacity-30 hover:bg-blue-500 transition-colors"
+                           disabled:opacity-30 hover:bg-blue-500 transition-colors
+                           flex-shrink-0"
               >
                 <Send size={16} className="text-white" />
               </button>
@@ -580,4 +639,3 @@ export default function AgentRPanel({ dashboard, onClose }) {
     </>
   );
 }
-
