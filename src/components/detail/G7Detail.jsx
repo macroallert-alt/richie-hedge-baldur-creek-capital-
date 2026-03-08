@@ -14,6 +14,20 @@ const STATUS_COLORS = {
   STRUCTURAL_BREAK: COLORS.signalRed,
 };
 
+const STATUS_LABELS = {
+  STABLE: 'STABIL',
+  SHIFTING: 'IM WANDEL',
+  ELEVATED_RISK: 'ERHÖHTES RISIKO',
+  STRUCTURAL_BREAK: 'STRUKTURBRUCH',
+};
+
+const ATTENTION_LABELS = {
+  NONE: null,
+  NOTE: 'Hinweis',
+  WATCH: 'Beobachten',
+  ALERT: 'Alarm',
+};
+
 const SCENARIO_COLORS = {
   managed_decline: '#F59E0B',        // amber
   conflict_escalation: '#EF4444',    // red
@@ -29,10 +43,10 @@ const SCENARIO_LABELS = {
 };
 
 const SCENARIO_SHORT = {
-  managed_decline: 'Gradueller Machtübergang, Gold strukturell OW',
+  managed_decline: 'Gradueller Machtübergang, Gold strukturell übergewichten',
   conflict_escalation: 'Militärische Konfrontation, SWIFT als Waffe',
   us_renewal: 'AI-Produktivitätsrevolution rettet US-Hegemonie',
-  multipolar_chaos: 'Kein Hegemon, Fragmentierung, Commodities OW',
+  multipolar_chaos: 'Kein Hegemon, Fragmentierung, Commodities übergewichten',
 };
 
 const TREND_ARROWS = {
@@ -44,11 +58,87 @@ const TREND_ARROWS = {
 
 const REGIONS = ['USA', 'CHINA', 'EU', 'INDIA', 'JP_KR_TW', 'GULF', 'REST_EM'];
 const REGION_LABELS = {
-  USA: 'USA', CHINA: 'China', EU: 'EU', INDIA: 'India',
-  JP_KR_TW: 'JP/KR/TW', GULF: 'Gulf', REST_EM: 'Rest EM',
+  USA: 'USA', CHINA: 'China', EU: 'EU', INDIA: 'Indien',
+  JP_KR_TW: 'JP/KR/TW', GULF: 'Golf', REST_EM: 'Rest EM',
 };
 
 const SCENARIOS = ['managed_decline', 'conflict_escalation', 'us_renewal', 'multipolar_chaos'];
+
+// ── Dimension Descriptions (Spec §9.1, Punkt 3) ──────────────
+const DIMENSION_DESCRIPTIONS = {
+  D1_economic: {
+    label: 'D1 Wirtschaftsleistung',
+    description: 'BIP, Wachstum, Produktivität, Innovationskraft. Misst die ökonomische Gesamtstärke.',
+    highMeans: 'Starke, diversifizierte Wirtschaft mit hohem Wachstum',
+    lowMeans: 'Schwaches Wachstum, strukturelle Probleme',
+  },
+  D2_military: {
+    label: 'D2 Militärische Stärke',
+    description: 'Verteidigungsbudget, nukleare Kapazität, Streitkräfte, Technologievorsprung.',
+    highMeans: 'Globale Projektionsfähigkeit, technologisch überlegen',
+    lowMeans: 'Begrenzte regionale Kapazität',
+  },
+  D3_tech: {
+    label: 'D3 Technologie',
+    description: 'AI-Führerschaft, Halbleiter, Patente, Forschungsausgaben, Tech-Ökosystem.',
+    highMeans: 'Weltweit führend in Schlüsseltechnologien',
+    lowMeans: 'Technologische Abhängigkeit, wenig eigene Innovation',
+  },
+  D4_energy: {
+    label: 'D4 Energiesicherheit',
+    description: 'Importabhängigkeit, Erneuerbare, strategische Reserven, LNG-Kapazität.',
+    highMeans: 'Weitgehend energieautark',
+    lowMeans: 'Hohe Importabhängigkeit, vulnerable Versorgung',
+  },
+  D5_finance: {
+    label: 'D5 Finanzmacht',
+    description: 'Reservewährung, Kapitalmarkttiefe, SWIFT-Zugang, Sanktionsfähigkeit.',
+    highMeans: 'Globale Leitwährung, tiefe Kapitalmärkte',
+    lowMeans: 'Begrenzte Finanzmacht, abhängig von externen Systemen',
+  },
+  D6_institutional: {
+    label: 'D6 Institutionelle Stärke',
+    description: 'Rechtsstaatlichkeit, Governance, Korruption, politische Stabilität.',
+    highMeans: 'Stabile Institutionen, hohe Governance-Qualität',
+    lowMeans: 'Schwache Institutionen, hohe Korruption',
+  },
+  D7_demographic: {
+    label: 'D7 Demografie',
+    description: 'Altersstruktur, Arbeitskräftepotenzial, Urbanisierung, Migration.',
+    highMeans: 'Junge Bevölkerung, wachsendes Arbeitskräftepotenzial',
+    lowMeans: 'Überalterung, schrumpfende Erwerbsbevölkerung',
+  },
+  D8_trade: {
+    label: 'D8 Handelsnetzwerke',
+    description: 'Handelsvolumen, Lieferkettenposition, Freihandelsabkommen, Diversifikation.',
+    highMeans: 'Zentraler Handelsknoten, diversifizierte Partner',
+    lowMeans: 'Periphere Position, abhängig von wenigen Partnern',
+  },
+  D9_resource: {
+    label: 'D9 Ressourcenzugang',
+    description: 'Kritische Mineralien, Seltene Erden, Wasser, Agrarflächen.',
+    highMeans: 'Reiche eigene Ressourcen oder gesicherte Versorgung',
+    lowMeans: 'Hohe Importabhängigkeit bei kritischen Rohstoffen',
+  },
+  D10_alliance: {
+    label: 'D10 Allianzstärke',
+    description: 'NATO/Bündnisse, bilaterale Abkommen, geopolitische Partnerschaften.',
+    highMeans: 'Starkes Allianznetz, verlässliche Partner',
+    lowMeans: 'Isoliert oder fragile Partnerschaften',
+  },
+  D11_soft_power: {
+    label: 'D11 Soft Power',
+    description: 'Kulturelle Ausstrahlung, Bildungsexport, Medienreichweite, diplomatischer Einfluss.',
+    highMeans: 'Globale kulturelle Dominanz und Anziehungskraft',
+    lowMeans: 'Geringe internationale Ausstrahlung',
+  },
+  D12_cyber: {
+    label: 'D12 Cyber & Space',
+    description: 'Cyberkapazität, Satelliteninfrastruktur, digitale Souveränität.',
+    highMeans: 'Offensive und defensive Cyberüberlegenheit',
+    lowMeans: 'Vulnerable digitale Infrastruktur',
+  },
+};
 
 // ══════════════════════════════════════════════════════════════
 // MINI SPARKLINE (SVG)
@@ -110,7 +200,7 @@ function SeverityDots({ score, max = 10 }) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TILT COLOR
+// TILT COLOR + LABEL
 // ══════════════════════════════════════════════════════════════
 
 function tiltColor(val) {
@@ -122,10 +212,17 @@ function tiltColor(val) {
 }
 
 function tiltLabel(val) {
-  if (val >= 0.3) return 'OW';
-  if (val <= -0.3) return 'UW';
+  if (val >= 0.3) return 'ÜG';
+  if (val <= -0.3) return 'UG';
   if (Math.abs(val) < 0.05) return 'N';
-  return val > 0 ? 'OW' : 'UW';
+  return val > 0 ? 'ÜG' : 'UG';
+}
+
+// ── Dimension Score Color (Spec §9.1: >70 grün, 40-70 gelb, <40 rot) ──
+function dimScoreColor(score) {
+  if (score > 70) return COLORS.signalGreen;
+  if (score >= 40) return COLORS.signalYellow;
+  return COLORS.signalRed;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -139,7 +236,7 @@ export default function G7Detail({ dashboard }) {
   if (!g7.available) {
     return (
       <div className="py-4">
-        <h1 className="text-page-title text-center">G7 World Order Monitor</h1>
+        <h1 className="text-page-title text-center">G7 Weltordnungs-Monitor</h1>
         <div className="glass-card p-6 mt-4 text-center">
           <p className="text-body text-muted-blue">G7 Daten nicht verfügbar. Nächster Run ausstehend.</p>
         </div>
@@ -178,12 +275,12 @@ export default function G7Detail({ dashboard }) {
   return (
     <div className="py-4 space-y-4">
       <h1 className="text-page-title text-center lg:text-page-title text-center-desktop">
-        G7 World Order Monitor
+        G7 Weltordnungs-Monitor
       </h1>
 
-      {/* ═══════ SECTION 1: THE WORLD RIGHT NOW ═══════ */}
+      {/* ═══════ SEKTION 1: DIE WELT JETZT ═══════ */}
 
-      {/* Status Ampel + Headline */}
+      {/* Status-Ampel + Headline */}
       <div className="glass-card-primary p-5 flex flex-col items-center">
         <div className="w-16 h-16 rounded-full mb-3 flex items-center justify-center"
           style={{ backgroundColor: `${statusColor}25`, border: `3px solid ${statusColor}` }}>
@@ -192,7 +289,7 @@ export default function G7Detail({ dashboard }) {
           </span>
         </div>
         <span className="text-data-large tabular-nums" style={{ color: statusColor }}>
-          {g7.status || '—'}
+          {STATUS_LABELS[g7.status] || g7.status || '—'}
         </span>
         {g7.attention_flag && g7.attention_flag !== 'NONE' && (
           <span className="text-caption mt-1 px-2 py-0.5 rounded"
@@ -200,7 +297,7 @@ export default function G7Detail({ dashboard }) {
               backgroundColor: `${statusColor}15`,
               color: statusColor,
             }}>
-            Attention: {g7.attention_flag}
+            {ATTENTION_LABELS[g7.attention_flag] || g7.attention_flag}
           </span>
         )}
       </div>
@@ -212,20 +309,20 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* Power Scores + Gap */}
+      {/* Machtbalance + Gap */}
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Power Balance</h2>
+        <h2 className="text-section-title text-ice-white mb-3">Machtbalance</h2>
 
         {/* USA-China Gap prominent */}
         <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/5">
           <div>
-            <span className="text-caption text-muted-blue">USA-China Gap</span>
+            <span className="text-caption text-muted-blue">USA-China Abstand</span>
             <div className="flex items-center gap-2">
               <span className="text-data-large tabular-nums text-ice-white">
                 {gap.value ?? '—'}
               </span>
               <span className="text-caption" style={{ color: gap.trend === 'CLOSING' ? COLORS.signalRed : COLORS.mutedBlue }}>
-                {gap.trend || '—'}
+                {gap.trend === 'CLOSING' ? 'Schließend' : gap.trend === 'WIDENING' ? 'Wachsend' : gap.trend || '—'}
               </span>
               <Sparkline data={gapSparkline} color={COLORS.baldurBlue} />
             </div>
@@ -269,7 +366,7 @@ export default function G7Detail({ dashboard }) {
         </div>
       </div>
 
-      {/* Power Balance Explanation */}
+      {/* Machtbalance Erklärung */}
       {expl.power_gap && (
         <div className="glass-card p-4">
           <p className="text-body text-ice-white leading-relaxed whitespace-pre-line">
@@ -278,12 +375,12 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* ═══════ SECTION 2: SCENARIO LANDSCAPE ═══════ */}
+      {/* ═══════ SEKTION 2: SZENARIO-LANDSCHAFT ═══════ */}
 
       <div className="glass-card p-4">
         <h2 className="text-section-title text-ice-white mb-3">Szenario-Landschaft</h2>
 
-        {/* Probability bars */}
+        {/* Wahrscheinlichkeitsbalken */}
         <div className="space-y-2 mb-4">
           {SCENARIOS.map(s => {
             const prob = probs[s] || 0;
@@ -316,25 +413,25 @@ export default function G7Detail({ dashboard }) {
           })}
         </div>
 
-        {/* Confidence + Source */}
+        {/* Konfidenz + Quelle */}
         <div className="flex gap-4 text-caption text-muted-blue pt-2 border-t border-white/5">
-          <span>Confidence: <span className="text-ice-white">{scenarios.confidence || '—'}</span></span>
-          <span>Source: <span className="text-ice-white">{scenarios.probability_source || '—'}</span></span>
+          <span>Konfidenz: <span className="text-ice-white">{scenarios.confidence || '—'}</span></span>
+          <span>Quelle: <span className="text-ice-white">{scenarios.probability_source || '—'}</span></span>
           {scenarios.interim_flag && (
-            <span className="text-signal-yellow">INTERIM</span>
+            <span className="text-signal-yellow">VORLÄUFIG</span>
           )}
         </div>
       </div>
 
-      {/* Tilts Heatmap */}
+      {/* Szenario-Gewichtungen (Tilts Heatmap) */}
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Asset Tilts</h2>
+        <h2 className="text-section-title text-ice-white mb-3">Szenario-Gewichtungen</h2>
 
-        {/* Header row */}
+        {/* Header row — volle Szenario-Namen */}
         <div className="grid grid-cols-7 gap-1 mb-1 text-[10px] text-faded-blue text-center">
           <span className="text-left">Asset</span>
           <span>MD</span><span>CE</span><span>UR</span><span>MC</span>
-          <span>Tilt</span><span>Dir</span>
+          <span>Komp.</span><span>Richt.</span>
         </div>
 
         {/* Asset rows */}
@@ -358,7 +455,7 @@ export default function G7Detail({ dashboard }) {
               })}
               <span className="text-data-small tabular-nums text-center"
                 style={{ color: tiltColor(row.composite) }}>
-                {row.composite > 0 ? '+' : ''}{row.composite?.toFixed(3)}
+                {row.composite > 0 ? '+' : ''}{row.composite?.toFixed(2)}
               </span>
               <span className="text-[10px] text-center font-medium"
                 style={{ color: tiltColor(row.composite) }}>
@@ -368,11 +465,32 @@ export default function G7Detail({ dashboard }) {
           ))}
         </div>
 
+        {/* ── Legende unter der Tabelle ── */}
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-faded-blue">
+            <span><span className="text-ice-white">MD</span> = Managed Decline</span>
+            <span><span className="text-ice-white">CE</span> = Conflict Escalation</span>
+            <span><span className="text-ice-white">UR</span> = US Renewal</span>
+            <span><span className="text-ice-white">MC</span> = Multipolar Chaos</span>
+          </div>
+          <div className="grid grid-cols-3 gap-x-4 text-[10px] text-faded-blue">
+            <span><span className="text-signal-green">ÜG</span> = Übergewichten</span>
+            <span><span className="text-signal-red">UG</span> = Untergewichten</span>
+            <span><span className="text-muted-blue">N</span> = Neutral</span>
+          </div>
+          <p className="text-[10px] text-faded-blue leading-relaxed">
+            Die Tabelle zeigt wie jedes Asset unter jedem Szenario reagiert.
+            +1.0 = profitiert maximal, −1.0 = leidet maximal.
+            Der Komposit-Wert (Komp.) kombiniert alle Szenarien mit ihren aktuellen
+            Wahrscheinlichkeiten zu einer gewichteten Gesamtneigung.
+          </p>
+        </div>
+
         {/* PermOpt */}
         {permopt.total_pct > 0 && (
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="flex items-center gap-2">
-              <span className="text-caption text-muted-blue">PermOpt:</span>
+              <span className="text-caption text-muted-blue">Permanente Optimierung:</span>
               <span className="text-data-small tabular-nums text-ice-white">{permopt.total_pct}%</span>
               <span className="text-caption text-faded-blue">
                 über {permopt.assets?.length || 0} Assets (DDI {permopt.ddi_level || '—'})
@@ -382,7 +500,7 @@ export default function G7Detail({ dashboard }) {
         )}
       </div>
 
-      {/* Scenario Implications Text */}
+      {/* Szenario-Implikationen Text */}
       {narr.scenario_implications && (
         <div className="glass-card p-4">
           <p className="text-body text-ice-white leading-relaxed whitespace-pre-line">
@@ -391,7 +509,7 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* Action Map (collapsible per scenario) */}
+      {/* Szenario-Aktionen (pro Szenario) */}
       <div className="glass-card p-4">
         <h2 className="text-section-title text-ice-white mb-3">Szenario-Aktionen</h2>
         <div className="space-y-2">
@@ -406,12 +524,12 @@ export default function G7Detail({ dashboard }) {
                 <div className="flex flex-wrap gap-2 mt-1">
                   {(am.overweight || []).map(a => (
                     <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-green/10 text-signal-green">
-                      OW {a}
+                      ÜG {a}
                     </span>
                   ))}
                   {(am.underweight || []).map(a => (
                     <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-red/10 text-signal-red">
-                      UW {a}
+                      UG {a}
                     </span>
                   ))}
                   {(am.vetos || []).map(a => (
@@ -426,10 +544,10 @@ export default function G7Detail({ dashboard }) {
         </div>
       </div>
 
-      {/* ═══════ SECTION 3: STRESS INDICATORS ═══════ */}
+      {/* ═══════ SEKTION 3: STRESS-INDIKATOREN ═══════ */}
 
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Stress Indikatoren</h2>
+        <h2 className="text-section-title text-ice-white mb-3">Stress-Indikatoren</h2>
 
         <div className="grid grid-cols-2 gap-3">
           {/* SCSI */}
@@ -496,7 +614,7 @@ export default function G7Detail({ dashboard }) {
         </div>
       </div>
 
-      {/* Overlay Explanation (connected narrative) */}
+      {/* Overlay-Erklärung (verbundene Narrative) */}
       {(expl.scsi || expl.ddi || expl.fdp || expl.ewi) && (
         <div className="glass-card p-4">
           <p className="text-body text-ice-white leading-relaxed whitespace-pre-line">
@@ -505,12 +623,12 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* ═══════ SECTION 4: SANCTIONS & GEOPOLITICAL RISK ═══════ */}
+      {/* ═══════ SEKTION 4: SANKTIONEN & GEOPOLITISCHES RISIKO ═══════ */}
 
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Sanctions & Geopolitical Risk</h2>
+        <h2 className="text-section-title text-ice-white mb-3">Sanktionen & Geopolitisches Risiko</h2>
 
-        {/* Global Status */}
+        {/* Globaler Status */}
         <div className="flex items-center gap-3 mb-4">
           <span className="text-caption text-muted-blue">Global:</span>
           <span className="text-data-medium font-medium" style={{
@@ -526,7 +644,7 @@ export default function G7Detail({ dashboard }) {
           )}
         </div>
 
-        {/* Region severity table */}
+        {/* Regionen-Severity-Tabelle */}
         <div className="space-y-2">
           {REGIONS.map(region => {
             const sev = sit.severity_by_region?.[region] ?? 0;
@@ -548,11 +666,11 @@ export default function G7Detail({ dashboard }) {
           })}
         </div>
 
-        {/* Portfolio Vetos */}
+        {/* Portfolio-Vetos */}
         {sit.portfolio_vetos?.length > 0 && (
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-caption text-signal-red font-medium">⚠ Veto Watch:</span>
+              <span className="text-caption text-signal-red font-medium">⚠ Veto-Liste:</span>
               {sit.portfolio_vetos.map(v => (
                 <span key={v} className="text-[10px] px-2 py-0.5 rounded bg-signal-red/15 text-signal-red font-medium">
                   {v}
@@ -563,17 +681,17 @@ export default function G7Detail({ dashboard }) {
         )}
       </div>
 
-      {/* ═══════ SECTION 5: CHALLENGE ═══════ */}
+      {/* ═══════ SEKTION 5: GEGENPRÜFUNG ═══════ */}
 
       <div className="glass-card p-4" style={{ borderLeft: `3px solid ${COLORS.signalRed}40` }}>
         <h2 className="text-section-title text-ice-white mb-3" style={{ color: '#F97316' }}>
-          ⚠ Challenge
+          ⚠ Gegenprüfung
         </h2>
 
-        {/* Counter-Narrative */}
+        {/* Gegennarrativ */}
         {challenge.counter_narrative && (
           <div className="mb-3">
-            <span className="text-[10px] text-faded-blue block mb-1">COUNTER-NARRATIVE</span>
+            <span className="text-[10px] text-faded-blue block mb-1">GEGENNARRATIV</span>
             <p className="text-body text-ice-white leading-relaxed whitespace-pre-line">
               {typeof challenge.counter_narrative === 'string'
                 ? challenge.counter_narrative
@@ -582,20 +700,20 @@ export default function G7Detail({ dashboard }) {
           </div>
         )}
 
-        {/* Unasked Question */}
+        {/* Ungestellte Frage */}
         {challenge.unasked_question && (
           <div className="mb-3 pt-3 border-t border-white/5">
-            <span className="text-[10px] text-faded-blue block mb-1">UNASKED QUESTION</span>
+            <span className="text-[10px] text-faded-blue block mb-1">UNGESTELLTE FRAGE</span>
             <p className="text-body text-signal-yellow leading-relaxed">
               {challenge.unasked_question}
             </p>
           </div>
         )}
 
-        {/* Stress Test */}
+        {/* Stresstest */}
         {challenge.stress_test_result && (
           <div className="pt-3 border-t border-white/5">
-            <span className="text-[10px] text-faded-blue block mb-1">THESIS STRESS TEST</span>
+            <span className="text-[10px] text-faded-blue block mb-1">THESE-STRESSTEST</span>
             <p className="text-caption text-muted-blue leading-relaxed">
               {challenge.stress_test_result}
             </p>
@@ -603,7 +721,7 @@ export default function G7Detail({ dashboard }) {
         )}
       </div>
 
-      {/* Weekly Shift + Portfolio Context narrative */}
+      {/* Wöchentliche Verschiebung + Portfolio-Kontext */}
       {(narr.weekly_shift || narr.portfolio_context) && (
         <div className="glass-card p-4">
           {narr.weekly_shift && (
@@ -625,16 +743,20 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* ═══════ SECTION 6: DIMENSION DEEP DIVE ═══════ */}
+      {/* ═══════ SEKTION 6: DIMENSIONS-DETAIL ═══════ */}
 
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Dimension Deep Dive</h2>
+        <h2 className="text-section-title text-ice-white mb-2">Dimensions-Detail</h2>
+        <p className="text-[10px] text-faded-blue mb-3">
+          Score 0–100 pro Dimension. &gt;70 = stark positioniert, 40–70 = mittel, &lt;40 = verwundbar.
+        </p>
         <div className="space-y-1">
           {Object.entries(dims).map(([dimKey, dimData]) => {
             const isOpen = dimOpen === dimKey;
             const scores = dimData?.scores || {};
             const usaScore = scores.USA ?? 0;
             const chinaScore = scores.CHINA ?? 0;
+            const dimInfo = DIMENSION_DESCRIPTIONS[dimKey];
 
             return (
               <div key={dimKey} className="overflow-hidden">
@@ -643,19 +765,21 @@ export default function G7Detail({ dashboard }) {
                   className="w-full text-left py-2 flex items-center gap-3"
                 >
                   <span className="text-caption text-muted-blue w-40 shrink-0">
-                    {dimData?.label || dimKey}
+                    {dimInfo?.label || dimData?.label || dimKey}
                   </span>
                   <div className="flex items-center gap-2 flex-1">
                     <span className="text-[10px] text-faded-blue w-8">USA</span>
-                    <span className="text-data-small tabular-nums text-ice-white w-8 text-right">
+                    <span className="text-data-small tabular-nums w-8 text-right"
+                      style={{ color: dimScoreColor(usaScore) }}>
                       {usaScore.toFixed?.(1) ?? '—'}
                     </span>
                     <span className="text-[10px] text-faded-blue w-8 ml-2">CHN</span>
-                    <span className="text-data-small tabular-nums text-ice-white w-8 text-right">
+                    <span className="text-data-small tabular-nums w-8 text-right"
+                      style={{ color: dimScoreColor(chinaScore) }}>
                       {chinaScore.toFixed?.(1) ?? '—'}
                     </span>
                     <span className="text-[10px] text-faded-blue ml-2">
-                      Gap {((usaScore || 0) - (chinaScore || 0)).toFixed(1)}
+                      Δ {((usaScore || 0) - (chinaScore || 0)).toFixed(1)}
                     </span>
                   </div>
                   <span className="text-muted-blue text-caption transition-transform duration-200"
@@ -666,17 +790,35 @@ export default function G7Detail({ dashboard }) {
 
                 {isOpen && (
                   <div className="pb-3 pl-4">
-                    <div className="grid grid-cols-7 gap-2 text-center">
-                      {REGIONS.map(r => (
-                        <div key={r}>
-                          <span className="text-[10px] text-faded-blue block">
-                            {REGION_LABELS[r]}
-                          </span>
-                          <span className="text-data-small tabular-nums text-ice-white">
-                            {(scores[r] ?? 0).toFixed?.(1) ?? '—'}
-                          </span>
+                    {/* Dimension Beschreibung */}
+                    {dimInfo && (
+                      <div className="mb-3 p-2 bg-white/5 rounded-lg">
+                        <p className="text-[10px] text-ice-white leading-relaxed">{dimInfo.description}</p>
+                        <div className="flex gap-4 mt-1.5 text-[10px]">
+                          <span className="text-signal-green">Hoch: {dimInfo.highMeans}</span>
                         </div>
-                      ))}
+                        <div className="flex gap-4 mt-0.5 text-[10px]">
+                          <span className="text-signal-red">Niedrig: {dimInfo.lowMeans}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Alle 7 Regionen */}
+                    <div className="grid grid-cols-7 gap-2 text-center">
+                      {REGIONS.map(r => {
+                        const rScore = scores[r] ?? 0;
+                        return (
+                          <div key={r}>
+                            <span className="text-[10px] text-faded-blue block">
+                              {REGION_LABELS[r]}
+                            </span>
+                            <span className="text-data-small tabular-nums"
+                              style={{ color: dimScoreColor(rScore) }}>
+                              {rScore.toFixed?.(1) ?? '—'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -686,7 +828,7 @@ export default function G7Detail({ dashboard }) {
         </div>
       </div>
 
-      {/* Status Explanation */}
+      {/* Status-Erklärung */}
       {expl.status && (
         <div className="glass-card p-4">
           <p className="text-caption text-muted-blue leading-relaxed">{expl.status}</p>
