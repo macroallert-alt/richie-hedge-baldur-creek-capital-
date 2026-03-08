@@ -49,11 +49,34 @@ const SCENARIO_SHORT = {
   multipolar_chaos: 'Kein Hegemon, Fragmentierung, Commodities übergewichten',
 };
 
+// ── Trend-Übersetzungen (für angezeigte JSON-Werte) ──────────
+const TREND_LABELS = {
+  ESCALATING: 'Eskalierend',
+  RISING: 'Steigend',
+  IMPROVING: 'Verbessernd',
+  STABLE: 'Stabil',
+  FLAT: 'Flach',
+  'DE-ESCALATING': 'Deeskalierend',
+  FALLING: 'Fallend',
+  DETERIORATING: 'Verschlechternd',
+  CRITICAL: 'Kritisch',
+  UNKNOWN: 'Unbekannt',
+};
+
 const TREND_ARROWS = {
   ESCALATING: '↑', RISING: '↑', IMPROVING: '↑',
   STABLE: '→', FLAT: '→',
   'DE-ESCALATING': '↓', FALLING: '↓', DETERIORATING: '↓',
   CRITICAL: '⚠',
+};
+
+// ── Konfidenz + Severity Übersetzungen ────────────────────────
+const CONFIDENCE_LABELS = {
+  HIGH: 'Hoch', MEDIUM: 'Mittel', LOW: 'Niedrig',
+};
+
+const SEVERITY_LABELS = {
+  HIGH: 'Hoch', MEDIUM: 'Mittel', LOW: 'Niedrig',
 };
 
 const REGIONS = ['USA', 'CHINA', 'EU', 'INDIA', 'JP_KR_TW', 'GULF', 'REST_EM'];
@@ -63,6 +86,14 @@ const REGION_LABELS = {
 };
 
 const SCENARIOS = ['managed_decline', 'conflict_escalation', 'us_renewal', 'multipolar_chaos'];
+
+// ── Overlay-Erklärungen (Akronyme) ───────────────────────────
+const OVERLAY_LABELS = {
+  scsi: 'SCSI — Supply Chain Stress',
+  ddi: 'DDI — Dollar Dominance',
+  fdp_usa: 'FDP — Fiskal-Dominanz USA',
+  ewi: 'EWI — Frühwarnsignale',
+};
 
 // ── Dimension Descriptions (Spec §9.1, Punkt 3) ──────────────
 const DIMENSION_DESCRIPTIONS = {
@@ -322,7 +353,7 @@ export default function G7Detail({ dashboard }) {
                 {gap.value ?? '—'}
               </span>
               <span className="text-caption" style={{ color: gap.trend === 'CLOSING' ? COLORS.signalRed : COLORS.mutedBlue }}>
-                {gap.trend === 'CLOSING' ? 'Schließend' : gap.trend === 'WIDENING' ? 'Wachsend' : gap.trend || '—'}
+                {gap.trend === 'CLOSING' ? 'Schließend' : gap.trend === 'WIDENING' ? 'Wachsend' : TREND_LABELS[gap.trend] || gap.trend || '—'}
               </span>
               <Sparkline data={gapSparkline} color={COLORS.baldurBlue} />
             </div>
@@ -397,7 +428,7 @@ export default function G7Detail({ dashboard }) {
                     </span>
                     {isDominant && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-baldur-blue/20 text-baldur-blue font-medium">
-                        DOMINANT
+                        FÜHREND
                       </span>
                     )}
                   </div>
@@ -415,8 +446,8 @@ export default function G7Detail({ dashboard }) {
 
         {/* Konfidenz + Quelle */}
         <div className="flex gap-4 text-caption text-muted-blue pt-2 border-t border-white/5">
-          <span>Konfidenz: <span className="text-ice-white">{scenarios.confidence || '—'}</span></span>
-          <span>Quelle: <span className="text-ice-white">{scenarios.probability_source || '—'}</span></span>
+          <span>Konfidenz: <span className="text-ice-white">{CONFIDENCE_LABELS[scenarios.confidence] || scenarios.confidence || '—'}</span></span>
+          <span>Quelle: <span className="text-ice-white">{scenarios.probability_source === 'LLM' ? 'KI-Schätzung' : scenarios.probability_source || '—'}</span></span>
           {scenarios.interim_flag && (
             <span className="text-signal-yellow">VORLÄUFIG</span>
           )}
@@ -427,7 +458,7 @@ export default function G7Detail({ dashboard }) {
       <div className="glass-card p-4">
         <h2 className="text-section-title text-ice-white mb-3">Szenario-Gewichtungen</h2>
 
-        {/* Header row — volle Szenario-Namen */}
+        {/* Header row */}
         <div className="grid grid-cols-7 gap-1 mb-1 text-[10px] text-faded-blue text-center">
           <span className="text-left">Asset</span>
           <span>MD</span><span>CE</span><span>UR</span><span>MC</span>
@@ -509,35 +540,80 @@ export default function G7Detail({ dashboard }) {
         </div>
       )}
 
-      {/* Szenario-Aktionen (pro Szenario) */}
+      {/* ── Szenario-Aktionen (komplett überarbeitet) ── */}
       <div className="glass-card p-4">
-        <h2 className="text-section-title text-ice-white mb-3">Szenario-Aktionen</h2>
-        <div className="space-y-2">
+        <h2 className="text-section-title text-ice-white mb-2">Szenario-Aktionen</h2>
+        <p className="text-[10px] text-faded-blue mb-3">
+          Empfohlene Positionierung pro Szenario. Übergewichten = Anteil erhöhen,
+          Untergewichten = Anteil reduzieren, Veto = nicht halten.
+        </p>
+        <div className="space-y-4">
           {SCENARIOS.map(s => {
             const am = actionMap[s] || {};
+            const ow = am.overweight || [];
+            const uw = am.underweight || [];
+            const vetos = am.vetos || [];
+            const hasContent = ow.length > 0 || uw.length > 0 || vetos.length > 0;
+            if (!hasContent) return null;
+
             return (
-              <div key={s} className="border-l-2 pl-3 py-1"
+              <div key={s} className="border-l-2 pl-3 py-2"
                 style={{ borderColor: SCENARIO_COLORS[s] }}>
-                <span className="text-caption font-medium" style={{ color: SCENARIO_COLORS[s] }}>
-                  {am.label || SCENARIO_LABELS[s]}
-                </span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {(am.overweight || []).map(a => (
-                    <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-green/10 text-signal-green">
-                      ÜG {a}
-                    </span>
-                  ))}
-                  {(am.underweight || []).map(a => (
-                    <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-red/10 text-signal-red">
-                      UG {a}
-                    </span>
-                  ))}
-                  {(am.vetos || []).map(a => (
-                    <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-red/20 text-signal-red font-medium">
-                      ⚠ VETO {a}
-                    </span>
-                  ))}
+                {/* Szenario-Name + Beschreibung */}
+                <div className="mb-2">
+                  <span className="text-caption font-medium" style={{ color: SCENARIO_COLORS[s] }}>
+                    {am.label || SCENARIO_LABELS[s]}
+                  </span>
+                  <p className="text-[10px] text-faded-blue mt-0.5">{SCENARIO_SHORT[s]}</p>
                 </div>
+
+                {/* Übergewichten */}
+                {ow.length > 0 && (
+                  <div className="mb-1.5">
+                    <span className="text-[10px] text-signal-green font-medium block mb-1">
+                      ▲ Übergewichten ({ow.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ow.map(a => (
+                        <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-green/10 text-signal-green">
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Untergewichten */}
+                {uw.length > 0 && (
+                  <div className="mb-1.5">
+                    <span className="text-[10px] text-signal-red font-medium block mb-1">
+                      ▼ Untergewichten ({uw.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {uw.map(a => (
+                        <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-red/10 text-signal-red">
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vetos */}
+                {vetos.length > 0 && (
+                  <div>
+                    <span className="text-[10px] text-signal-red font-bold block mb-1">
+                      ⚠ Veto — nicht halten ({vetos.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {vetos.map(a => (
+                        <span key={a} className="text-[10px] px-1.5 py-0.5 rounded bg-signal-red/20 text-signal-red font-medium border border-signal-red/30">
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -552,7 +628,7 @@ export default function G7Detail({ dashboard }) {
         <div className="grid grid-cols-2 gap-3">
           {/* SCSI */}
           <div className="bg-white/5 rounded-lg p-3">
-            <span className="text-[10px] text-faded-blue block mb-1">SCSI</span>
+            <span className="text-[10px] text-faded-blue block mb-1">{OVERLAY_LABELS.scsi}</span>
             <div className="flex items-center gap-2">
               <span className="text-data-medium tabular-nums text-ice-white">
                 {overlays.scsi?.value ?? '—'}
@@ -560,7 +636,7 @@ export default function G7Detail({ dashboard }) {
               <span className="text-caption" style={{
                 color: overlays.scsi?.trend === 'RISING' ? COLORS.signalYellow : COLORS.mutedBlue
               }}>
-                {TREND_ARROWS[overlays.scsi?.trend] || '→'} {overlays.scsi?.trend || '—'}
+                {TREND_ARROWS[overlays.scsi?.trend] || '→'} {TREND_LABELS[overlays.scsi?.trend] || '—'}
               </span>
             </div>
             <Sparkline data={overlaySparkline('scsi')} width={70} height={16}
@@ -569,7 +645,7 @@ export default function G7Detail({ dashboard }) {
 
           {/* DDI */}
           <div className="bg-white/5 rounded-lg p-3">
-            <span className="text-[10px] text-faded-blue block mb-1">DDI</span>
+            <span className="text-[10px] text-faded-blue block mb-1">{OVERLAY_LABELS.ddi}</span>
             <div className="flex items-center gap-2">
               <span className="text-data-medium tabular-nums text-ice-white">
                 {overlays.ddi?.value ?? '—'}
@@ -577,7 +653,7 @@ export default function G7Detail({ dashboard }) {
               <span className="text-caption" style={{
                 color: overlays.ddi?.trend === 'RISING' ? COLORS.signalYellow : COLORS.mutedBlue
               }}>
-                {TREND_ARROWS[overlays.ddi?.trend] || '→'} {overlays.ddi?.trend || '—'}
+                {TREND_ARROWS[overlays.ddi?.trend] || '→'} {TREND_LABELS[overlays.ddi?.trend] || '—'}
               </span>
             </div>
             <Sparkline data={overlaySparkline('ddi')} width={70} height={16}
@@ -586,7 +662,7 @@ export default function G7Detail({ dashboard }) {
 
           {/* FDP USA */}
           <div className="bg-white/5 rounded-lg p-3">
-            <span className="text-[10px] text-faded-blue block mb-1">FDP USA</span>
+            <span className="text-[10px] text-faded-blue block mb-1">{OVERLAY_LABELS.fdp_usa}</span>
             <div className="flex items-center gap-2">
               <span className="text-data-medium tabular-nums text-ice-white">
                 {overlays.fdp_usa?.value ?? '—'}
@@ -597,17 +673,17 @@ export default function G7Detail({ dashboard }) {
 
           {/* EWI */}
           <div className="bg-white/5 rounded-lg p-3">
-            <span className="text-[10px] text-faded-blue block mb-1">EWI</span>
+            <span className="text-[10px] text-faded-blue block mb-1">{OVERLAY_LABELS.ewi}</span>
             <div className="flex items-center gap-2">
               <span className="text-data-medium tabular-nums text-ice-white">
-                {overlays.ewi?.active_signals ?? 0}/10
+                {overlays.ewi?.active_signals ?? 0}/10 Signale
               </span>
               <span className="text-caption" style={{
                 color: overlays.ewi?.severity === 'HIGH' ? COLORS.signalRed
                   : overlays.ewi?.severity === 'MEDIUM' ? COLORS.signalYellow
                   : COLORS.mutedBlue
               }}>
-                {overlays.ewi?.severity || '—'}
+                {SEVERITY_LABELS[overlays.ewi?.severity] || '—'}
               </span>
             </div>
           </div>
@@ -630,14 +706,14 @@ export default function G7Detail({ dashboard }) {
 
         {/* Globaler Status */}
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-caption text-muted-blue">Global:</span>
+          <span className="text-caption text-muted-blue">Globaler Trend:</span>
           <span className="text-data-medium font-medium" style={{
             color: sit.global_trend === 'CRITICAL' ? COLORS.signalRed
               : sit.global_trend === 'ESCALATING' ? '#F97316'
               : sit.global_trend === 'DE-ESCALATING' ? COLORS.signalGreen
               : COLORS.mutedBlue,
           }}>
-            {sit.global_trend || '—'}
+            {TREND_LABELS[sit.global_trend] || sit.global_trend || '—'}
           </span>
           {sit.dominant_driver && (
             <span className="text-caption text-ice-white">— {sit.dominant_driver}</span>
@@ -837,7 +913,7 @@ export default function G7Detail({ dashboard }) {
 
       {/* Meta */}
       <div className="text-center text-[10px] text-faded-blue py-2">
-        {meta.last_run} • {meta.run_type} • {meta.duration_s}s
+        Letzter Lauf: {meta.last_run} • {meta.run_type} • {meta.duration_s}s
       </div>
     </div>
   );
