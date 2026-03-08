@@ -1,65 +1,108 @@
 'use client';
 
 import GlassCard from '@/components/shared/GlassCard';
-import { G7_REGIME_COLORS, COLORS, DIRECTION_DISPLAY } from '@/lib/constants';
+import { COLORS } from '@/lib/constants';
+
+const STATUS_COLORS = {
+  STABLE: COLORS.signalGreen,
+  SHIFTING: COLORS.signalYellow,
+  ELEVATED_RISK: COLORS.signalOrange,
+  STRUCTURAL_BREAK: COLORS.signalRed,
+};
+
+const REGION_LABELS = {
+  USA: '🇺🇸', CHINA: '🇨🇳', EU: '🇪🇺', INDIA: '🇮🇳',
+  JP_KR_TW: '🇯🇵', GULF: '🇸🇦', REST_EM: '🌍',
+};
+
+const SCENARIO_LABELS = {
+  managed_decline: 'Managed Decline',
+  conflict_escalation: 'Conflict Escalation',
+  us_renewal: 'US Renewal',
+  multipolar_chaos: 'Multipolar Chaos',
+};
 
 export default function G7Card({ dashboard, onNavigate }) {
-  const g7 = dashboard.g7_summary;
-  if (!g7) return null;
+  const g7 = dashboard?.g7;
 
-  const regimeColor = G7_REGIME_COLORS[g7.active_regime] || COLORS.mutedBlue;
-  const regions = g7.regions || [];
-  const scenarios = g7.scenarios || [];
-  const topScenario = scenarios[0];
+  // Graceful degradation: no g7 block yet
+  if (!g7 || !g7.available) {
+    return (
+      <GlassCard variant="secondary" stripeColor={COLORS.mutedBlue} onClick={() => onNavigate('g7')}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-label uppercase tracking-wider text-muted-blue">🌍 G7 World Order</span>
+          <span className="text-label text-muted-blue">PENDING</span>
+        </div>
+        <p className="text-caption text-muted-blue">G7 Daten werden geladen...</p>
+      </GlassCard>
+    );
+  }
+
+  const statusColor = STATUS_COLORS[g7.status] || COLORS.mutedBlue;
+  const ps = g7.power_scores || {};
+  const gap = g7.gap || {};
+  const scenarios = g7.scenarios || {};
+  const probs = scenarios.probabilities || {};
+  const sit = g7.sit || {};
+  const narr = g7.narrative || {};
+
+  // Find dominant scenario
+  const dominant = scenarios.dominant || 'managed_decline';
+  const dominantPct = Math.round((probs[dominant] || 0) * 100);
+
+  // Top 3 regions by score
+  const regionEntries = Object.entries(ps)
+    .map(([r, d]) => ({ region: r, score: d.score || 0, momentum: d.momentum || 0 }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
 
   return (
-    <GlassCard variant="secondary" stripeColor={regimeColor} onClick={() => onNavigate('g7')}>
+    <GlassCard variant="secondary" stripeColor={statusColor} onClick={() => onNavigate('g7')}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-label uppercase tracking-wider text-muted-blue">🌍 G7 World Order</span>
         <span className="text-label font-medium px-2 py-0.5 rounded"
-          style={{ backgroundColor: `${regimeColor}20`, color: regimeColor }}>
-          {g7.active_regime} — {g7.regime_label}
+          style={{ backgroundColor: `${statusColor}20`, color: statusColor }}>
+          {g7.status}
         </span>
       </div>
 
-      {/* EWI Score */}
-      <div className="flex items-center gap-3 mb-3">
+      {/* Gap + Dominant Scenario */}
+      <div className="flex items-center gap-4 mb-3">
         <div>
-          <span className="text-caption text-muted-blue block">EWI</span>
-          <span className="text-data-medium tabular-nums text-ice-white">{g7.ewi_score}</span>
-          <span className="text-caption text-muted-blue ml-1">{g7.ewi_label}</span>
+          <span className="text-caption text-muted-blue block">USA-China Gap</span>
+          <span className="text-data-medium tabular-nums text-ice-white">{gap.value ?? '—'}</span>
+          <span className="text-caption text-muted-blue ml-1">{gap.trend || ''}</span>
         </div>
-        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full rounded-full bg-signal-yellow/60" style={{ width: `${g7.ewi_score}%` }} />
+        <div>
+          <span className="text-caption text-muted-blue block">Dominant</span>
+          <span className="text-data-small text-ice-white">{SCENARIO_LABELS[dominant] || dominant}</span>
+          <span className="text-caption text-baldur-blue ml-1">{dominantPct}%</span>
         </div>
       </div>
 
-      {/* Regions (compact) */}
+      {/* Region scores compact */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {regions.slice(0, 5).map((r) => {
-          const dir = DIRECTION_DISPLAY[r.trend] || DIRECTION_DISPLAY.STABLE;
-          return (
-            <div key={r.name} className="flex items-center gap-1 text-caption">
-              <span>{r.flag}</span>
-              <span className="text-ice-white tabular-nums">{r.score}</span>
-              <span style={{ color: dir.color }}>{dir.arrow}</span>
-            </div>
-          );
-        })}
+        {regionEntries.map((r) => (
+          <div key={r.region} className="flex items-center gap-1 text-caption">
+            <span>{REGION_LABELS[r.region] || r.region}</span>
+            <span className="text-ice-white tabular-nums">{r.score.toFixed(1)}</span>
+            <span style={{ color: r.momentum > 0.3 ? COLORS.signalGreen : r.momentum < -0.3 ? COLORS.signalRed : COLORS.mutedBlue }}>
+              {r.momentum > 0.3 ? '↑' : r.momentum < -0.3 ? '↓' : '→'}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {/* Top Scenario */}
-      {topScenario && (
-        <p className="text-caption text-muted-blue">
-          Top: {topScenario.name} ({Math.round(topScenario.probability * 100)}%)
+      {/* SIT Global */}
+      {sit.global_trend && sit.global_trend !== 'STABLE' && (
+        <p className="text-caption text-signal-yellow mb-1">
+          ⚠ SIT: {sit.global_trend} {sit.dominant_driver ? `— ${sit.dominant_driver}` : ''}
         </p>
       )}
 
-      {/* Attention Flags */}
-      {g7.attention_flags?.length > 0 && (
-        <p className="text-caption text-signal-yellow mt-1">
-          ⚠ {g7.attention_flags[0].slice(0, 80)}...
-        </p>
+      {/* Headline truncated */}
+      {narr.headline && (
+        <p className="text-caption text-muted-blue line-clamp-2">{narr.headline}</p>
       )}
 
       <p className="text-caption text-muted-blue text-right mt-2">Details →</p>

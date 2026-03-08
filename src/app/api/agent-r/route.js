@@ -1,20 +1,20 @@
-// src/app/api/agent-r/route.js
-// Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
+﻿// src/app/api/agent-r/route.js
+// Agent R API Route â€” Edge Runtime, Tool-Use-Loop, SSE Streaming
 // V1.1: Dashboard compression + rate limit handling
-// Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
+// Based on: AGENT_R_TECH_SPEC_TEIL_2.md Â§2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
 import { TOOL_DEFINITIONS, executeTool } from '@/lib/agent-r-tools';
 
 export const runtime = 'edge';
 
-// Max tool-use rounds before forcing final answer (Spec §2.4.1)
+// Max tool-use rounds before forcing final answer (Spec Â§2.4.1)
 const MAX_TOOL_ROUNDS = 3; // Reduced from 5 to stay within rate limits
 
 // Max messages sent to Claude (keep context manageable)
 const MAX_HISTORY_MESSAGES = 10; // Reduced from 20 for token budget
 
-// Claude model (Spec §2.2)
+// Claude model (Spec Â§2.2)
 const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
 const CLAUDE_MAX_TOKENS = 4096;
 
@@ -24,7 +24,7 @@ const MAX_RETRIES = 2;
 
 
 // ===== DASHBOARD COMPRESSION =====
-// Full dashboard.json is ~37KB (~10K tokens) — too much for 30K/min rate limit
+// Full dashboard.json is ~37KB (~10K tokens) â€” too much for 30K/min rate limit
 // Compress to ~3-5KB (~1-2K tokens) with only what Agent R needs in System Prompt
 // Full dashboard stays available via get_dashboard tool
 
@@ -123,7 +123,7 @@ function compactToolResult(result) {
   // If under 3KB, keep as-is
   if (str.length < 3000) return str;
   // Truncate with note
-  return str.slice(0, 3000) + '\n... [truncated — use get_dashboard for full data]';
+  return str.slice(0, 3000) + '\n... [truncated â€” use get_dashboard for full data]';
 }
 
 
@@ -188,7 +188,7 @@ export async function POST(request) {
 
           if (!response.ok) {
             const errText = await response.text();
-            send({ type: 'error', error: `Claude API Error: ${response.status} — ${errText}` });
+            send({ type: 'error', error: `Claude API Error: ${response.status} â€” ${errText}` });
             send({ type: 'done' });
             controller.close();
             return;
@@ -200,7 +200,7 @@ export async function POST(request) {
           const toolUseBlocks = (result.content || []).filter(b => b.type === 'tool_use');
 
           if (toolUseBlocks.length === 0) {
-            // No tool calls — final answer
+            // No tool calls â€” final answer
             const textBlocks = (result.content || []).filter(b => b.type === 'text');
             const fullText = textBlocks.map(b => b.text).join('');
 
@@ -214,7 +214,7 @@ export async function POST(request) {
             return;
           }
 
-          // Tool calls — execute in parallel
+          // Tool calls â€” execute in parallel
           for (const block of toolUseBlocks) {
             send({
               type: 'tool_call',
@@ -222,7 +222,7 @@ export async function POST(request) {
             });
           }
 
-          // Execute tools — pass FULL dashboard for tool execution
+          // Execute tools â€” pass FULL dashboard for tool execution
           const toolResults = await Promise.all(
             toolUseBlocks.map(async (block) => {
               try {
@@ -256,7 +256,7 @@ export async function POST(request) {
           toolRound++;
         }
 
-        // Max tool rounds reached — force final answer
+        // Max tool rounds reached â€” force final answer
         const finalResponse = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, [], true);
 
         if (!finalResponse.ok) {
@@ -296,7 +296,7 @@ async function callClaudeWithRetry(apiKey, systemPrompt, messages, tools, stream
     const response = await callClaude(apiKey, systemPrompt, messages, tools, stream);
 
     if (response.status === 429 && attempt < MAX_RETRIES) {
-      // Rate limited — wait and retry
+      // Rate limited â€” wait and retry
       await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WAIT_MS * (attempt + 1)));
       continue;
     }
@@ -368,3 +368,4 @@ async function streamClaudeResponse(response, send) {
     }
   }
 }
+

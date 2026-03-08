@@ -67,12 +67,12 @@ export const DIRECTION_DISPLAY = {
   FALLING: { arrow: '↓', color: COLORS.signalRed },
 };
 
-// ===== G7 REGIME → COLOR (Spec §4.10) =====
+// ===== G7 STATUS → COLOR (Spec §4.10) =====
 export const G7_REGIME_COLORS = {
-  R1: COLORS.signalGreen,
-  R2: COLORS.signalYellow,
-  R3: COLORS.signalOrange,
-  R4: COLORS.signalRed,
+  STABLE: COLORS.signalGreen,
+  SHIFTING: COLORS.signalYellow,
+  ELEVATED_RISK: COLORS.signalOrange,
+  STRUCTURAL_BREAK: COLORS.signalRed,
 };
 
 // ===== FRAGILITY → COLOR =====

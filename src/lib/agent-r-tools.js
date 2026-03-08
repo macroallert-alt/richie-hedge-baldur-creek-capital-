@@ -583,66 +583,26 @@ async function toolGetLiveSnapshot({ additional_tickers }, dashboard) {
   const fmpKey = process.env.FMP_API_KEY;
   if (!fmpKey) throw new Error('FMP_API_KEY nicht konfiguriert');
 
-  // Use ETF tickers only — no index symbols (^VIX causes 403)
-  // VIXY = VIX proxy, UUP = DXY proxy
-  const coreTickers = [
-    { fmp: 'SPY', display: 'SPY' },
-    { fmp: 'VIXY', display: 'VIX(VIXY)' },
-    { fmp: 'UUP', display: 'DXY(UUP)' },
-    { fmp: 'TLT', display: 'TLT' },
-    { fmp: 'HYG', display: 'HYG' },
-  ];
-  const extra = (additional_tickers || []).map(t => ({ fmp: t, display: t }));
-  const allTickers = [...coreTickers, ...extra];
+  const coreTickers = ['SPY', 'VIX', 'DXY', 'TLT', 'HYG'];
+  // DXY is not on FMP, use UUP as proxy
+  const fmpTickers = ['SPY', 'VIXY', 'UUP', 'TLT', 'HYG'];
+  const extra = additional_tickers || [];
+  const allTickers = [...fmpTickers, ...extra];
 
-  // Fetch all as batch — single request
-  const tickerStr = allTickers.map(t => t.fmp).join(',');
-  const snapshot = [];
-  const errors = [];
+  const tickerStr = allTickers.join(',');
+  const res = await fetch(
+    `https://financialmodelingprep.com/api/v3/quote/${tickerStr}?apikey=${fmpKey}`
+  );
+  if (!res.ok) throw new Error(`FMP API Error: ${res.status}`);
 
-  try {
-    const res = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/${tickerStr}?apikey=${fmpKey}`
-    );
-    if (res.ok) {
-      const quotes = await res.json();
-      for (const q of quotes) {
-        const mapping = allTickers.find(t => t.fmp === q.symbol);
-        snapshot.push({
-          ticker: mapping?.display || q.symbol,
-          price: q.price,
-          change_pct: q.changesPercentage ? Math.round(q.changesPercentage * 100) / 100 : null,
-          volume: q.volume,
-        });
-      }
-    } else {
-      // Batch failed — try individually
-      await Promise.all(allTickers.map(async (t) => {
-        try {
-          const r = await fetch(
-            `https://financialmodelingprep.com/api/v3/quote/${t.fmp}?apikey=${fmpKey}`
-          );
-          if (r.ok) {
-            const data = await r.json();
-            if (data?.[0]) {
-              snapshot.push({
-                ticker: t.display,
-                price: data[0].price,
-                change_pct: data[0].changesPercentage ? Math.round(data[0].changesPercentage * 100) / 100 : null,
-                volume: data[0].volume,
-              });
-            }
-          } else {
-            errors.push(`${t.fmp}: HTTP ${r.status}`);
-          }
-        } catch (e) {
-          errors.push(`${t.fmp}: ${e.message}`);
-        }
-      }));
-    }
-  } catch (e) {
-    errors.push(`Batch fetch: ${e.message}`);
-  }
+  const quotes = await res.json();
+
+  const snapshot = quotes.map(q => ({
+    ticker: q.symbol === 'text-page-title text-center' ? 'VIX' : q.symbol === 'UUP' ? 'DXY(UUP)' : q.symbol,
+    price: q.price,
+    change_pct: q.changesPercentage ? Math.round(q.changesPercentage * 100) / 100 : null,
+    volume: q.volume,
+  }));
 
   // Dashboard age for context
   const dashboardAge = dashboard?.generated_at
@@ -651,9 +611,8 @@ async function toolGetLiveSnapshot({ additional_tickers }, dashboard) {
 
   return {
     snapshot,
-    errors: errors.length > 0 ? errors : undefined,
     dashboard_age_hours: parseFloat(dashboardAge),
-    note: `Live-Kurse von FMP. Dashboard ist ${dashboardAge}h alt.${errors.length > 0 ? ` ${errors.length} Ticker fehlgeschlagen.` : ''}`,
+    note: `Live-Kurse von FMP. Dashboard ist ${dashboardAge}h alt.`,
     _timestamp: new Date().toISOString(),
   };
 }
