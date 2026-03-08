@@ -1,14 +1,16 @@
 import '@/styles/globals.css';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
+};
+
 export const metadata = {
   title: 'Baldur Creek Capital',
   description: 'Multi-Agent Trading System Dashboard',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: 'cover',
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

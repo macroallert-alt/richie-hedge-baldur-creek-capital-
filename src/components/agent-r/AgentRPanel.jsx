@@ -60,7 +60,7 @@ function getTabTitle(messages) {
   const firstUser = messages.find(m => m.role === 'user');
   if (!firstUser) return 'Neuer Chat';
   const text = firstUser.text || '';
-  return text.length > 30 ? text.slice(0, 30) + '…' : text;
+  return text.length > 30 ? text.slice(0, 30) + '\u2026' : text;
 }
 
 
@@ -77,6 +77,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const abortRef = useRef(null);
   const tabsContainerRef = useRef(null);
   const panelRef = useRef(null);
+  const inputAreaRef = useRef(null);
   const agentCtx = dashboard?.agent_r_context || {};
 
   // Current tab's messages
@@ -124,8 +125,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
   }, [isStreaming, activeTabId]);
 
   // ===== Mobile Keyboard Fix: visualViewport listener =====
-  // On iOS/Android, when the keyboard opens the visualViewport shrinks.
-  // We resize the panel to match, keeping the input field visible.
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
@@ -134,19 +133,14 @@ export default function AgentRPanel({ dashboard, onClose }) {
       const panel = panelRef.current;
       if (!panel) return;
 
-      // On mobile (< 1024px / lg breakpoint), adjust panel height
       if (window.innerWidth < 1024) {
-        // visualViewport.height = visible area without keyboard
-        // visualViewport.offsetTop = how much the viewport shifted down
         const keyboardVisible = window.innerHeight - vv.height > 100;
 
         if (keyboardVisible) {
-          // Lock panel to visible viewport height, positioned at viewport top
           panel.style.height = vv.height + 'px';
           panel.style.bottom = 'auto';
           panel.style.top = vv.offsetTop + 'px';
         } else {
-          // Keyboard closed — restore original 80vh from bottom
           panel.style.height = '80vh';
           panel.style.bottom = '0px';
           panel.style.top = 'auto';
@@ -174,6 +168,18 @@ export default function AgentRPanel({ dashboard, onClose }) {
   useEffect(() => {
     resizeTextarea();
   }, [input, resizeTextarea]);
+
+  // ===== Scroll input into view on focus (mobile keyboard fallback) =====
+  const handleInputFocus = useCallback(() => {
+    // Delay to let keyboard animation finish
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 300);
+    // Second attempt after keyboard fully open
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 600);
+  }, []);
 
   // ===== Update messages in active tab =====
   const updateActiveMessages = useCallback((updater) => {
@@ -351,7 +357,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   };
 
   const handleNudgeClick = (nudge) => {
-    handleSend(`Erkläre mir: ${nudge.title}`);
+    handleSend(`Erkl\u00e4re mir: ${nudge.title}`);
   };
 
   return (
@@ -431,23 +437,23 @@ export default function AgentRPanel({ dashboard, onClose }) {
         {/* Compact Statusbar */}
         <div className="px-4 py-2 border-b border-white/5 text-caption text-muted-blue flex-shrink-0">
           <p>
-            V16: {agentCtx.regime || dashboard?.v16?.regime || '—'} | DD: {dashboard?.v16?.current_drawdown ?? '—'}% | KS: {
-              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? '⚠️' : '✅'
-            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || '—'}
+            V16: {agentCtx.regime || dashboard?.v16?.regime || '\u2014'} | DD: {dashboard?.v16?.current_drawdown ?? '\u2014'}% | KS: {
+              Object.values(dashboard?.risk?.emergency_triggers || {}).some(v => v) ? '\u26a0\ufe0f' : '\u2705'
+            } | Conv: {agentCtx.conviction || dashboard?.header?.system_conviction || '\u2014'}
           </p>
           <p>
-            Exec: {dashboard?.execution?.execution_level || '—'} ({dashboard?.execution?.total_score ?? '—'}/{dashboard?.execution?.max_score ?? '—'}) | Stand: {
+            Exec: {dashboard?.execution?.execution_level || '\u2014'} ({dashboard?.execution?.total_score ?? '\u2014'}/{dashboard?.execution?.max_score ?? '\u2014'}) | Stand: {
               dashboard?.generated_at
                 ? new Date(dashboard.generated_at).toISOString().slice(11, 16)
-                : '—'
+                : '\u2014'
             } UTC
           </p>
         </div>
 
-        {/* Nudges — only show when no messages in active tab */}
+        {/* Nudges \u2014 only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
-            <p className="text-caption text-muted-blue">PRIORITÄRE HINWEISE</p>
+            <p className="text-caption text-muted-blue">PRIORIT{'\u00c4'}RE HINWEISE</p>
             {nudges.map((n, i) => (
               <button
                 key={i}
@@ -467,7 +473,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && nudges.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-blue text-center px-4">
-              <p className="text-body mb-2">Agent R — Research Terminal</p>
+              <p className="text-body mb-2">Agent R {'\u2014'} Research Terminal</p>
               <p className="text-caption">
                 Frag mich zu Regime, Portfolio, Risiko, Einzelaktien, Options, Makro.
                 Bei Trade-Entscheidungen erzwinge ich das Decision Protocol.
@@ -487,7 +493,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
                     {msg.toolCalls.map((tool, j) => (
                       <div key={j} className="flex items-center gap-1.5 text-caption text-muted-blue">
                         <span className={`${i === messages.length - 1 && isStreaming ? 'animate-pulse' : ''}`}>
-                          🔧
+                          {'\ud83d\udd27'}
                         </span>
                         <span>{TOOL_LABELS[tool.name] || tool.name}</span>
                         {tool.input?.ticker && (
@@ -591,13 +597,14 @@ export default function AgentRPanel({ dashboard, onClose }) {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-white/5 safe-area-bottom flex-shrink-0">
+        <div ref={inputAreaRef} className="p-4 border-t border-white/5 safe-area-bottom flex-shrink-0">
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onFocus={handleInputFocus}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
