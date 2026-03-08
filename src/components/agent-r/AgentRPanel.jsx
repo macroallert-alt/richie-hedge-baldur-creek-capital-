@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, AlertTriangle, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useNudges } from '@/hooks/useNudges';
 import { TOOL_LABELS } from '@/lib/constants';
 
@@ -519,6 +520,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   <div className="text-body text-ice-white agent-r-markdown">
                     {msg.text ? (
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                           strong: ({ children }) => <strong className="text-ice-white font-semibold">{children}</strong>,
