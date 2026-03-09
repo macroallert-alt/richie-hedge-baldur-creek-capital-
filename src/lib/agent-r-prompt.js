@@ -1,9 +1,9 @@
 // src/lib/agent-r-prompt.js
 // Agent R System Prompt — Schicht 1 (statisch) + Schicht 2 (dynamischer Dashboard Header)
-// Prompt Version: V1.2 — Asset Universe + Cluster-Mapping hinzugefuegt
-// Basiert auf: AGENT_R_TECH_SPEC_TEIL_3.md §3.2 + §3.3
+// Prompt Version: V1.3 — Disruptions Intelligence hinzugefuegt
+// Basiert auf: AGENT_R_TECH_SPEC_TEIL_3.md §3.2 + §3.3 + DISRUPTIONS_FRONTEND_ERWEITERUNG_SPEC_TEIL5 §22
 
-export const PROMPT_VERSION = 'V1.2';
+export const PROMPT_VERSION = 'V1.3';
 
 // ===== SCHICHT 1: STATISCHER SYSTEM PROMPT (~2.000 Tokens) =====
 const STATIC_PROMPT = `Du bist Agent R — das interaktive Research Terminal eines systematischen Global Macro Ein-Mann-Hedge-Fund.
@@ -76,6 +76,15 @@ F6 Sheet (8 Tabs) \u2014 StockPicker:
 - DASHBOARD, POSITIONS, SIGNALS, OPTIONS
 - V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS
 
+Disruptions Sheet (7 Tabs) \u2014 Disruption Intelligence:
+- TRENDS: Alle getrackten Disruption-Trends mit Scores (Maturity, Momentum, Inflection, Phase, Status, Conviction).
+- ETF_MAP: Thematische ETFs mit Preisen, Flows, Short Interest.
+- SIGNALS: Woechentliche Screening-Rohdaten (Brave Hits, Google Trends, ETF Flows).
+- EXPOSURE: V16 Portfolio Exposure Check pro Kategorie (Blind Spots, Threats).
+- HISTORY: Woechentliche Score-Snapshots fuer Trend-Entwicklung ueber Zeit.
+- JOURNAL: Idea Journal mit hypothetischer P&L.
+- CONFIG: Kategorie-Definitionen und Schwellenwerte.
+
 ROUTING — BEFOLGE EXAKT:
 - Historische State/Regime/Rotations-Fragen \u2192 V16 Sheet, CALC_Macro_State!A:O, max_rows=60 (reicht fuer 3 Monate, erhoehe nur wenn noetig)
 - Historische Gewichts-Aenderungen \u2192 V16 Sheet, CALC_Changelog!A:K, max_rows=50
@@ -85,6 +94,17 @@ ROUTING — BEFOLGE EXAKT:
 - G7 Power Scores \u2192 G7 Sheet, POWER_SCORES!A:Z oder G7_POWER_SCORE_HISTORY!A:P
 - Risk Alerts \u2192 DW Sheet, RISK_ALLERTS!A:Z
 - Layer Scores \u2192 DW Sheet, SCORES!A:M
+- Disruptions Trends \u2192 DISRUPTIONS Sheet, TRENDS!A:Z
+- Disruptions Exposure/Blind Spots \u2192 DISRUPTIONS Sheet, EXPOSURE!A:Z
+- Disruptions History \u2192 DISRUPTIONS Sheet, HISTORY!A:Z, max_rows=50
+- Thematische ETFs \u2192 DISRUPTIONS Sheet, ETF_MAP!A:Z
+
+=== DISRUPTIONS INTELLIGENCE ===
+Du hast Zugriff auf den Disruptions Monitor — ein woechentlicher Scan von 12 Technologie-Disruption-Kategorien (D1 AI bis D12 Regulatory). Der Monitor trackt: Maturity (S-Kurve Position), Momentum, Inflection Score, Crowding, Convergence Zones, Blind Spots, Vulnerability Watchlist.
+
+Wenn Richie nach Disruptions, Trends, Blind Spots, Convergence, Inflection, thematischen ETFs, oder "welche Technologie-Trends sind relevant" fragt, nutze das DISRUPTIONS Sheet.
+
+Disruptions-Zusammenfassung (aktuell im Dashboard Header unten).
 
 === PREIS-DATEN WARNUNG ===
 WICHTIG: get_stock_data (FMP API) liefert fuer manche ETFs FALSCHE oder FEHLENDE Preise (bekannte Probleme: SLV, GDX, GDXJ, SIL, DBC und andere V16-Universe Assets). Wenn Richie nach aktuellen Kursen fuer V16-Universe Assets fragt:
@@ -320,6 +340,25 @@ Empfehlung: F\u00fcr System-Fragen verwende get_dashboard Tool.`;
   const execution = dashboard.execution || {};
   const agentCtx = dashboard.agent_r_context || {};
   const intel = dashboard.intelligence || {};
+  const dis = dashboard.disruptions || {};
+
+  // Disruptions Summary
+  const disSummary = agentCtx.disruptions_summary || {};
+  let disLine = '';
+  if (dis.readiness_score !== undefined) {
+    const activeTrends = (dis.trends || []).filter(t => t.status === 'ACTIVE');
+    const watchTrends = (dis.trends || []).filter(t => t.status === 'WATCH');
+    const blindCount = dis.blind_spots_count || 0;
+    const convergence = dis.convergence_active ? 'AKTIV' : 'INAKTIV';
+    const regime = disSummary.regime || '';
+    disLine = `Disruptions: Readiness ${dis.readiness_score} (${dis.readiness_label}) | ${activeTrends.length}A ${watchTrends.length}W | BS:${blindCount} | Conv:${convergence}${regime ? ` | Regime:${regime}` : ''}`;
+    if (activeTrends.length > 0) {
+      disLine += `\n  Active: ${activeTrends.map(t => `${t.id} ${t.name} (Mom:${t.momentum})`).join(', ')}`;
+    }
+    if (disSummary.vulnerable_assets?.length > 0) {
+      disLine += `\n  Vulnerable: ${disSummary.vulnerable_assets.join(', ')}`;
+    }
+  }
 
   // Kill Switch Status
   const emergencyTriggers = risk.emergency_triggers || {};
@@ -392,6 +431,8 @@ Fragility: ${layers.fragility_state || '?'}
 
 F6: ${f6.status || 'nicht aktiv'}
 G7: ${g7.active_regime || '?'} ${g7.regime_label || ''} | EWI: ${g7.ewi_score || '?'}
+
+${disLine ? disLine : 'Disruptions: Keine Daten'}
 
 ${execLine}
 ${intelLine}

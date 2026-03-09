@@ -329,3 +329,67 @@ export const DISRUPTION_ALERT_COLORS = {
   MODERATE: COLORS.signalYellow,
   WEAK: COLORS.mutedBlue,
 };
+
+// =====================================================================
+// PHASE A — DISRUPTIONS ERWEITERUNG (Spec TEIL 1-5)
+// =====================================================================
+
+// ===== CONVICTION LEVEL → COLOR (Spec §3.5 / §7.4) =====
+export const CONVICTION_COLORS = {
+  HIGH: COLORS.signalGreen,
+  MEDIUM: COLORS.signalYellow,
+  LOW: COLORS.signalRed,
+};
+
+// ===== ASYMMETRY RATIO → COLOR (Spec §3.5) =====
+export function getAsymmetryColor(ratio) {
+  if (ratio > 3.0) return COLORS.signalGreen;
+  if (ratio >= 2.0) return COLORS.signalYellow;
+  return COLORS.mutedBlue;
+}
+
+// ===== DECISION STATUS → COLOR (Spec §3.5) =====
+export const DECISION_STATUS_COLORS = {
+  EXECUTE: COLORS.signalGreen,
+  WATCH_FOR_TRIGGER: COLORS.signalYellow,
+  HOLD: COLORS.baldurBlue,
+  AVOID: COLORS.signalRed,
+};
+
+// ===== SECOND ORDER CONFIDENCE → COLOR (Spec §5.4) =====
+export const CONFIDENCE_COLORS = {
+  HIGH: COLORS.signalGreen,
+  MEDIUM: COLORS.signalYellow,
+  LOW: COLORS.mutedBlue,
+};
+
+// ===== EFFECT DIRECTION → DISPLAY (Spec §5.4) =====
+export const EFFECT_DIRECTION_DISPLAY = {
+  BULLISH: { arrow: '\u2191', color: COLORS.signalGreen },
+  BEARISH: { arrow: '\u2193', color: COLORS.signalRed },
+};
+
+// ===== CROWDING ALERT LEVEL → COLOR (Spec §6.4) =====
+export const CROWDING_ALERT_COLORS = {
+  DANGER: COLORS.signalRed,
+  WARNING: COLORS.signalOrange,
+  ELEVATED: COLORS.signalYellow,
+};
+
+// ===== ASYMMETRY RATIO LABEL → COLOR (Spec §9.4) =====
+export const ASYMMETRY_LABEL_COLORS = {
+  EXCEPTIONAL: COLORS.signalGreen,
+  EXCELLENT: COLORS.signalGreen,
+  GOOD: COLORS.signalYellow,
+  MARGINAL: COLORS.signalOrange,
+  UNFAVORABLE: COLORS.signalRed,
+};
+
+// ===== G7 CROSS-REFERENCE RELATIONSHIP → COLOR (Spec §23.5) =====
+export const G7_RELATIONSHIP_COLORS = {
+  ACCELERATES: COLORS.signalGreen,
+  AMPLIFIES: COLORS.signalGreen,
+  ENABLES: COLORS.signalGreen,
+  DECELERATES: COLORS.signalRed,
+  DISRUPTS: COLORS.signalRed,
+};

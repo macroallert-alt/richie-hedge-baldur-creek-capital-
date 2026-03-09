@@ -240,14 +240,23 @@ DASHBOARD, POWER_SCORES, STRUCTURAL, FINANCIAL, LEADING, FEEDBACK_LOOPS, SCENARI
 === F6 Sheet (8 Tabs) ===
 DASHBOARD, POSITIONS, SIGNALS, OPTIONS, V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS.
 
+=== Disruptions Sheet (7 Tabs) ===
+TRENDS: Alle getrackten Disruption-Trends mit Scores (Maturity, Momentum, Inflection, Phase, Status).
+ETF_MAP: Thematische ETFs mit Preisen, Flows, Short Interest.
+SIGNALS: Woechentliche Screening-Rohdaten (Brave Hits, Google Trends, ETF Flows).
+EXPOSURE: V16 Portfolio Exposure Check pro Kategorie (Blind Spots, Threats).
+HISTORY: Woechentliche Score-Snapshots fuer Trend-Entwicklung ueber Zeit.
+JOURNAL: Idea Journal mit hypothetischer P&L.
+CONFIG: Kategorie-Definitionen und Schwellenwerte.
+
 Tab-Namen sind CASE-SENSITIVE.`,
     input_schema: {
       type: 'object',
       properties: {
         sheet: {
           type: 'string',
-          enum: ['V16', 'DW', 'G7', 'F6'],
-          description: 'V16=Macro/Price History bis 2007, DW=Data Warehouse/Layers/Alerts, G7=World Order Monitor, F6=StockPicker',
+          enum: ['V16', 'DW', 'G7', 'F6', 'DISRUPTIONS'],
+          description: 'V16=Macro/Price History bis 2007, DW=Data Warehouse/Layers/Alerts, G7=World Order Monitor, F6=StockPicker, DISRUPTIONS=Disruption Trends/ETFs/Exposure',
         },
         range: {
           type: 'string',
@@ -397,6 +406,9 @@ const V16_SHEET_ID = '11xoZ-E-W0eG23V_HSKloqzC4ubLYg9pfcf6k7HJ0oSE';
 const G7_SHEET_ID = '1TVl-GNYxK7Sppn8Tv8lSlMVgFfCwr8WslWSwABpOybk';
 const F6_SHEET_ID = '13VBh0hLjwRJ8hQsy6RxojDnMAmv81IPNIMMvcu3Bg8s';
 
+// Sheet IDs — Disruptions
+const DISRUPTIONS_SHEET_ID = '1wfNJzt-voW4bpGs9g8KHUvsHlhqWEe1t4uEch2W4bAg';
+
 // Sheet name → ID mapping for read_sheet tool
 const SHEET_MAP = {
   DW: DW_SHEET_ID,
@@ -404,6 +416,7 @@ const SHEET_MAP = {
   V16: V16_SHEET_ID,
   G7: G7_SHEET_ID,
   F6: F6_SHEET_ID,
+  DISRUPTIONS: DISRUPTIONS_SHEET_ID,
 };
 
 
