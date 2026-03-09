@@ -287,4 +287,45 @@ export const CIRCLES = [
   { id: 'f6', name: 'F6', icon: 'Target', route: '/f6' },
   { id: 'intel', name: 'Intel', icon: 'Search', route: '/intel' },
   { id: 'g7', name: 'G7', icon: 'Globe', route: '/g7' },
+  { id: 'disruptions', name: 'Disruptions', icon: 'Zap', route: '/disruptions' },
 ];
+
+// ===== DISRUPTION PHASE → COLOR =====
+export const DISRUPTION_PHASE_COLORS = {
+  EMERGING: COLORS.mutedBlue,
+  ACCELERATING: COLORS.signalYellow,
+  MATURING: COLORS.signalOrange,
+  MAINSTREAM: COLORS.signalGreen,
+  DEAD_ZONE: COLORS.fadedBlue,
+};
+
+// ===== DISRUPTION STATUS → COLOR =====
+export const DISRUPTION_STATUS_COLORS = {
+  ACTIVE: COLORS.signalGreen,
+  WATCH: COLORS.signalYellow,
+  PARKED: COLORS.fadedBlue,
+  ARCHIVED: COLORS.mutedBlue,
+};
+
+// ===== READINESS SCORE → COLOR =====
+export function getReadinessColor(score) {
+  if (score > 80) return COLORS.signalGreen;
+  if (score >= 50) return COLORS.signalYellow;
+  return COLORS.signalRed;
+}
+
+// ===== THREAT LEVEL → COLOR =====
+export const DISRUPTION_THREAT_COLORS = {
+  NONE: COLORS.mutedBlue,
+  LOW: COLORS.signalGreen,
+  MEDIUM: COLORS.signalYellow,
+  HIGH: COLORS.signalOrange,
+  CRITICAL: COLORS.signalRed,
+};
+
+// ===== CONTRARIAN ALERT LEVEL → COLOR =====
+export const DISRUPTION_ALERT_COLORS = {
+  STRONG: COLORS.signalGreen,
+  MODERATE: COLORS.signalYellow,
+  WEAK: COLORS.mutedBlue,
+};

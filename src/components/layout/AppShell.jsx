@@ -17,6 +17,7 @@ import IntelDetail from '@/components/detail/IntelDetail';
 import G7Detail from '@/components/detail/G7Detail';
 import TradingDeskDetail from '@/components/detail/TradingDeskDetail';
 import RotationDetail from '@/components/detail/RotationDetail';
+import DisruptionsDetail from '@/components/detail/DisruptionsDetail';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -36,6 +37,7 @@ const PAGE_COMPONENTS = {
   f6: F6Detail,
   intel: IntelDetail,
   g7: G7Detail,
+  disruptions: DisruptionsDetail,
   settings: SettingsPage,
 };
 
