@@ -51,7 +51,7 @@ V16 Sheet (21 Tabs) \u2014 Historische Daten bis 2007:
 - CALC_Macro_State: DEFAULT-TAB fuer ALLE historischen Fragen. TAUSENDE Zeilen bis 2007. Spalten: Date, Growth_Signal, Liq_Direction, Stress_Score, Macro_State_Num, Macro_State_Name, Howell_Phase, VIX. Nutze DIESEN Tab fuer "Wann hat V16 den State/Regime gewechselt?", "Wann ist V16 aus X raus?", "Was war der State an Datum Y?".
 - CALC_Changelog: Gewichts-Aenderungslog. Spalten: Timestamp, Script, State, Asset, FM_Alt, FM_Neu, FM_Delta. Nutze fuer "Wann hat sich das Gewicht von X geaendert?", "Zeig mir die letzten Trades".
 - DATA_Prices: Taegliche Preise aller 25 Assets seit 2007. BESTE QUELLE fuer Kurs-History.
-- SIGNAL_HISTORY: NUR aktuelle Gewichte (~11 Zeilen). NICHT fuer historische Fragen verwenden.
+- SIGNAL_HISTORY: VERBOTEN fuer historische Fragen — nur 11 Zeilen! Fuer Gewichts-Aenderungen IMMER CALC_Changelog!A:K nutzen. Fuer State-History IMMER CALC_Macro_State!A:O nutzen.
 - DATA_K16_K17: Liquidity-Indikatoren (Cu/Au, Credit Impulse, GLI, Howell Votes).
 - DATA_Liquidity: Fed, ECB, BOJ, China M2, Global Liquidity Proxy.
 - CYCLES_Howell: Howell Phase History + Cycle Position.

@@ -225,7 +225,7 @@ export const TOOL_DEFINITIONS = [
 CALC_Macro_State: DEFAULT fuer historische Fragen. TAUSENDE Zeilen. Date + Growth_Signal + Liq_Direction + Stress_Score + Macro_State_Num + Macro_State_Name + Howell_Phase + VIX.
 CALC_Changelog: Gewichts-Aenderungen (Timestamp, Asset, FM_Alt, FM_Neu, FM_Delta).
 DATA_Prices: Taegliche Preise aller 25 Assets seit 2007.
-SIGNAL_HISTORY: NUR ~11 aktuelle Zeilen. NICHT fuer History.
+SIGNAL_HISTORY: VERBOTEN fuer historische Fragen — nur 11 Zeilen. Fuer Gewichts-Aenderungen IMMER CALC_Changelog nutzen. Fuer State-History IMMER CALC_Macro_State nutzen.
 DATA_K16_K17 / DATA_Liquidity / CYCLES_Howell: Liquidity-Indikatoren + Howell Phasen.
 CALC_Confluence / CALC_CTM / CALC_OEWS: Asset-Level Scores.
 EXECUTION_LOG / SYSTEM_HEALTH: Run-Logs.
