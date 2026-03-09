@@ -325,6 +325,15 @@ function RegimeHeatmap({ heatmap }) {
       <div className="text-[10px] mt-2 text-center" style={{ color: COLORS.fadedBlue }}>
         Aktuelles Regime: <span style={{ color: REGIME_COLORS[current] || COLORS.signalYellow, fontWeight: 'bold' }}>{current}</span> (hervorgehobene Spalte)
       </div>
+      <div className="mt-2 pt-2 border-t border-[#1E3A5F]/50 text-[10px] space-y-1" style={{ color: COLORS.mutedBlue }}>
+        <div>Score 0-100: Wie gut passt ein Disruption-Trend zum jeweiligen Makro-Regime?
+          {' '}<span style={{ color: COLORS.signalGreen }}>{'\u25A0'} 70+</span> Ideal
+          {' '}<span style={{ color: COLORS.signalYellow }}>{'\u25A0'} 50-69</span> Neutral
+          {' '}<span style={{ color: COLORS.signalOrange }}>{'\u25A0'} 30-49</span> Schwierig
+          {' '}<span style={{ color: COLORS.signalRed }}>{'\u25A0'} &lt;30</span> Gegenwind
+        </div>
+        <div>Hohe Scores in deinem aktuellen Regime = Trends die jetzt am besten funktionieren. Niedrige Scores = Trends die auf ein anderes Regime warten.</div>
+      </div>
     </div>
   );
 }
