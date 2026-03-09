@@ -219,14 +219,35 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'read_sheet',
-    description: `Lese beliebige Daten aus den 4 System-Sheets: V16 (Signal History, Gewichts-Zeitreihen, Macro States, alle historischen V16-Daten), DW/DATA_WAREHOUSE (Layer Scores, Intelligence, Agent R Log, Config, Decision Journal, Thesis Tracker), G7 (World Order Monitor — Regionen, Dimensionen, Szenarien, EWI History), F6 (StockPicker — Signals, Positionen, Performance). Nutze dieses Tool wenn Richie nach HISTORISCHEN Daten fragt (z.B. "Wann ist V16 aus BTC ausgestiegen?", "Wie haben sich Layer Scores entwickelt?", "Zeig mir die G7 Dimension History"). Gib immer das Sheet und den Tab+Range an.`,
+    description: `Lese beliebige Daten aus den 4 System-Sheets. WICHTIG: Direkt den vollen Range abfragen (z.B. 'CALC_Macro_State!A:O'), NICHT erst klein testen. Nutze max_rows um Token zu begrenzen.
+
+=== V16 Sheet (21 Tabs, Daten bis 2007) ===
+CALC_Macro_State: DEFAULT fuer historische Fragen. TAUSENDE Zeilen. Date + Growth_Signal + Liq_Direction + Stress_Score + Macro_State_Num + Macro_State_Name + Howell_Phase + VIX.
+CALC_Changelog: Gewichts-Aenderungen (Timestamp, Asset, FM_Alt, FM_Neu, FM_Delta).
+DATA_Prices: Taegliche Preise aller 25 Assets seit 2007.
+SIGNAL_HISTORY: NUR ~11 aktuelle Zeilen. NICHT fuer History.
+DATA_K16_K17 / DATA_Liquidity / CYCLES_Howell: Liquidity-Indikatoren + Howell Phasen.
+CALC_Confluence / CALC_CTM / CALC_OEWS: Asset-Level Scores.
+EXECUTION_LOG / SYSTEM_HEALTH: Run-Logs.
+PARAMS_*: 7 Kalibrierungs-Tabs.
+
+=== DW Sheet (15 Tabs) ===
+DASHBOARD, RAW_MARKET, RAW_MACRO, RAW_AGENT2, RAW_AGENT2_HISTORY, INTELLIGENCE, SCORES, DIVERGENCE, AGENT_SUMMARY, BELIEFS, ALERT_LOG, AGENT_R_LOG, CONFIG, RISK_ALLERTS, RISK_HISTORY.
+
+=== G7 Sheet (19 Tabs) ===
+DASHBOARD, POWER_SCORES, STRUCTURAL, FINANCIAL, LEADING, FEEDBACK_LOOPS, SCENARIOS, UNIVERSE_MAP, HISTORY, SOURCES, SCORING, G7_STATUS, G7_THESIS, G7_NARRATIVE, G7_THESIS_HISTORY, G7_POWER_SCORE_HISTORY, G7_RUN_LOG, G7_DATA_CACHE, G7_OPERATOR_OVERRIDES.
+
+=== F6 Sheet (8 Tabs) ===
+DASHBOARD, POSITIONS, SIGNALS, OPTIONS, V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS.
+
+Tab-Namen sind CASE-SENSITIVE.`,
     input_schema: {
       type: 'object',
       properties: {
         sheet: {
           type: 'string',
           enum: ['V16', 'DW', 'G7', 'F6'],
-          description: 'Welches Sheet lesen: V16 (Signal History, Gewichte), DW (Data Warehouse, Layers, Journal), G7 (World Order Monitor), F6 (StockPicker)',
+          description: 'V16=Macro/Price History bis 2007, DW=Data Warehouse/Layers/Alerts, G7=World Order Monitor, F6=StockPicker',
         },
         range: {
           type: 'string',
