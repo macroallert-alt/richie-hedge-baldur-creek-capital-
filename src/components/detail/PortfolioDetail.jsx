@@ -1,7 +1,7 @@
 'use client';
 
 import GlassCard from '@/components/shared/GlassCard';
-import { getDrawdownColor, COLORS } from '@/lib/constants';
+import { getDrawdownColor, getAssetLabel, getAssetLabelShort, COLORS } from '@/lib/constants';
 
 export default function PortfolioDetail({ dashboard }) {
   const v16 = dashboard.v16 || {};
@@ -56,7 +56,7 @@ export default function PortfolioDetail({ dashboard }) {
         <div className="space-y-1.5">
           {Object.entries(weights).sort(([, a], [, b]) => b - a).map(([ticker, weight]) => (
             <div key={ticker} className="flex items-center gap-2">
-              <span className="text-data-small tabular-nums text-ice-white w-16">{ticker}</span>
+              <span className="text-data-small tabular-nums text-ice-white w-44 truncate">{getAssetLabel(ticker)}</span>
               <span className="text-data-small tabular-nums text-muted-blue w-12 text-right">{Math.round(weight * 100)}%</span>
               <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-baldur-blue/60" style={{ width: `${Math.min(weight * 100 * 4, 100)}%` }} />
@@ -73,7 +73,7 @@ export default function PortfolioDetail({ dashboard }) {
             <p className="text-caption text-signal-green mb-1">↑ ERHÖHUNGEN</p>
             {deltas.top_increases.map((d) => (
               <div key={d.ticker} className="flex items-center gap-2 mb-1">
-                <span className="text-data-small text-ice-white w-12">{d.ticker}</span>
+                <span className="text-data-small text-ice-white w-24 truncate">{getAssetLabelShort(d.ticker)}</span>
                 <span className="text-data-small tabular-nums text-muted-blue">{Math.round(d.yesterday * 100)}% → {Math.round(d.today * 100)}%</span>
                 <span className="text-data-small tabular-nums text-signal-green">+{Math.round(d.delta * 100)}%</span>
               </div>
@@ -85,7 +85,7 @@ export default function PortfolioDetail({ dashboard }) {
             <p className="text-caption text-signal-red mb-1">↓ REDUZIERUNGEN</p>
             {deltas.top_decreases.map((d) => (
               <div key={d.ticker} className="flex items-center gap-2 mb-1">
-                <span className="text-data-small text-ice-white w-12">{d.ticker}</span>
+                <span className="text-data-small text-ice-white w-24 truncate">{getAssetLabelShort(d.ticker)}</span>
                 <span className="text-data-small tabular-nums text-muted-blue">{Math.round(d.yesterday * 100)}% → {Math.round(d.today * 100)}%</span>
                 <span className="text-data-small tabular-nums text-signal-red">{Math.round(d.delta * 100)}%</span>
               </div>

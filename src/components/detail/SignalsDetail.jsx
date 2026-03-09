@@ -1,6 +1,6 @@
 'use client';
 
-import { COLORS, URGENCY_COLORS } from '@/lib/constants';
+import { COLORS, URGENCY_COLORS, getAssetLabelShort } from '@/lib/constants';
 
 export default function SignalsDetail({ dashboard }) {
   const signals = dashboard?.signals || {};
@@ -56,7 +56,7 @@ export default function SignalsDetail({ dashboard }) {
             <p className="text-caption text-signal-green mb-2">▲ Erhöht</p>
             {(weightDeltas.top_increases || []).map((w) => (
               <div key={w.ticker} className="flex items-center justify-between text-body mb-1">
-                <span className="text-ice-white">{w.ticker}</span>
+                <span className="text-ice-white">{getAssetLabelShort(w.ticker)}</span>
                 <span className="tabular-nums text-signal-green">+{(w.delta * 100).toFixed(0)}%</span>
               </div>
             ))}
@@ -65,7 +65,7 @@ export default function SignalsDetail({ dashboard }) {
             <p className="text-caption text-signal-red mb-2">▼ Reduziert</p>
             {(weightDeltas.top_decreases || []).map((w) => (
               <div key={w.ticker} className="flex items-center justify-between text-body mb-1">
-                <span className="text-ice-white">{w.ticker}</span>
+                <span className="text-ice-white">{getAssetLabelShort(w.ticker)}</span>
                 <span className="tabular-nums text-signal-red">{(w.delta * 100).toFixed(0)}%</span>
               </div>
             ))}

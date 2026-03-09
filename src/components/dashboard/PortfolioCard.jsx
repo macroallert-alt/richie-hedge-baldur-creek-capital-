@@ -1,7 +1,7 @@
 'use client';
 
 import GlassCard from '@/components/shared/GlassCard';
-import { getDrawdownColor, COLORS } from '@/lib/constants';
+import { getDrawdownColor, getAssetLabelShort, COLORS } from '@/lib/constants';
 
 export default function PortfolioCard({ dashboard, onNavigate }) {
   const v16 = dashboard.v16 || {};
@@ -33,7 +33,7 @@ export default function PortfolioCard({ dashboard, onNavigate }) {
       <div className="space-y-1.5 mb-3">
         {top5.map(({ ticker, weight }) => (
           <div key={ticker} className="flex items-center gap-2">
-            <span className="text-data-small tabular-nums text-ice-white w-10">{ticker}</span>
+            <span className="text-data-small tabular-nums text-ice-white w-24 truncate">{getAssetLabelShort(ticker)}</span>
             <span className="text-data-small tabular-nums text-muted-blue w-10 text-right">{Math.round(weight * 100)}%</span>
             <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
               <div
