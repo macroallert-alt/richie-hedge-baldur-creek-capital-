@@ -217,6 +217,29 @@ export const TOOL_DEFINITIONS = [
       required: ['target', 'entry_id', 'updates'],
     },
   },
+  {
+    name: 'read_sheet',
+    description: `Lese beliebige Daten aus den 4 System-Sheets: V16 (Signal History, Gewichts-Zeitreihen, Macro States, alle historischen V16-Daten), DW/DATA_WAREHOUSE (Layer Scores, Intelligence, Agent R Log, Config, Decision Journal, Thesis Tracker), G7 (World Order Monitor — Regionen, Dimensionen, Szenarien, EWI History), F6 (StockPicker — Signals, Positionen, Performance). Nutze dieses Tool wenn Richie nach HISTORISCHEN Daten fragt (z.B. "Wann ist V16 aus BTC ausgestiegen?", "Wie haben sich Layer Scores entwickelt?", "Zeig mir die G7 Dimension History"). Gib immer das Sheet und den Tab+Range an.`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        sheet: {
+          type: 'string',
+          enum: ['V16', 'DW', 'G7', 'F6'],
+          description: 'Welches Sheet lesen: V16 (Signal History, Gewichte), DW (Data Warehouse, Layers, Journal), G7 (World Order Monitor), F6 (StockPicker)',
+        },
+        range: {
+          type: 'string',
+          description: "Tab und Zellbereich im A1-Format. Beispiele: 'signal_history!A:Z' (alle Spalten), 'signal_history!A1:Z50' (letzte 50 Zeilen), 'DASHBOARD!A:F', 'SCORES!A:M'. Tipp: Erst mit kleinem Range testen um die Spalten zu sehen, dann gezielt abfragen.",
+        },
+        max_rows: {
+          type: 'integer',
+          description: 'Maximale Anzahl Zeilen die zurueckgegeben werden (default: 100). Nutze kleinere Werte fuer grosse Sheets um Token zu sparen.',
+        },
+      },
+      required: ['sheet', 'range'],
+    },
+  },
 ];
 
 
@@ -349,6 +372,18 @@ async function updateSheet(spreadsheetId, range, values) {
 
 // Sheet IDs
 const DW_SHEET_ID = '1sZeZ4VVztAqjBjyfXcCfhpSWJ4pCGF8ip1ksu_TYMHY';
+const V16_SHEET_ID = '11xoZ-E-W0eG23V_HSKloqzC4ubLYg9pfcf6k7HJ0oSE';
+const G7_SHEET_ID = '1TVl-GNYxK7Sppn8Tv8lSlMVgFfCwr8WslWSwABpOybk';
+const F6_SHEET_ID = '13VBh0hLjwRJ8hQsy6RxojDnMAmv81IPNIMMvcu3Bg8s';
+
+// Sheet name → ID mapping for read_sheet tool
+const SHEET_MAP = {
+  DW: DW_SHEET_ID,
+  DATA_WAREHOUSE: DW_SHEET_ID,
+  V16: V16_SHEET_ID,
+  G7: G7_SHEET_ID,
+  F6: F6_SHEET_ID,
+};
 
 
 // ===== TOOL 1: get_dashboard =====
@@ -1059,6 +1094,53 @@ async function toolUpdateDecision({ target, entry_id, updates }) {
 }
 
 
+// ===== TOOL 11: read_sheet =====
+async function toolReadSheet({ sheet, range, max_rows }) {
+  const sheetId = SHEET_MAP[sheet];
+  if (!sheetId) {
+    throw new Error(`Unbekanntes Sheet: ${sheet}. Verfuegbar: ${Object.keys(SHEET_MAP).join(', ')}`);
+  }
+
+  const data = await readSheet(sheetId, range);
+
+  if (!data || data.length === 0) {
+    return {
+      sheet,
+      range,
+      rows_found: 0,
+      data: [],
+      _note: 'Keine Daten im angegebenen Bereich gefunden. Pruefe Tab-Name und Range.',
+      _timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Header = erste Zeile, Rest = Daten
+  const header = data[0];
+  let rows = data.slice(1);
+  const totalRows = rows.length;
+
+  // Limit rows to save tokens
+  const limit = max_rows || 100;
+  if (rows.length > limit) {
+    rows = rows.slice(-limit); // Letzte N Zeilen (neueste Daten)
+  }
+
+  return {
+    sheet,
+    range,
+    columns: header,
+    rows_total: totalRows,
+    rows_returned: rows.length,
+    truncated: totalRows > limit,
+    data: rows,
+    _note: totalRows > limit
+      ? `${totalRows} Zeilen gefunden, nur die letzten ${limit} zurueckgegeben. Nutze max_rows oder spezifischere Range fuer mehr/weniger.`
+      : undefined,
+    _timestamp: new Date().toISOString(),
+  };
+}
+
+
 // ===== TOOL DISPATCHER =====
 // Called by the API route to execute a tool by name
 
@@ -1076,6 +1158,7 @@ export async function executeTool(name, input, dashboard) {
     run_what_if: () => toolRunWhatIf(input, dashboard),
     save_decision: () => toolSaveDecision(input, dashboard),
     update_decision: () => toolUpdateDecision(input),
+    read_sheet: () => toolReadSheet(input),
   }[name];
 
   if (!toolFn) {
