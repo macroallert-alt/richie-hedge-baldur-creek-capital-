@@ -219,85 +219,43 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'read_sheet',
-    description: `Lese beliebige Daten aus den 4 System-Sheets. Gib immer Sheet + Tab+Range an. WICHTIG: Direkt den vollen Range abfragen (z.B. 'SIGNAL_HISTORY!A:Z'), NICHT erst klein testen. Nutze max_rows um Token zu begrenzen.
+    description: `Lese beliebige Daten aus den 4 System-Sheets. WICHTIG: Direkt den vollen Range abfragen (z.B. 'CALC_Macro_State!A:O'), NICHT erst klein testen. Nutze max_rows um Token zu begrenzen.
 
-=== V16 Sheet (21 Tabs) — Historische Daten bis 2007 ===
-SIGNAL_HISTORY: Datum + Macro_State + Growth + Liq_Dir + Stress + Gewichte aller 25 Assets (FM_GLD, FM_SLV, ..., FM_ETH). WICHTIG: Hat nur ~11 aktuelle Zeilen. Fuer laengere Gewichts-History nutze CALC_Macro_State.
-CALC_Macro_State: Datum + Growth_Signal + Liq_Direction + Stress_Score + Macro_State_Num + Macro_State_Name + Howell_Phase + VIX. TAUSENDE Zeilen bis 2007. BESTE QUELLE fuer historische Regime/State-Wechsel.
-DATA_Prices: Taegliche Preise aller 25 Assets (GLD, SLV, ..., BTC, ETH) seit 2007.
-DATA_K16_K17: Cu/Au Ratio, Credit Impulse, GLI_Accel, Howell Phase + Votes — Liquidity-Indikatoren.
-DATA_Liquidity: Fed, ECB, BOJ, China M2, Global Liq Proxy + MAs + Trend.
-CYCLES_Howell: Howell Phase History, Momentum, Acceleration, Cycle Position, Months_Since/To_Trough.
-CALC_Confluence: Asset-Level Regime Alignment, Confluence Scores, Signals, Multiplikatoren.
-CALC_CTM: Cross-Timeframe Momentum pro Asset (3M, 6M, 12M Returns vs SPY).
-CALC_OEWS: Optimistic/Extreme Warning Score pro Asset (Momentum, 52W Position, Volatility).
-CALC_Changelog: Aenderungslog (Timestamp, Asset, alte/neue Gewichte, Deltas).
-EXECUTION_LOG: Run-Log (Timestamp, Status, State, Trades, Runtime).
-SYSTEM_HEALTH: System-Status Dashboard.
-PARAMS_*: 7 Parameter-Tabs (HOWELL, STATE_ALIGN, KR1, CTM, CV_CUTOFF, SYSTEM, RV_PAIRS) — Kalibrierungsdaten.
+=== V16 Sheet (21 Tabs, Daten bis 2007) ===
+CALC_Macro_State: DEFAULT fuer historische Fragen. TAUSENDE Zeilen. Date + Growth_Signal + Liq_Direction + Stress_Score + Macro_State_Num + Macro_State_Name + Howell_Phase + VIX.
+CALC_Changelog: Gewichts-Aenderungen (Timestamp, Asset, FM_Alt, FM_Neu, FM_Delta).
+DATA_Prices: Taegliche Preise aller 25 Assets seit 2007.
+SIGNAL_HISTORY: VERBOTEN fuer historische Fragen — nur 11 Zeilen. Fuer Gewichts-Aenderungen IMMER CALC_Changelog nutzen. Fuer State-History IMMER CALC_Macro_State nutzen.
+DATA_K16_K17 / DATA_Liquidity / CYCLES_Howell: Liquidity-Indikatoren + Howell Phasen.
+CALC_Confluence / CALC_CTM / CALC_OEWS: Asset-Level Scores.
+EXECUTION_LOG / SYSTEM_HEALTH: Run-Logs.
+PARAMS_*: 7 Kalibrierungs-Tabs.
 
-=== DW Sheet (15 Tabs) — Data Warehouse ===
-DASHBOARD: System Status Uebersicht.
-RAW_MARKET: L2+L4+L5+L7 Rohdaten (Markt).
-RAW_MACRO: L6+L8+G7 Rohdaten (Makro).
-RAW_AGENT2: 30 Fields fuer Market Analyst (taeglich).
-RAW_AGENT2_HISTORY: Taegliche History der 30 Agent2 Fields.
-INTELLIGENCE: IC Pipeline Summaries (L3).
-SCORES: Layer Scores — 7 Layers x 13 Dimensionen.
-DIVERGENCE: Cross-Layer Divergenzen + Katalysatoren.
-AGENT_SUMMARY: Aktuelle Agent-Ergebnisse (taeglich).
-BELIEFS: 15 Beliefs mit Wahrscheinlichkeiten.
-ALERT_LOG: Alle System-Alerts (append-only).
-AGENT_R_LOG: Agent R On-Demand Anfragen Log.
-CONFIG: System-Konfiguration + F6 Signal Parameters.
-RISK_ALLERTS: Risk Officer Alerts.
-RISK_HISTORY: Risk Officer History.
+=== DW Sheet (15 Tabs) ===
+DASHBOARD, RAW_MARKET, RAW_MACRO, RAW_AGENT2, RAW_AGENT2_HISTORY, INTELLIGENCE, SCORES, DIVERGENCE, AGENT_SUMMARY, BELIEFS, ALERT_LOG, AGENT_R_LOG, CONFIG, RISK_ALLERTS, RISK_HISTORY.
 
-=== G7 Sheet (19 Tabs) — World Order Monitor ===
-DASHBOARD: G7 Gesamt-Uebersicht.
-POWER_SCORES: Power Score Matrix (7 Regionen x 12 Dimensionen).
-STRUCTURAL: Strukturelle Daten (langsam-aendernd).
-FINANCIAL: Finanz-Daten (Reserven, Schulden, Handel).
-LEADING: Fuehrende/dynamische Indikatoren.
-FEEDBACK_LOOPS: Feedback Loop Analyse.
-SCENARIOS: Szenario Engine (4 Szenarien A-D).
-UNIVERSE_MAP: V16 Universe Mapping auf G7 Dimensionen.
-HISTORY: Quartalweise History.
-SOURCES: Datenquellen.
-SCORING: Scoring Engine.
-G7_STATUS: Aktueller G7 Status.
-G7_THESIS: Aktuelle Thesis.
-G7_NARRATIVE: Aktuelles Narrativ.
-G7_THESIS_HISTORY: Thesis History (date, type, dominant_thesis, confidence, probabilities).
-G7_POWER_SCORE_HISTORY: Power Score History (date, usa_china_gap, alle Scores + Momentum).
-G7_RUN_LOG: Run Log (run_id, status, duration, errors).
-G7_DATA_CACHE: Gecachte Daten.
-G7_OPERATOR_OVERRIDES: Operator Overrides (key/value).
+=== G7 Sheet (19 Tabs) ===
+DASHBOARD, POWER_SCORES, STRUCTURAL, FINANCIAL, LEADING, FEEDBACK_LOOPS, SCENARIOS, UNIVERSE_MAP, HISTORY, SOURCES, SCORING, G7_STATUS, G7_THESIS, G7_NARRATIVE, G7_THESIS_HISTORY, G7_POWER_SCORE_HISTORY, G7_RUN_LOG, G7_DATA_CACHE, G7_OPERATOR_OVERRIDES.
 
-=== F6 Sheet (8 Tabs) — StockPicker ===
-DASHBOARD: F6 Gesamt-Uebersicht.
-POSITIONS: Aktive und kuerzliche Positionen.
-SIGNALS: F6 Sector Rarity Signals.
-OPTIONS: Options Overlay Daten.
-V16_WEIGHTS: V16 Asset Weights (Referenz).
-PERFORMANCE: Performance Tracking.
-CONFIG: F6 System-Konfiguration.
-CBOE_SIGNALS: CBOE Signal Feed.`,
+=== F6 Sheet (8 Tabs) ===
+DASHBOARD, POSITIONS, SIGNALS, OPTIONS, V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS.
+
+Tab-Namen sind CASE-SENSITIVE.`,
     input_schema: {
       type: 'object',
       properties: {
         sheet: {
           type: 'string',
           enum: ['V16', 'DW', 'G7', 'F6'],
-          description: 'Welches Sheet lesen. V16=Signal/Macro/Price History bis 2007, DW=Data Warehouse/Layers/Alerts, G7=World Order Monitor, F6=StockPicker',
+          description: 'V16=Macro/Price History bis 2007, DW=Data Warehouse/Layers/Alerts, G7=World Order Monitor, F6=StockPicker',
         },
         range: {
           type: 'string',
-          description: "Tab und Zellbereich im A1-Format. DIREKT den vollen Range abfragen, NICHT erst klein testen. Beispiele: 'CALC_Macro_State!A:O' (alle Macro States), 'SIGNAL_HISTORY!A:Z', 'DATA_Prices!A:Z', 'SCORES!A:M', 'G7_POWER_SCORE_HISTORY!A:P'. Tab-Namen sind CASE-SENSITIVE — exakt wie in der Tool-Description schreiben.",
+          description: "Tab und Zellbereich im A1-Format. Beispiele: 'signal_history!A:Z' (alle Spalten), 'signal_history!A1:Z50' (letzte 50 Zeilen), 'DASHBOARD!A:F', 'SCORES!A:M'. Tipp: Erst mit kleinem Range testen um die Spalten zu sehen, dann gezielt abfragen.",
         },
         max_rows: {
           type: 'integer',
-          description: 'Maximale Anzahl Zeilen (default: 100). Fuer lange Zeitreihen (Prices, Macro_State) auf 200-500 erhoehen. Fuer Token-Effizienz auf 20-50 reduzieren wenn nur aktuelle Daten noetig.',
+          description: 'Maximale Anzahl Zeilen die zurueckgegeben werden (default: 100). Nutze kleinere Werte fuer grosse Sheets um Token zu sparen.',
         },
       },
       required: ['sheet', 'range'],

@@ -51,7 +51,7 @@ V16 Sheet (21 Tabs) \u2014 Historische Daten bis 2007:
 - CALC_Macro_State: DEFAULT-TAB fuer ALLE historischen Fragen. TAUSENDE Zeilen bis 2007. Spalten: Date, Growth_Signal, Liq_Direction, Stress_Score, Macro_State_Num, Macro_State_Name, Howell_Phase, VIX. Nutze DIESEN Tab fuer "Wann hat V16 den State/Regime gewechselt?", "Wann ist V16 aus X raus?", "Was war der State an Datum Y?".
 - CALC_Changelog: Gewichts-Aenderungslog. Spalten: Timestamp, Script, State, Asset, FM_Alt, FM_Neu, FM_Delta. Nutze fuer "Wann hat sich das Gewicht von X geaendert?", "Zeig mir die letzten Trades".
 - DATA_Prices: Taegliche Preise aller 25 Assets seit 2007. BESTE QUELLE fuer Kurs-History.
-- SIGNAL_HISTORY: NUR aktuelle Gewichte (~11 Zeilen). NICHT fuer historische Fragen verwenden.
+- SIGNAL_HISTORY: VERBOTEN fuer historische Fragen — nur 11 Zeilen! Fuer Gewichts-Aenderungen IMMER CALC_Changelog!A:K nutzen. Fuer State-History IMMER CALC_Macro_State!A:O nutzen.
 - DATA_K16_K17: Liquidity-Indikatoren (Cu/Au, Credit Impulse, GLI, Howell Votes).
 - DATA_Liquidity: Fed, ECB, BOJ, China M2, Global Liquidity Proxy.
 - CYCLES_Howell: Howell Phase History + Cycle Position.
@@ -77,9 +77,9 @@ F6 Sheet (8 Tabs) \u2014 StockPicker:
 - V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS
 
 ROUTING — BEFOLGE EXAKT:
-- Historische State/Regime/Rotations-Fragen \u2192 V16 Sheet, CALC_Macro_State!A:O, max_rows=500
-- Historische Gewichts-Aenderungen \u2192 V16 Sheet, CALC_Changelog!A:K, max_rows=200
-- Preis-History \u2192 V16 Sheet, DATA_Prices!A:Z, max_rows=500
+- Historische State/Regime/Rotations-Fragen \u2192 V16 Sheet, CALC_Macro_State!A:O, max_rows=60 (reicht fuer 3 Monate, erhoehe nur wenn noetig)
+- Historische Gewichts-Aenderungen \u2192 V16 Sheet, CALC_Changelog!A:K, max_rows=50
+- Preis-History \u2192 V16 Sheet, DATA_Prices!A:Z, max_rows=60
 - Aktuelle Gewichte \u2192 V16 Sheet, SIGNAL_HISTORY!A:Z (nur hier, nur aktuell)
 - Howell Cycle \u2192 V16 Sheet, CYCLES_Howell!A:O, max_rows=100
 - G7 Power Scores \u2192 G7 Sheet, POWER_SCORES!A:Z oder G7_POWER_SCORE_HISTORY!A:P
