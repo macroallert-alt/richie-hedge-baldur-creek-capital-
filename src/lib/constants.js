@@ -194,13 +194,93 @@ export const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 export const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const CRITICAL_STALE_THRESHOLD_MS = 48 * 60 * 60 * 1000; // 48 hours
 
-// ===== CIRCLE DEFINITIONS (Spec §5.1) =====
+// ===== CLUSTER MAPPING (Rotation Circle Spec §2.1) =====
+export const CLUSTER_MAP = {
+  PM:       { name: 'Precious Metals',         assets: ['GLD','SLV','GDX','GDXJ','SIL'] },
+  EQ_CYCL:  { name: 'Cyclical Equities',       assets: ['SPY','XLY','XLI','XLF','XLE','IWM'] },
+  EQ_DEFN:  { name: 'Defensive Equities',      assets: ['XLV','XLP','XLU','VNQ'] },
+  EQ_GROW:  { name: 'Growth Equities',          assets: ['XLK'] },
+  EQ_INTL:  { name: 'International Equities',   assets: ['EEM','VGK'] },
+  BOND:     { name: 'Government & IG Bonds',    assets: ['TLT','TIP','LQD'] },
+  CREDIT:   { name: 'High Yield Credit',        assets: ['HYG'] },
+  COMMOD:   { name: 'Commodities',              assets: ['DBC'] },
+  CRYPTO:   { name: 'Crypto',                   assets: ['BTC','ETH'] },
+};
+
+// Reverse lookup: Ticker → Cluster Key
+export const ASSET_TO_CLUSTER = Object.fromEntries(
+  Object.entries(CLUSTER_MAP).flatMap(([key, { assets }]) =>
+    assets.map(a => [a, key])
+  )
+);
+
+// Cluster → Display Color (fuer Balken, Charts, Badges)
+export const CLUSTER_COLORS = {
+  PM:       '#FFD700',  // Gold
+  EQ_CYCL:  '#3B82F6',  // Blue
+  EQ_DEFN:  '#8B9DC3',  // Muted Blue
+  EQ_GROW:  '#06B6D4',  // Cyan
+  EQ_INTL:  '#A855F7',  // Purple
+  BOND:     '#6B7280',  // Gray
+  CREDIT:   '#F97316',  // Orange
+  COMMOD:   '#84CC16',  // Lime
+  CRYPTO:   '#EC4899',  // Pink
+};
+
+// Helper: Ticker → Display String "HYG — High Yield Credit"
+export function getAssetLabel(ticker) {
+  const cluster = ASSET_TO_CLUSTER[ticker];
+  if (!cluster) return ticker;
+  return `${ticker} — ${CLUSTER_MAP[cluster].name}`;
+}
+
+// Helper: Ticker → Kompakt-Label "HYG (Credit)"
+export function getAssetLabelShort(ticker) {
+  const cluster = ASSET_TO_CLUSTER[ticker];
+  if (!cluster) return ticker;
+  const shortName = CLUSTER_MAP[cluster].name.split(' ').pop();
+  return `${ticker} (${shortName})`;
+}
+
+// ===== ROTATION STATUS COLORS (Rotation Circle Spec §4.3) =====
+export const ROTATION_STATUS_COLORS = {
+  ALIGNED:      COLORS.signalGreen,
+  SHIFTING:     COLORS.signalYellow,
+  BIG_ROTATION: COLORS.signalRed,
+};
+
+// ===== MATERIALITY THRESHOLDS (Rotation Circle Spec §4.5) =====
+export const MATERIALITY_THRESHOLDS = {
+  GREEN:  0.02,  // < 2pp
+  YELLOW: 0.05,  // 2-5pp
+  ORANGE: 0.10,  // 5-10pp
+  RED:    0.10,  // > 10pp
+};
+
+export function getMaterialityColor(deltaPp) {
+  const abs = Math.abs(deltaPp);
+  if (abs < 0.02) return COLORS.signalGreen;
+  if (abs < 0.05) return COLORS.signalYellow;
+  if (abs < 0.10) return COLORS.signalOrange;
+  return COLORS.signalRed;
+}
+
+export function getMaterialityLabel(deltaPp) {
+  const abs = Math.abs(deltaPp);
+  if (abs < 0.02) return 'GREEN';
+  if (abs < 0.05) return 'YELLOW';
+  if (abs < 0.10) return 'ORANGE';
+  return 'RED';
+}
+
+// ===== CIRCLE DEFINITIONS (Spec §5.1, Rotation Circle Spec §2.6) =====
 export const CIRCLES = [
   { id: 'dashboard', name: 'Home', icon: 'LayoutDashboard', route: '/dashboard' },
   { id: 'cio', name: 'CIO', icon: 'FileText', route: '/cio' },
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
   { id: 'signals', name: 'Signals', icon: 'Radio', route: '/signals' },
   { id: 'trading-desk', name: 'Trading', icon: 'Briefcase', route: '/trading-desk' },
+  { id: 'rotation', name: 'Rotation', icon: 'RefreshCw', route: '/rotation' },
   { id: 'layers', name: 'Layers', icon: 'BarChart3', route: '/layers' },
   { id: 'portfolio', name: 'Portfolio', icon: 'PieChart', route: '/portfolio' },
   { id: 'f6', name: 'F6', icon: 'Target', route: '/f6' },
