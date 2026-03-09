@@ -156,70 +156,56 @@ function getHoldingValueFrom(holdings, inputMode, ticker) {
 }
 
 function MyPortfolioCard({ weights }) {
-  // Saved = was in localStorage steht (uebernommen)
-  const [savedAum, setSavedAum] = useState(() => loadSaved('bcc_rebalancer_aum', ''));
-  const [savedInputMode, setSavedInputMode] = useState(() => loadSaved('bcc_rebalancer_inputmode', 'eur'));
-  const [savedHoldings, setSavedHoldings] = useState(() => loadSaved('bcc_rebalancer_holdings', {}));
+  const [aum, setAum] = useState(() => loadSaved('bcc_rebalancer_aum', ''));
+  const [inputMode, setInputMode] = useState(() => loadSaved('bcc_rebalancer_inputmode', 'eur'));
+  const [holdings, setHoldings] = useState(() => loadSaved('bcc_rebalancer_holdings', {}));
 
-  // Draft = was der User gerade eingibt
-  const [draftAum, setDraftAum] = useState(savedAum);
-  const [draftInputMode, setDraftInputMode] = useState(savedInputMode);
-  const [draftHoldings, setDraftHoldings] = useState(savedHoldings);
-  const [isDirty, setIsDirty] = useState(false);
-
-  const draftAumNum = parseFloat(draftAum) || 0;
-  const savedAumNum = parseFloat(savedAum) || 0;
+  const aumNum = parseFloat(aum) || 0;
 
   const activeAssets = Object.entries(weights)
     .filter(([, w]) => w > 0)
     .sort((a, b) => b[1] - a[1]);
 
-  // Draft updaters
-  const updateDraftAum = (val) => { setDraftAum(val); setIsDirty(true); };
-  const updateDraftInputMode = (val) => { setDraftInputMode(val); setIsDirty(true); };
-  const updateDraftHolding = (ticker, field, val) => {
-    setDraftHoldings(prev => ({ ...prev, [ticker]: { ...(prev[ticker] || {}), [field]: val } }));
-    setIsDirty(true);
-  };
-
-  // Uebernehmen
-  const handleSubmit = () => {
-    savePersistent('bcc_rebalancer_aum', draftAum);
-    savePersistent('bcc_rebalancer_inputmode', draftInputMode);
-    savePersistent('bcc_rebalancer_holdings', draftHoldings);
-    // Also set mode to rebalance so Rotation Circle picks it up
+  // Sofort speichern bei jeder Aenderung
+  const updateAum = (val) => {
+    setAum(val);
+    savePersistent('bcc_rebalancer_aum', val);
     savePersistent('bcc_rebalancer_mode', 'rebalance');
-    setSavedAum(draftAum);
-    setSavedInputMode(draftInputMode);
-    setSavedHoldings(draftHoldings);
-    setIsDirty(false);
+  };
+  const updateInputMode = (val) => {
+    setInputMode(val);
+    savePersistent('bcc_rebalancer_inputmode', val);
+  };
+  const updateHolding = (ticker, field, val) => {
+    setHoldings(prev => {
+      const next = { ...prev, [ticker]: { ...(prev[ticker] || {}), [field]: val } };
+      savePersistent('bcc_rebalancer_holdings', next);
+      return next;
+    });
   };
 
   const resetAll = () => {
-    setDraftAum(''); setDraftHoldings({}); setDraftInputMode('eur');
-    setSavedAum(''); setSavedHoldings({}); setSavedInputMode('eur');
+    setAum(''); setHoldings({}); setInputMode('eur');
     savePersistent('bcc_rebalancer_aum', '');
     savePersistent('bcc_rebalancer_holdings', {});
     savePersistent('bcc_rebalancer_inputmode', 'eur');
-    setIsDirty(false);
   };
 
-  // Display values from saved data
-  const getDisplayHoldingValue = (ticker) => getHoldingValueFrom(savedHoldings, savedInputMode, ticker);
-  const totalDisplayHoldings = activeAssets.reduce((sum, [t]) => sum + getDisplayHoldingValue(t), 0);
-  const hasAnySavedHoldings = activeAssets.some(([t]) => getDisplayHoldingValue(t) > 0);
+  const getHoldVal = (ticker) => getHoldingValueFrom(holdings, inputMode, ticker);
+  const totalHoldings = activeAssets.reduce((sum, [t]) => sum + getHoldVal(t), 0);
+  const hasAnyHoldings = activeAssets.some(([t]) => getHoldVal(t) > 0);
 
-  const materialThreshold = savedAumNum * 0.005;
+  const materialThreshold = aumNum * 0.005;
 
   const fmtEur = (val) => val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
-  // Cluster-Aggregation
+  // Cluster-Aggregation — Ist% gegen AUM
   const clusterIst = {};
   const clusterZiel = {};
   activeAssets.forEach(([ticker, w]) => {
     const ck = ASSET_TO_CLUSTER[ticker] || 'OTHER';
-    clusterIst[ck] = (clusterIst[ck] || 0) + getDisplayHoldingValue(ticker);
-    if (savedAumNum > 0) clusterZiel[ck] = (clusterZiel[ck] || 0) + w * savedAumNum;
+    clusterIst[ck] = (clusterIst[ck] || 0) + getHoldVal(ticker);
+    if (aumNum > 0) clusterZiel[ck] = (clusterZiel[ck] || 0) + w * aumNum;
   });
 
   return (
@@ -233,8 +219,8 @@ function MyPortfolioCard({ weights }) {
           <input
             type="number"
             placeholder="z.B. 100000"
-            value={draftAum}
-            onChange={(e) => updateDraftAum(e.target.value)}
+            value={aum}
+            onChange={(e) => updateAum(e.target.value)}
             className="flex-1 rounded px-3 py-2 text-sm outline-none"
             style={{
               backgroundColor: `${COLORS.fadedBlue}20`,
@@ -246,28 +232,28 @@ function MyPortfolioCard({ weights }) {
         </div>
       </div>
 
-      {draftAumNum > 0 && (
+      {aumNum > 0 && (
         <>
           {/* Input-Mode Toggle */}
           <div className="flex items-center justify-between mb-3">
             <label className="text-caption text-muted-blue">Bestände eingeben als:</label>
             <div className="flex rounded overflow-hidden" style={{ border: `1px solid ${COLORS.fadedBlue}40` }}>
               <button
-                onClick={() => updateDraftInputMode('eur')}
+                onClick={() => updateInputMode('eur')}
                 className="py-1 px-3 text-caption transition-colors"
                 style={{
-                  backgroundColor: draftInputMode === 'eur' ? COLORS.baldurBlue : 'transparent',
-                  color: draftInputMode === 'eur' ? '#fff' : COLORS.mutedBlue,
+                  backgroundColor: inputMode === 'eur' ? COLORS.baldurBlue : 'transparent',
+                  color: inputMode === 'eur' ? '#fff' : COLORS.mutedBlue,
                 }}
               >
                 € Beträge
               </button>
               <button
-                onClick={() => updateDraftInputMode('units')}
+                onClick={() => updateInputMode('units')}
                 className="py-1 px-3 text-caption transition-colors"
                 style={{
-                  backgroundColor: draftInputMode === 'units' ? COLORS.baldurBlue : 'transparent',
-                  color: draftInputMode === 'units' ? '#fff' : COLORS.mutedBlue,
+                  backgroundColor: inputMode === 'units' ? COLORS.baldurBlue : 'transparent',
+                  color: inputMode === 'units' ? '#fff' : COLORS.mutedBlue,
                 }}
               >
                 Stück × Kurs
@@ -278,7 +264,7 @@ function MyPortfolioCard({ weights }) {
           {/* Asset-Eingabefelder */}
           <div className="space-y-1.5 mb-3">
             {activeAssets.map(([ticker, w]) => {
-              const h = draftHoldings[ticker] || {};
+              const h = holdings[ticker] || {};
               const zielPct = w * 100;
 
               return (
@@ -289,13 +275,13 @@ function MyPortfolioCard({ weights }) {
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {draftInputMode === 'eur' ? (
+                    {inputMode === 'eur' ? (
                       <>
                         <input
                           type="number"
                           placeholder="0"
                           value={h.eur || ''}
-                          onChange={(e) => updateDraftHolding(ticker, 'eur', e.target.value)}
+                          onChange={(e) => updateHolding(ticker, 'eur', e.target.value)}
                           className="flex-1 rounded px-2 py-1 text-caption outline-none"
                           style={{
                             backgroundColor: `${COLORS.fadedBlue}20`,
@@ -308,13 +294,13 @@ function MyPortfolioCard({ weights }) {
                     ) : (
                       <>
                         <input type="number" placeholder="Stk" value={h.units || ''}
-                          onChange={(e) => updateDraftHolding(ticker, 'units', e.target.value)}
+                          onChange={(e) => updateHolding(ticker, 'units', e.target.value)}
                           className="w-20 rounded px-2 py-1 text-caption outline-none"
                           style={{ backgroundColor: `${COLORS.fadedBlue}20`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}30` }}
                         />
                         <span className="text-caption text-muted-blue">×</span>
                         <input type="number" step="0.01" placeholder="Kurs" value={h.price || ''}
-                          onChange={(e) => updateDraftHolding(ticker, 'price', e.target.value)}
+                          onChange={(e) => updateHolding(ticker, 'price', e.target.value)}
                           className="w-20 rounded px-2 py-1 text-caption outline-none"
                           style={{ backgroundColor: `${COLORS.fadedBlue}20`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}30` }}
                         />
@@ -327,40 +313,30 @@ function MyPortfolioCard({ weights }) {
             })}
           </div>
 
-          {/* Uebernehmen + Reset */}
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={handleSubmit}
-              className="flex-1 py-2 rounded text-caption font-bold transition-colors"
-              style={{
-                backgroundColor: isDirty ? COLORS.baldurBlue : `${COLORS.fadedBlue}30`,
-                color: isDirty ? '#fff' : COLORS.fadedBlue,
-              }}
-            >
-              {isDirty ? '✓ Übernehmen' : 'Gespeichert'}
-            </button>
+          {/* Reset */}
+          <div className="flex justify-end mb-3">
             <button
               onClick={resetAll}
-              className="text-caption px-3 py-2 rounded transition-colors"
+              className="text-caption px-3 py-1 rounded transition-colors"
               style={{ color: COLORS.fadedBlue, border: `1px solid ${COLORS.fadedBlue}30` }}
             >
-              Reset
+              Zurücksetzen
             </button>
           </div>
         </>
       )}
 
-      {/* Ergebnis-Anzeige — basiert auf SAVED Daten */}
-      {savedAumNum > 0 && hasAnySavedHoldings && (
+      {/* Ergebnis-Anzeige — live aus State */}
+      {aumNum > 0 && hasAnyHoldings && (
         <div className="rounded p-3 space-y-3" style={{ backgroundColor: `${COLORS.fadedBlue}10`, border: `1px solid ${COLORS.fadedBlue}20` }}>
 
           {/* Pro Asset: Ist vs Ziel */}
           <div className="space-y-1">
             {activeAssets.map(([ticker, w]) => {
-              const holdVal = getDisplayHoldingValue(ticker);
-              const targetVal = w * savedAumNum;
+              const holdVal = getHoldVal(ticker);
+              const targetVal = w * aumNum;
               const delta = targetVal - holdVal;
-              const istPct = (holdVal / savedAumNum * 100);
+              const istPct = (holdVal / aumNum * 100);
               const zielPct = w * 100;
               const isMatch = Math.abs(delta) <= materialThreshold;
 
@@ -391,24 +367,24 @@ function MyPortfolioCard({ weights }) {
           <div className="grid grid-cols-3 gap-2 text-center" style={{ borderTop: `1px solid ${COLORS.fadedBlue}20`, paddingTop: '8px' }}>
             <div>
               <span className="text-caption text-muted-blue block">Ist</span>
-              <span className="text-data-small tabular-nums text-ice-white">{fmtEur(totalDisplayHoldings)}</span>
+              <span className="text-data-small tabular-nums text-ice-white">{fmtEur(totalHoldings)}</span>
             </div>
             <div>
               <span className="text-caption text-muted-blue block">Ziel</span>
-              <span className="text-data-small tabular-nums text-ice-white">{fmtEur(savedAumNum)}</span>
+              <span className="text-data-small tabular-nums text-ice-white">{fmtEur(aumNum)}</span>
             </div>
             <div>
               <span className="text-caption text-muted-blue block">Diff</span>
               <span className="text-data-small tabular-nums" style={{
-                color: savedAumNum - totalDisplayHoldings > 0 ? COLORS.signalGreen : savedAumNum - totalDisplayHoldings < 0 ? COLORS.signalRed : COLORS.fadedBlue
+                color: aumNum - totalHoldings > 0 ? COLORS.signalGreen : aumNum - totalHoldings < 0 ? COLORS.signalRed : COLORS.fadedBlue
               }}>
-                {savedAumNum - totalDisplayHoldings >= 0 ? '+' : ''}{fmtEur(savedAumNum - totalDisplayHoldings)}
+                {aumNum - totalHoldings >= 0 ? '+' : ''}{fmtEur(aumNum - totalHoldings)}
               </span>
             </div>
           </div>
 
-          {/* Cluster-Balken: IST */}
-          {totalDisplayHoldings > 0 && (
+          {/* Cluster-Balken: IST — gegen AUM */}
+          {totalHoldings > 0 && (
             <div>
               <p className="text-caption text-muted-blue mb-1">IST (Cluster)</p>
               <div className="flex h-5 rounded overflow-hidden">
@@ -416,7 +392,7 @@ function MyPortfolioCard({ weights }) {
                   .filter(([, v]) => v > 0)
                   .sort((a, b) => b[1] - a[1])
                   .map(([ck, val]) => {
-                    const pct = (val / savedAumNum) * 100;
+                    const pct = (val / aumNum) * 100;
                     return (
                       <div key={ck}
                         className="flex items-center justify-center text-caption font-medium overflow-hidden"
@@ -440,7 +416,7 @@ function MyPortfolioCard({ weights }) {
                   .map(([ck, val]) => (
                     <span key={ck} className="flex items-center gap-1 text-caption text-muted-blue">
                       <span className="inline-block w-2 h-2 rounded-sm" style={{ backgroundColor: CLUSTER_COLORS[ck] }} />
-                      {CLUSTER_MAP[ck]?.name?.split(' ').pop() || ck} {(val / savedAumNum * 100).toFixed(1)}%
+                      {CLUSTER_MAP[ck]?.name?.split(' ').pop() || ck} {(val / aumNum * 100).toFixed(1)}%
                     </span>
                   ))}
               </div>
@@ -455,7 +431,7 @@ function MyPortfolioCard({ weights }) {
                 .filter(([, v]) => v > 0)
                 .sort((a, b) => b[1] - a[1])
                 .map(([ck, val]) => {
-                  const pct = (val / savedAumNum) * 100;
+                  const pct = (val / aumNum) * 100;
                   return (
                     <div key={ck}
                       className="flex items-center justify-center text-caption font-medium overflow-hidden"
