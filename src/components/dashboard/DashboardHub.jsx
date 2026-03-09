@@ -10,7 +10,6 @@ import RotationCard from '@/components/dashboard/RotationCard';
 import LayerScoresCard from '@/components/dashboard/LayerScoresCard';
 import IntelCard from '@/components/dashboard/IntelCard';
 import G7Card from '@/components/dashboard/G7Card';
-import DisruptionsCard from '@/components/dashboard/DisruptionsCard';
 
 export default function DashboardHub({ dashboard, onNavigate }) {
   if (!dashboard) return null;
@@ -26,9 +25,8 @@ export default function DashboardHub({ dashboard, onNavigate }) {
       <RotationCard dashboard={dashboard} onNavigate={onNavigate} />
       <LayerScoresCard dashboard={dashboard} onNavigate={onNavigate} />
       <IntelCard dashboard={dashboard} onNavigate={onNavigate} />
-      <G7Card dashboard={dashboard} onNavigate={onNavigate} />
       <div className="lg:col-span-2">
-        <DisruptionsCard dashboard={dashboard} onNavigate={onNavigate} />
+        <G7Card dashboard={dashboard} onNavigate={onNavigate} />
       </div>
     </div>
   );
