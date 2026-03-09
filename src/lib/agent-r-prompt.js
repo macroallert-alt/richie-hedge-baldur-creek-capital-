@@ -77,9 +77,9 @@ F6 Sheet (8 Tabs) \u2014 StockPicker:
 - V16_WEIGHTS, PERFORMANCE, CONFIG, CBOE_SIGNALS
 
 ROUTING — BEFOLGE EXAKT:
-- Historische State/Regime/Rotations-Fragen \u2192 V16 Sheet, CALC_Macro_State!A:O, max_rows=500
-- Historische Gewichts-Aenderungen \u2192 V16 Sheet, CALC_Changelog!A:K, max_rows=200
-- Preis-History \u2192 V16 Sheet, DATA_Prices!A:Z, max_rows=500
+- Historische State/Regime/Rotations-Fragen \u2192 V16 Sheet, CALC_Macro_State!A:O, max_rows=60 (reicht fuer 3 Monate, erhoehe nur wenn noetig)
+- Historische Gewichts-Aenderungen \u2192 V16 Sheet, CALC_Changelog!A:K, max_rows=50
+- Preis-History \u2192 V16 Sheet, DATA_Prices!A:Z, max_rows=60
 - Aktuelle Gewichte \u2192 V16 Sheet, SIGNAL_HISTORY!A:Z (nur hier, nur aktuell)
 - Howell Cycle \u2192 V16 Sheet, CYCLES_Howell!A:O, max_rows=100
 - G7 Power Scores \u2192 G7 Sheet, POWER_SCORES!A:Z oder G7_POWER_SCORE_HISTORY!A:P
