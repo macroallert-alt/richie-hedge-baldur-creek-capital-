@@ -26,6 +26,7 @@ export default function RotationCard({ dashboard, onNavigate }) {
 
   // Badge config
   const badgeConfig = getBadgeConfig(status, mode, materialCount);
+  const BadgeIcon = badgeConfig.icon;
 
   // Delta display
   let deltaText = '—';
@@ -58,7 +59,7 @@ export default function RotationCard({ dashboard, onNavigate }) {
 
       {/* Status Badge */}
       <div className="flex items-center justify-center gap-2 mb-3">
-        <badgeConfig.icon size={20} style={{ color: badgeConfig.color }}
+        <BadgeIcon size={20} style={{ color: badgeConfig.color }}
           className={badgeConfig.pulse ? 'animate-pulse' : ''} />
         <span className="text-lg font-bold" style={{ color: badgeConfig.color }}>
           {badgeConfig.text}
