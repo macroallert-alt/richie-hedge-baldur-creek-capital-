@@ -274,6 +274,46 @@ export function getMaterialityLabel(deltaPp) {
   return 'RED';
 }
 
+// ===== DISRUPTION PHASE → COLOR (Disruptions Spec §17.5) =====
+export const DISRUPTION_PHASE_COLORS = {
+  EMERGING:      COLORS.mutedBlue,
+  ACCELERATING:  COLORS.signalYellow,
+  MATURING:      COLORS.signalOrange,
+  MAINSTREAM:    COLORS.signalGreen,
+  DEAD_ZONE:     COLORS.fadedBlue,
+};
+
+// ===== DISRUPTION WATCHLIST STATUS → COLOR (Disruptions Spec §17.6) =====
+export const DISRUPTION_STATUS_COLORS = {
+  ACTIVE:    COLORS.signalGreen,
+  WATCH:     COLORS.signalYellow,
+  PARKED:    COLORS.fadedBlue,
+  ARCHIVED:  COLORS.mutedBlue,
+};
+
+// ===== DISRUPTION READINESS SCORE → COLOR (Disruptions Spec §17.4) =====
+export function getReadinessColor(score) {
+  if (score > 80) return COLORS.signalGreen;
+  if (score >= 50) return COLORS.signalYellow;
+  return COLORS.signalRed;
+}
+
+// ===== DISRUPTION THREAT LEVEL → COLOR =====
+export const DISRUPTION_THREAT_COLORS = {
+  NONE:     COLORS.mutedBlue,
+  LOW:      COLORS.signalGreen,
+  MEDIUM:   COLORS.signalYellow,
+  HIGH:     COLORS.signalOrange,
+  CRITICAL: COLORS.signalRed,
+};
+
+// ===== DISRUPTION CONTRARIAN ALERT LEVEL → COLOR =====
+export const DISRUPTION_ALERT_COLORS = {
+  STRONG:   COLORS.signalGreen,
+  MODERATE: COLORS.signalYellow,
+  WEAK:     COLORS.mutedBlue,
+};
+
 // ===== CIRCLE DEFINITIONS (Spec §5.1, Rotation Circle Spec §2.6) =====
 export const CIRCLES = [
   { id: 'dashboard', name: 'Home', icon: 'LayoutDashboard', route: '/dashboard' },
@@ -287,4 +327,5 @@ export const CIRCLES = [
   { id: 'f6', name: 'F6', icon: 'Target', route: '/f6' },
   { id: 'intel', name: 'Intel', icon: 'Search', route: '/intel' },
   { id: 'g7', name: 'G7', icon: 'Globe', route: '/g7' },
+  { id: 'disruptions', name: 'Disruptions', icon: 'Zap', route: '/disruptions' },
 ];
