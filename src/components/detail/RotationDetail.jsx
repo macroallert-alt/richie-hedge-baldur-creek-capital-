@@ -561,63 +561,81 @@ function savePersistent(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* noop */ }
 }
 
+function getHoldingValueFrom(holdings, inputMode, ticker) {
+  const h = holdings[ticker] || {};
+  if (inputMode === 'eur') return parseFloat(h.eur) || 0;
+  return (parseFloat(h.units) || 0) * (parseFloat(h.price) || 0);
+}
+
 function AUMCalculator({ rotation }) {
   const [aumExpanded, setAumExpanded] = useState(false);
-  const [aum, setAum] = useState(() => loadSaved('bcc_rebalancer_aum', ''));
-  const [mode, setMode] = useState(() => loadSaved('bcc_rebalancer_mode', 'target'));
-  // 'target' = neues Portfolio (Zielbetraege), 'rebalance' = bestehende Positionen → Deltas
-  const [inputMode, setInputMode] = useState(() => loadSaved('bcc_rebalancer_inputmode', 'eur'));
-  // 'eur' = Euro-Betraege, 'units' = Stueckzahlen + Kurs
-  const [holdings, setHoldings] = useState(() => loadSaved('bcc_rebalancer_holdings', {}));
-  // holdings: { ticker: { eur: '25000' } } oder { ticker: { units: '340', price: '73.50' } }
+
+  // Saved = was in localStorage steht (uebernommen)
+  const [savedAum, setSavedAum] = useState(() => loadSaved('bcc_rebalancer_aum', ''));
+  const [savedMode, setSavedMode] = useState(() => loadSaved('bcc_rebalancer_mode', 'target'));
+  const [savedInputMode, setSavedInputMode] = useState(() => loadSaved('bcc_rebalancer_inputmode', 'eur'));
+  const [savedHoldings, setSavedHoldings] = useState(() => loadSaved('bcc_rebalancer_holdings', {}));
+
+  // Draft = was der User gerade eingibt (noch nicht uebernommen)
+  const [draftAum, setDraftAum] = useState(savedAum);
+  const [draftMode, setDraftMode] = useState(savedMode);
+  const [draftInputMode, setDraftInputMode] = useState(savedInputMode);
+  const [draftHoldings, setDraftHoldings] = useState(savedHoldings);
+  const [isDirty, setIsDirty] = useState(false);
 
   const assetDetails = rotation.asset_details || {};
-  const aumNum = parseFloat(aum) || 0;
+  const draftAumNum = parseFloat(draftAum) || 0;
+  const savedAumNum = parseFloat(savedAum) || 0;
 
   const sortedAssets = Object.entries(assetDetails)
     .filter(([, ad]) => ad.weight > 0)
     .sort((a, b) => b[1].weight - a[1].weight);
 
-  // Persist on change
-  const updateAum = (val) => { setAum(val); savePersistent('bcc_rebalancer_aum', val); };
-  const updateMode = (val) => { setMode(val); savePersistent('bcc_rebalancer_mode', val); };
-  const updateInputMode = (val) => { setInputMode(val); savePersistent('bcc_rebalancer_inputmode', val); };
-  const updateHolding = (ticker, field, val) => {
-    setHoldings(prev => {
-      const next = { ...prev, [ticker]: { ...(prev[ticker] || {}), [field]: val } };
-      savePersistent('bcc_rebalancer_holdings', next);
-      return next;
-    });
+  // Draft updaters — markieren als dirty, speichern NICHT
+  const updateDraftAum = (val) => { setDraftAum(val); setIsDirty(true); };
+  const updateDraftMode = (val) => { setDraftMode(val); setIsDirty(true); };
+  const updateDraftInputMode = (val) => { setDraftInputMode(val); setIsDirty(true); };
+  const updateDraftHolding = (ticker, field, val) => {
+    setDraftHoldings(prev => ({ ...prev, [ticker]: { ...(prev[ticker] || {}), [field]: val } }));
+    setIsDirty(true);
   };
 
-  const resetHoldings = () => {
-    setHoldings({});
+  // Uebernehmen — speichert alles in localStorage
+  const handleSubmit = () => {
+    savePersistent('bcc_rebalancer_aum', draftAum);
+    savePersistent('bcc_rebalancer_mode', draftMode);
+    savePersistent('bcc_rebalancer_inputmode', draftInputMode);
+    savePersistent('bcc_rebalancer_holdings', draftHoldings);
+    setSavedAum(draftAum);
+    setSavedMode(draftMode);
+    setSavedInputMode(draftInputMode);
+    setSavedHoldings(draftHoldings);
+    setIsDirty(false);
+  };
+
+  const resetAll = () => {
+    setDraftAum(''); setDraftHoldings({}); setDraftMode('target'); setDraftInputMode('eur');
+    setSavedAum(''); setSavedHoldings({}); setSavedMode('target'); setSavedInputMode('eur');
+    savePersistent('bcc_rebalancer_aum', '');
     savePersistent('bcc_rebalancer_holdings', {});
+    savePersistent('bcc_rebalancer_mode', 'target');
+    savePersistent('bcc_rebalancer_inputmode', 'eur');
+    setIsDirty(false);
   };
 
-  // Berechne IST-Wert pro Asset
-  const getHoldingValue = (ticker) => {
-    const h = holdings[ticker] || {};
-    if (inputMode === 'eur') {
-      return parseFloat(h.eur) || 0;
-    }
-    // units mode: Stueck × Kurs
-    const units = parseFloat(h.units) || 0;
-    const price = parseFloat(h.price) || 0;
-    return units * price;
-  };
+  // Fuer Anzeige: immer saved Daten verwenden, fuer Eingabe: draft
+  const displayAumNum = savedAumNum;
+  const displayHoldings = savedHoldings;
+  const displayInputMode = savedInputMode;
+  const getDisplayHoldingValue = (ticker) => getHoldingValueFrom(displayHoldings, displayInputMode, ticker);
+  const totalDisplayHoldings = sortedAssets.reduce((sum, [t]) => sum + getDisplayHoldingValue(t), 0);
+  const hasAnySavedHoldings = sortedAssets.some(([t]) => getDisplayHoldingValue(t) > 0);
 
-  // Berechne Gesamt-IST (Summe aller Holdings)
-  const totalHoldings = sortedAssets.reduce((sum, [ticker]) => sum + getHoldingValue(ticker), 0);
-
-  // Effektiver AUM: im Rebalance-Modus = eingegebener AUM (Ziel-Portfoliowert)
-  // Im Target-Modus = eingegebener AUM
+  // Materiality threshold: 0.5% of AUM
+  const materialThreshold = displayAumNum * 0.005;
 
   const fmtEur = (val) => val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   const fmtEurSigned = (val) => `${val >= 0 ? '+' : ''}${fmtEur(val)}`;
-
-  // Pruefen ob Bestaende eingegeben
-  const hasAnyHoldings = sortedAssets.some(([ticker]) => getHoldingValue(ticker) > 0);
 
   return (
     <div className="rounded-lg border" style={{ borderColor: `${COLORS.fadedBlue}30` }}>
@@ -629,9 +647,9 @@ function AUMCalculator({ rotation }) {
         <span className="flex items-center gap-2">
           <Calculator size={14} />
           <span>Portfolio Rebalancer</span>
-          {aumNum > 0 && (
+          {displayAumNum > 0 && (
             <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: `${COLORS.baldurBlue}20`, color: COLORS.baldurBlue }}>
-              {fmtEur(aumNum)}
+              {fmtEur(displayAumNum)}
             </span>
           )}
         </span>
@@ -644,21 +662,21 @@ function AUMCalculator({ rotation }) {
           {/* Modus-Toggle: Target vs Rebalance */}
           <div className="flex rounded overflow-hidden text-xs" style={{ border: `1px solid ${COLORS.fadedBlue}40` }}>
             <button
-              onClick={() => updateMode('target')}
+              onClick={() => updateDraftMode('target')}
               className="flex-1 py-1.5 px-3 transition-colors"
               style={{
-                backgroundColor: mode === 'target' ? COLORS.baldurBlue : 'transparent',
-                color: mode === 'target' ? '#fff' : COLORS.mutedBlue,
+                backgroundColor: draftMode === 'target' ? COLORS.baldurBlue : 'transparent',
+                color: draftMode === 'target' ? '#fff' : COLORS.mutedBlue,
               }}
             >
               Neues Portfolio
             </button>
             <button
-              onClick={() => updateMode('rebalance')}
+              onClick={() => updateDraftMode('rebalance')}
               className="flex-1 py-1.5 px-3 transition-colors"
               style={{
-                backgroundColor: mode === 'rebalance' ? COLORS.baldurBlue : 'transparent',
-                color: mode === 'rebalance' ? '#fff' : COLORS.mutedBlue,
+                backgroundColor: draftMode === 'rebalance' ? COLORS.baldurBlue : 'transparent',
+                color: draftMode === 'rebalance' ? '#fff' : COLORS.mutedBlue,
               }}
             >
               Rebalancing
@@ -668,14 +686,14 @@ function AUMCalculator({ rotation }) {
           {/* AUM Eingabe */}
           <div>
             <label className="text-xs mb-1 block" style={{ color: COLORS.fadedBlue }}>
-              {mode === 'target' ? 'Portfolio-Wert (AUM)' : 'Ziel-Portfoliowert (AUM)'}
+              {draftMode === 'target' ? 'Portfolio-Wert (AUM)' : 'Ziel-Portfoliowert (AUM)'}
             </label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 placeholder="z.B. 100000"
-                value={aum}
-                onChange={(e) => updateAum(e.target.value)}
+                value={draftAum}
+                onChange={(e) => updateDraftAum(e.target.value)}
                 className="flex-1 rounded px-3 py-2 text-sm outline-none"
                 style={{
                   backgroundColor: `${COLORS.fadedBlue}20`,
@@ -688,28 +706,28 @@ function AUMCalculator({ rotation }) {
           </div>
 
           {/* Rebalance-Modus: Eingabe-Toggle + Bestands-Eingabe */}
-          {mode === 'rebalance' && aumNum > 0 && (
+          {draftMode === 'rebalance' && draftAumNum > 0 && (
             <>
-              {/* Input-Mode Toggle: EUR vs Stueckzahlen */}
+              {/* Input-Mode Toggle */}
               <div className="flex items-center justify-between">
                 <label className="text-xs" style={{ color: COLORS.fadedBlue }}>Bestände eingeben als:</label>
                 <div className="flex rounded overflow-hidden text-xs" style={{ border: `1px solid ${COLORS.fadedBlue}40` }}>
                   <button
-                    onClick={() => updateInputMode('eur')}
+                    onClick={() => updateDraftInputMode('eur')}
                     className="py-1 px-3 transition-colors"
                     style={{
-                      backgroundColor: inputMode === 'eur' ? COLORS.baldurBlue : 'transparent',
-                      color: inputMode === 'eur' ? '#fff' : COLORS.mutedBlue,
+                      backgroundColor: draftInputMode === 'eur' ? COLORS.baldurBlue : 'transparent',
+                      color: draftInputMode === 'eur' ? '#fff' : COLORS.mutedBlue,
                     }}
                   >
                     € Beträge
                   </button>
                   <button
-                    onClick={() => updateInputMode('units')}
+                    onClick={() => updateDraftInputMode('units')}
                     className="py-1 px-3 transition-colors"
                     style={{
-                      backgroundColor: inputMode === 'units' ? COLORS.baldurBlue : 'transparent',
-                      color: inputMode === 'units' ? '#fff' : COLORS.mutedBlue,
+                      backgroundColor: draftInputMode === 'units' ? COLORS.baldurBlue : 'transparent',
+                      color: draftInputMode === 'units' ? '#fff' : COLORS.mutedBlue,
                     }}
                   >
                     Stück × Kurs
@@ -720,14 +738,11 @@ function AUMCalculator({ rotation }) {
               {/* Bestaende-Tabelle */}
               <div className="space-y-1.5">
                 {sortedAssets.map(([ticker, ad]) => {
-                  const h = holdings[ticker] || {};
-                  const holdVal = getHoldingValue(ticker);
-                  const targetVal = ad.weight * aumNum;
-                  const delta = targetVal - holdVal;
+                  const h = draftHoldings[ticker] || {};
+                  const targetVal = ad.weight * draftAumNum;
 
                   return (
                     <div key={ticker} className="rounded p-2" style={{ backgroundColor: `${COLORS.fadedBlue}10` }}>
-                      {/* Asset name + target weight */}
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-medium" style={{ color: COLORS.iceWhite }}>
                           {getAssetLabel(ticker)}
@@ -737,15 +752,14 @@ function AUMCalculator({ rotation }) {
                         </span>
                       </div>
 
-                      {/* Input row */}
-                      {inputMode === 'eur' ? (
+                      {draftInputMode === 'eur' ? (
                         <div className="flex items-center gap-2">
                           <span className="text-xs" style={{ color: COLORS.fadedBlue }}>Ist:</span>
                           <input
                             type="number"
                             placeholder="0"
                             value={h.eur || ''}
-                            onChange={(e) => updateHolding(ticker, 'eur', e.target.value)}
+                            onChange={(e) => updateDraftHolding(ticker, 'eur', e.target.value)}
                             className="flex-1 rounded px-2 py-1 text-xs outline-none"
                             style={{
                               backgroundColor: `${COLORS.fadedBlue}20`,
@@ -754,53 +768,22 @@ function AUMCalculator({ rotation }) {
                             }}
                           />
                           <span className="text-xs" style={{ color: COLORS.fadedBlue }}>€</span>
-                          {holdVal > 0 && (
-                            <span className="text-xs font-medium min-w-[80px] text-right" style={{
-                              color: Math.abs(delta) < aumNum * 0.005 ? COLORS.fadedBlue
-                                : delta > 0 ? COLORS.signalGreen : COLORS.signalRed
-                            }}>
-                              {fmtEurSigned(delta)}
-                            </span>
-                          )}
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs" style={{ color: COLORS.fadedBlue }}>Stk:</span>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={h.units || ''}
-                            onChange={(e) => updateHolding(ticker, 'units', e.target.value)}
+                          <input type="number" placeholder="0" value={h.units || ''}
+                            onChange={(e) => updateDraftHolding(ticker, 'units', e.target.value)}
                             className="w-20 rounded px-2 py-1 text-xs outline-none"
-                            style={{
-                              backgroundColor: `${COLORS.fadedBlue}20`,
-                              color: COLORS.iceWhite,
-                              border: `1px solid ${COLORS.fadedBlue}30`,
-                            }}
+                            style={{ backgroundColor: `${COLORS.fadedBlue}20`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}30` }}
                           />
                           <span className="text-xs" style={{ color: COLORS.fadedBlue }}>×</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Kurs"
-                            value={h.price || ''}
-                            onChange={(e) => updateHolding(ticker, 'price', e.target.value)}
+                          <input type="number" step="0.01" placeholder="Kurs" value={h.price || ''}
+                            onChange={(e) => updateDraftHolding(ticker, 'price', e.target.value)}
                             className="w-20 rounded px-2 py-1 text-xs outline-none"
-                            style={{
-                              backgroundColor: `${COLORS.fadedBlue}20`,
-                              color: COLORS.iceWhite,
-                              border: `1px solid ${COLORS.fadedBlue}30`,
-                            }}
+                            style={{ backgroundColor: `${COLORS.fadedBlue}20`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}30` }}
                           />
                           <span className="text-xs" style={{ color: COLORS.fadedBlue }}>€</span>
-                          {holdVal > 0 && (
-                            <span className="text-xs font-medium min-w-[80px] text-right" style={{
-                              color: Math.abs(delta) < aumNum * 0.005 ? COLORS.fadedBlue
-                                : delta > 0 ? COLORS.signalGreen : COLORS.signalRed
-                            }}>
-                              {fmtEurSigned(delta)}
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -808,90 +791,107 @@ function AUMCalculator({ rotation }) {
                 })}
               </div>
 
-              {/* Zusammenfassung */}
-              {hasAnyHoldings && (
-                <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: `${COLORS.fadedBlue}15`, border: `1px solid ${COLORS.fadedBlue}30` }}>
-                  <div className="flex justify-between text-xs">
-                    <span style={{ color: COLORS.fadedBlue }}>Ist-Portfolio:</span>
-                    <span style={{ color: COLORS.iceWhite }}>{fmtEur(totalHoldings)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span style={{ color: COLORS.fadedBlue }}>Ziel-Portfolio:</span>
-                    <span style={{ color: COLORS.iceWhite }}>{fmtEur(aumNum)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-medium" style={{ borderTop: `1px solid ${COLORS.fadedBlue}30`, paddingTop: '6px' }}>
-                    <span style={{ color: COLORS.fadedBlue }}>Differenz:</span>
-                    <span style={{ color: aumNum - totalHoldings > 0 ? COLORS.signalGreen : aumNum - totalHoldings < 0 ? COLORS.signalRed : COLORS.fadedBlue }}>
-                      {fmtEurSigned(aumNum - totalHoldings)}
-                    </span>
-                  </div>
-
-                  {/* Rebalancing Trades */}
-                  <div style={{ borderTop: `1px solid ${COLORS.fadedBlue}30`, paddingTop: '6px' }}>
-                    <p className="text-xs font-bold mb-2" style={{ color: COLORS.iceWhite }}>Rebalancing-Trades:</p>
-                    {sortedAssets.map(([ticker, ad]) => {
-                      const holdVal = getHoldingValue(ticker);
-                      const targetVal = ad.weight * aumNum;
-                      const delta = targetVal - holdVal;
-                      if (Math.abs(delta) < 1) return null;
-
-                      const isBuy = delta > 0;
-                      const absDelta = Math.abs(delta);
-                      const pctOfAum = (absDelta / aumNum * 100).toFixed(1);
-
-                      return (
-                        <div key={ticker} className="flex justify-between items-center text-xs py-0.5">
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block w-4 text-center font-bold" style={{
-                              color: isBuy ? COLORS.signalGreen : COLORS.signalRed
-                            }}>
-                              {isBuy ? '▲' : '▼'}
-                            </span>
-                            <span style={{ color: COLORS.iceWhite }}>{ticker}</span>
-                          </span>
-                          <span style={{ color: isBuy ? COLORS.signalGreen : COLORS.signalRed }}>
-                            {isBuy ? 'KAUFEN' : 'VERKAUFEN'} {fmtEur(absDelta)} ({pctOfAum}%)
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Reset Button */}
-              <button
-                onClick={resetHoldings}
-                className="text-xs px-3 py-1.5 rounded transition-colors"
-                style={{
-                  color: COLORS.fadedBlue,
-                  border: `1px solid ${COLORS.fadedBlue}30`,
-                }}
-              >
-                Bestände zurücksetzen
-              </button>
+              {/* Uebernehmen + Reset Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSubmit}
+                  className="flex-1 py-2 rounded text-xs font-bold transition-colors"
+                  style={{
+                    backgroundColor: isDirty ? COLORS.baldurBlue : `${COLORS.fadedBlue}30`,
+                    color: isDirty ? '#fff' : COLORS.fadedBlue,
+                  }}
+                >
+                  {isDirty ? '✓ Übernehmen' : 'Gespeichert'}
+                </button>
+                <button
+                  onClick={resetAll}
+                  className="text-xs px-3 py-2 rounded transition-colors"
+                  style={{ color: COLORS.fadedBlue, border: `1px solid ${COLORS.fadedBlue}30` }}
+                >
+                  Reset
+                </button>
+              </div>
             </>
           )}
 
+          {/* Ergebnis-Anzeige: basiert auf SAVED Daten */}
+          {savedMode === 'rebalance' && displayAumNum > 0 && hasAnySavedHoldings && (
+            <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: `${COLORS.fadedBlue}15`, border: `1px solid ${COLORS.fadedBlue}30` }}>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: COLORS.fadedBlue }}>Ist-Portfolio:</span>
+                <span style={{ color: COLORS.iceWhite }}>{fmtEur(totalDisplayHoldings)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: COLORS.fadedBlue }}>Ziel-Portfolio:</span>
+                <span style={{ color: COLORS.iceWhite }}>{fmtEur(displayAumNum)}</span>
+              </div>
+              <div className="flex justify-between text-xs font-medium" style={{ borderTop: `1px solid ${COLORS.fadedBlue}30`, paddingTop: '6px' }}>
+                <span style={{ color: COLORS.fadedBlue }}>Differenz:</span>
+                <span style={{ color: displayAumNum - totalDisplayHoldings > 0 ? COLORS.signalGreen : displayAumNum - totalDisplayHoldings < 0 ? COLORS.signalRed : COLORS.fadedBlue }}>
+                  {fmtEurSigned(displayAumNum - totalDisplayHoldings)}
+                </span>
+              </div>
+
+              {/* Rebalancing Trades — nur echte Trades */}
+              <div style={{ borderTop: `1px solid ${COLORS.fadedBlue}30`, paddingTop: '6px' }}>
+                <p className="text-xs font-bold mb-2" style={{ color: COLORS.iceWhite }}>Rebalancing-Trades:</p>
+                {(() => {
+                  const trades = sortedAssets
+                    .map(([ticker, ad]) => {
+                      const holdVal = getDisplayHoldingValue(ticker);
+                      const targetVal = ad.weight * displayAumNum;
+                      const delta = targetVal - holdVal;
+                      return { ticker, delta, holdVal, targetVal };
+                    })
+                    .filter(t => Math.abs(t.delta) > materialThreshold);
+
+                  if (trades.length === 0) {
+                    return (
+                      <p className="text-xs" style={{ color: COLORS.signalGreen }}>
+                        ✓ Portfolio ist im Ziel — kein Rebalancing nötig
+                      </p>
+                    );
+                  }
+
+                  return trades.map(t => {
+                    const isBuy = t.delta > 0;
+                    const absDelta = Math.abs(t.delta);
+                    return (
+                      <div key={t.ticker} className="flex justify-between items-center text-xs py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className="inline-block w-4 text-center font-bold" style={{
+                            color: isBuy ? COLORS.signalGreen : COLORS.signalRed
+                          }}>
+                            {isBuy ? '▲' : '▼'}
+                          </span>
+                          <span style={{ color: COLORS.iceWhite }}>{t.ticker}</span>
+                        </span>
+                        <span style={{ color: isBuy ? COLORS.signalGreen : COLORS.signalRed }}>
+                          {isBuy ? 'KAUFEN' : 'VERKAUFEN'} {fmtEur(absDelta)}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
+
           {/* Target-Modus: nur Zielbetraege (wie bisher) */}
-          {mode === 'target' && aumNum > 0 && (
+          {draftMode === 'target' && draftAumNum > 0 && (
             <div className="space-y-2">
               <p className="text-xs" style={{ color: COLORS.fadedBlue }}>
-                Ziel-Allokation für {fmtEur(aumNum)}:
+                Ziel-Allokation für {fmtEur(draftAumNum)}:
               </p>
               {sortedAssets.map(([ticker, ad]) => {
-                const euroAmount = ad.weight * aumNum;
-                const euroDelta = (ad.delta_1d || 0) * aumNum;
+                const euroAmount = ad.weight * draftAumNum;
+                const euroDelta = (ad.delta_1d || 0) * draftAumNum;
                 return (
                   <div key={ticker} className="flex justify-between items-center text-xs">
                     <span style={{ color: COLORS.iceWhite }}>{getAssetLabel(ticker)}</span>
                     <div className="text-right">
-                      <span style={{ color: COLORS.iceWhite }}>
-                        {fmtEur(euroAmount)}
-                      </span>
-                      <span className="ml-2" style={{ color: COLORS.fadedBlue }}>
-                        ({(ad.weight * 100).toFixed(1)}%)
-                      </span>
+                      <span style={{ color: COLORS.iceWhite }}>{fmtEur(euroAmount)}</span>
+                      <span className="ml-2" style={{ color: COLORS.fadedBlue }}>({(ad.weight * 100).toFixed(1)}%)</span>
                       {euroDelta !== 0 && (
                         <span className="ml-2" style={{ color: getMaterialityColor(ad.delta_1d || 0) }}>
                           {euroDelta > 0 ? '+' : ''}{fmtEur(euroDelta)}
