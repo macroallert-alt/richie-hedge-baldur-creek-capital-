@@ -273,9 +273,17 @@ function TrendRow({ trend, isExpanded, onToggle, convictionData, payoffData, g7R
 // ═══════════════════════════════════════════════════════
 function RegimeHeatmap({ heatmap }) {
   if (!heatmap || !heatmap.matrix) return null;
-  const regimes = heatmap.regimes || ['EXPANSION', 'TRANSITION', 'CONTRACTION', 'CRISIS'];
+  const regimes = heatmap.regimes || [];
   const current = heatmap.current_regime;
   const entries = Object.entries(heatmap.matrix);
+
+  // Kompakte Labels fuer 12-Spalten Heatmap
+  const SHORT_LABELS = {
+    EARLY_RECOVERY: 'EARLY REC', REFLATION: 'REFLAT', FULL_EXPANSION: 'FULL EXP',
+    STEADY_GROWTH: 'STEADY', FRAGILE_EXPANSION: 'FRAGILE', LATE_EXPANSION: 'LATE EXP',
+    STRESS_ELEVATED: 'STRESS', CONTRACTION: 'CONTR', DEEP_CONTRACTION: 'DEEP C',
+    FINANCIAL_CRISIS: 'FIN CRISIS', SOFT_LANDING: 'SOFT L', NEUTRAL: 'NEUTRAL',
+  };
 
   function getCellColor(score) {
     if (score >= 70) return COLORS.signalGreen;
@@ -288,28 +296,29 @@ function RegimeHeatmap({ heatmap }) {
     <div className="rounded-lg border border-[#1E3A5F] p-3" style={{ backgroundColor: '#0D1B2A' }}>
       <div className="text-sm font-bold mb-2" style={{ color: COLORS.iceWhite }}>REGIME-OVERLAY HEATMAP</div>
       <div className="overflow-x-auto">
-        <table className="w-full text-[10px]">
+        <table className="text-[9px]" style={{ minWidth: 700 }}>
           <thead>
             <tr>
-              <th className="text-left py-1 pr-2" style={{ color: COLORS.fadedBlue }}>Trend</th>
+              <th className="text-left py-1 pr-2 sticky left-0 bg-[#0D1B2A] z-10" style={{ color: COLORS.fadedBlue, minWidth: 80 }}>Trend</th>
               {regimes.map(r => (
-                <th key={r} className="text-center py-1 px-2" style={{
+                <th key={r} className="text-center py-1 px-1 whitespace-nowrap" style={{
                   color: r === current ? COLORS.iceWhite : COLORS.fadedBlue,
                   backgroundColor: r === current ? `${REGIME_COLORS[r]}20` : 'transparent',
                   fontWeight: r === current ? 'bold' : 'normal',
-                }}>{r}</th>
+                  minWidth: 48,
+                }}>{SHORT_LABELS[r] || r}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {entries.map(([tid, data]) => (
               <tr key={tid} className="border-t border-[#1E3A5F]/50">
-                <td className="py-1 pr-2 font-mono" style={{ color: COLORS.iceWhite }}>{tid} {data.name}</td>
+                <td className="py-1 pr-2 font-mono sticky left-0 bg-[#0D1B2A] z-10" style={{ color: COLORS.iceWhite }}>{tid} {data.name}</td>
                 {regimes.map(r => {
                   const score = data.scores?.[r] || 0;
                   const isCurrent = r === current;
                   return (
-                    <td key={r} className="text-center py-1 px-2 font-mono"
+                    <td key={r} className="text-center py-1 px-1 font-mono"
                       style={{
                         color: getCellColor(score),
                         backgroundColor: isCurrent ? `${REGIME_COLORS[r]}10` : 'transparent',
@@ -324,6 +333,7 @@ function RegimeHeatmap({ heatmap }) {
       </div>
       <div className="text-[10px] mt-2 text-center" style={{ color: COLORS.fadedBlue }}>
         Aktuelles Regime: <span style={{ color: REGIME_COLORS[current] || COLORS.signalYellow, fontWeight: 'bold' }}>{current}</span> (hervorgehobene Spalte)
+        {' \u00B7 '} Zyklusreihenfolge: Erholung &rarr; Expansion &rarr; Sp&auml;tzyklus &rarr; Kontraktion &rarr; Krise
       </div>
       <div className="mt-2 pt-2 border-t border-[#1E3A5F]/50 text-[10px] space-y-1" style={{ color: COLORS.mutedBlue }}>
         <div>Score 0-100: Wie gut passt ein Disruption-Trend zum jeweiligen Makro-Regime?
@@ -530,31 +540,29 @@ export default function DisruptionsDetail({ dashboard }) {
       {briefing && (
         <div className="rounded-lg border border-[#1E3A5F]" style={{ backgroundColor: '#0D1B2A' }}>
           <button onClick={() => setBriefingOpen(!briefingOpen)}
-            className="w-full p-4 flex items-start justify-between text-left">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\uD83D\uDCCB'} WEEKLY INTELLIGENCE BRIEFING &mdash; {briefing.date}</span>
-                {briefingOpen ? <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\u25B2'}</span> : <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\u25BC'}</span>}
-              </div>
-              <div className="text-lg font-bold" style={{ color: COLORS.iceWhite }}>{briefing.headline}</div>
-              {/* Key Changes */}
-              {briefing.key_changes_this_week?.length > 0 && (
-                <div className="mt-2 space-y-0.5">
-                  {briefing.key_changes_this_week.map((change, i) => {
-                    const isUp = change.includes('hochgestuft') || change.includes('ACTIVE') || change.includes('+');
-                    const isDown = change.includes('Verlust') || change.includes('-') || change.includes('herabgestuft');
-                    const prefix = isUp ? '\u2191' : isDown ? '\u2193' : '\u25CF';
-                    const prefixColor = isUp ? COLORS.signalGreen : isDown ? COLORS.signalRed : COLORS.signalYellow;
-                    return (
-                      <div key={i} className="text-xs" style={{ color: COLORS.iceWhite }}>
-                        <span style={{ color: prefixColor }}>{prefix}</span> {change}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            className="w-full p-4 text-left">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\uD83D\uDCCB'} WEEKLY INTELLIGENCE BRIEFING &mdash; {briefing.date}</span>
+              <RegimeBadge regimeContext={regimeContext} />
+              {briefingOpen ? <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\u25B2'}</span> : <span className="text-xs" style={{ color: COLORS.fadedBlue }}>{'\u25BC'}</span>}
             </div>
-            <RegimeBadge regimeContext={regimeContext} />
+            <div className="text-lg font-bold" style={{ color: COLORS.iceWhite }}>{briefing.headline}</div>
+            {/* Key Changes */}
+            {briefing.key_changes_this_week?.length > 0 && (
+              <div className="mt-2 space-y-0.5">
+                {briefing.key_changes_this_week.map((change, i) => {
+                  const isUp = change.includes('hochgestuft') || change.includes('ACTIVE') || change.includes('+');
+                  const isDown = change.includes('Verlust') || change.includes('-') || change.includes('herabgestuft');
+                  const prefix = isUp ? '\u2191' : isDown ? '\u2193' : '\u25CF';
+                  const prefixColor = isUp ? COLORS.signalGreen : isDown ? COLORS.signalRed : COLORS.signalYellow;
+                  return (
+                    <div key={i} className="text-xs" style={{ color: COLORS.iceWhite }}>
+                      <span style={{ color: prefixColor }}>{prefix}</span> {change}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </button>
           {/* Sections Accordion */}
           {briefingOpen && briefing.sections?.length > 0 && (

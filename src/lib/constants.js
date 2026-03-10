@@ -11,20 +11,24 @@ export const COLORS = {
   signalRed: '#EF4444',
 };
 
-// ===== REGIME → COLOR (Spec §4.2) =====
+// ===== REGIME → COLOR (12 offizielle V16 Macro States) =====
 export const REGIME_COLORS = {
-  EXPANSION: COLORS.signalGreen,
-  RISK_ON: COLORS.signalGreen,
-  BROAD_RISK_ON: COLORS.signalGreen,
-  SELECTIVE: COLORS.signalGreen,
-  TRANSITION: COLORS.signalYellow,
+  // Expansiv (Grün)
+  FULL_EXPANSION: COLORS.signalGreen,
+  STEADY_GROWTH: COLORS.signalGreen,
+  REFLATION: COLORS.signalGreen,
+  EARLY_RECOVERY: COLORS.signalGreen,
+  // Selektiv (Gelb)
+  FRAGILE_EXPANSION: COLORS.signalYellow,
+  LATE_EXPANSION: COLORS.signalYellow,
   NEUTRAL: COLORS.signalYellow,
-  CONFLICTED: COLORS.signalYellow,
+  SOFT_LANDING: COLORS.signalYellow,
+  // Defensiv (Orange)
+  STRESS_ELEVATED: COLORS.signalOrange,
   CONTRACTION: COLORS.signalOrange,
-  RISK_OFF: COLORS.signalOrange,
-  BROAD_RISK_OFF: COLORS.signalOrange,
-  CRISIS: COLORS.signalRed,
-  RISK_OFF_FORCED: COLORS.signalRed,
+  DEEP_CONTRACTION: COLORS.signalOrange,
+  // Krise (Rot)
+  FINANCIAL_CRISIS: COLORS.signalRed,
 };
 
 // ===== RISK AMPEL → COLOR (Spec §4.5) =====
