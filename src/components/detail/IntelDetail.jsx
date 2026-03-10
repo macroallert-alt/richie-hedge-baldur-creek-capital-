@@ -227,11 +227,40 @@ function SourceCard({ card }) {
             </div>
           )}
 
-          {/* Top claim full text */}
-          {card.top_claim && (
-            <div className="mt-2">
-              <span className="text-caption text-muted-blue">Top Claim: </span>
-              <p className="text-caption text-ice-white/80 mt-0.5">&quot;{card.top_claim}&quot;</p>
+          {/* All claims with freshness badges */}
+          {card.claims && card.claims.length > 0 && (
+            <div className="mt-2 space-y-2">
+              <span className="text-caption text-muted-blue">All Claims ({card.claims.length}):</span>
+              {card.claims.map((c, i) => {
+                const fCfg = FRESHNESS_CONFIG[c.freshness] || FRESHNESS_CONFIG.FRESH;
+                const cDir = directionArrow(c.direction);
+                return (
+                  <div key={i} className="rounded-lg bg-white/[0.02] border border-white/5 p-2" style={{ opacity: fCfg.opacity }}>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`text-caption px-1.5 py-0.5 rounded ${fCfg.bg}`} style={{ color: fCfg.color }}>
+                        {fCfg.label}
+                      </span>
+                      <span className="text-caption" style={{ color: cDir.color }}>
+                        {cDir.arrow} {c.direction}
+                      </span>
+                      <span className="text-caption text-muted-blue">Nov: {c.novelty_score}</span>
+                      {c.content_date && (
+                        <span className="text-caption text-muted-blue ml-auto">{c.content_date}</span>
+                      )}
+                    </div>
+                    <p className="text-caption text-ice-white/80">&quot;{c.claim_text}&quot;</p>
+                    {c.topics && c.topics.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {c.topics.map((t) => (
+                          <span key={t} className="text-caption px-1 py-0.5 rounded bg-white/5 text-muted-blue/70" style={{ fontSize: '0.65rem' }}>
+                            {t.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
