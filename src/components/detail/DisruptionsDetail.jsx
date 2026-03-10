@@ -33,23 +33,20 @@ function SCurveChart({ trends }) {
   const inflectionRight = 45;
   const activeTrends = trends.filter(t => t.status === 'ACTIVE' || t.status === 'WATCH');
 
-  // Label collision detection — offset overlapping labels
-  const positions = activeTrends.map(t => {
-    const x = t.s_curve_x || t.maturity;
-    const y = 100 / (1 + Math.exp(-0.08 * (x - 50)));
-    return { id: t.id, x, y, labelOffsetX: 0, labelOffsetY: -14 };
-  });
-  for (let i = 0; i < positions.length; i++) {
-    for (let j = i + 1; j < positions.length; j++) {
-      const dx = Math.abs(positions[i].x - positions[j].x);
-      const dy = Math.abs(positions[i].y - positions[j].y);
-      if (dx < 6 && dy < 8) {
-        positions[j].labelOffsetX = (j % 2 === 0) ? 16 : -16;
-        positions[j].labelOffsetY = (j % 3 === 0) ? -20 : -8;
+  // Jitter: leicht versetzen wenn Trends zu nah beieinander
+  const placed = [];
+  const jittered = activeTrends.map(t => {
+    let x = t.s_curve_x || t.maturity;
+    let y = 100 / (1 + Math.exp(-0.08 * (x - 50)));
+    for (const p of placed) {
+      if (Math.abs(p.x - x) < 4 && Math.abs(p.y - y) < 4) {
+        x += (placed.length % 2 === 0 ? 3 : -3);
+        y += (placed.length % 3 === 0 ? 3 : -2);
       }
     }
-  }
-  const posMap = Object.fromEntries(positions.map(p => [p.id, p]));
+    placed.push({ x, y });
+    return { ...t, jx: x, jy: y };
+  });
 
   return (
     <div className="relative w-full bg-[#0D1B2A] rounded-lg border border-[#1E3A5F] overflow-hidden" style={{ height: 320 }}>
@@ -64,19 +61,15 @@ function SCurveChart({ trends }) {
         <polyline fill="none" stroke={COLORS.fadedBlue} strokeWidth="0.5" strokeDasharray="2,2"
           points={curvePoints.map(p => `${p.x},${100 - p.y}`).join(' ')} />
       </svg>
-      {activeTrends.map((t) => {
-        const x = t.s_curve_x || t.maturity;
-        const y = 100 / (1 + Math.exp(-0.08 * (x - 50)));
-        const size = Math.max(8, Math.min(20, (t.relevance || 50) / 5));
+      {jittered.map((t) => {
         const momColor = t.momentum > 60 ? COLORS.signalGreen : t.momentum > 40 ? COLORS.signalYellow : COLORS.signalRed;
-        const pos = posMap[t.id] || { labelOffsetX: 0, labelOffsetY: -14 };
+        const num = t.id.replace('D', '');
         return (
-          <div key={t.id} className="absolute flex flex-col items-center"
-            style={{ left: `${x}%`, bottom: `${y}%`, transform: 'translate(-50%, 50%)' }}>
-            <div className="rounded-full border-2"
-              style={{ width: size, height: size, backgroundColor: momColor, borderColor: DISRUPTION_STATUS_COLORS[t.status] || COLORS.mutedBlue, opacity: 0.9 }} />
-            <span className="text-[9px] whitespace-nowrap px-0.5 rounded"
-              style={{ color: COLORS.iceWhite, backgroundColor: '#0D1B2ACC', position: 'relative', left: pos.labelOffsetX, top: pos.labelOffsetY + 14 }}>{t.id}</span>
+          <div key={t.id} className="absolute flex items-center justify-center"
+            style={{ left: `${t.jx}%`, bottom: `${t.jy}%`, transform: 'translate(-50%, 50%)',
+                     width: 22, height: 22, borderRadius: '50%', backgroundColor: momColor,
+                     border: `2px solid ${DISRUPTION_STATUS_COLORS[t.status] || COLORS.mutedBlue}`, opacity: 0.9 }}>
+            <span style={{ color: '#0A1628', fontSize: 9, fontWeight: 'bold', fontFamily: 'monospace', lineHeight: 1 }}>{num}</span>
           </div>
         );
       })}
@@ -377,31 +370,27 @@ function CrowdingMomentumScatter({ trends }) {
 
   const w = 400, h = 300;
   const pad = 35;
+  const dotR = 12;
 
-  // Label collision detection — compute offsets
+  // Jitter: versetze Dots die zu nah beieinander sind
   const dots = activeTrends.map(t => ({
     id: t.id,
+    num: t.id.replace('D', ''),
     cx: pad + (t.momentum / 100) * (w - 2 * pad),
     cy: h - pad - (t.crowding / 100) * (h - 2 * pad),
-    lx: 0, ly: -10,
+    phase: t.phase, status: t.status,
   }));
   for (let i = 0; i < dots.length; i++) {
     for (let j = i + 1; j < dots.length; j++) {
       const dx = Math.abs(dots[i].cx - dots[j].cx);
       const dy = Math.abs(dots[i].cy - dots[j].cy);
-      if (dx < 18 && dy < 14) {
-        const angles = [
-          { lx: 12, ly: -10 }, { lx: -12, ly: -10 },
-          { lx: 14, ly: 4 }, { lx: -14, ly: 4 },
-          { lx: 0, ly: 10 }, { lx: 16, ly: -6 },
-        ];
-        const pick = angles[j % angles.length];
-        dots[j].lx = pick.lx;
-        dots[j].ly = pick.ly;
+      if (dx < dotR * 2 && dy < dotR * 2) {
+        const angle = ((j * 137.5) % 360) * (Math.PI / 180);
+        dots[j].cx += Math.cos(angle) * (dotR + 2);
+        dots[j].cy += Math.sin(angle) * (dotR + 2);
       }
     }
   }
-  const dotMap = Object.fromEntries(dots.map(d => [d.id, d]));
 
   return (
     <div className="rounded-lg border border-[#1E3A5F] p-3" style={{ backgroundColor: '#0D1B2A' }}>
@@ -427,20 +416,13 @@ function CrowdingMomentumScatter({ trends }) {
         <line x1={pad} y1={pad + (h - 2 * pad) / 2} x2={w - pad} y2={pad + (h - 2 * pad) / 2} stroke={COLORS.fadedBlue} strokeWidth="0.3" strokeDasharray="3,3" />
         {/* Danger Zone (Crowding >75) */}
         <rect x={pad} y={pad} width={w - 2 * pad} height={(h - 2 * pad) * 0.25} fill={COLORS.signalRed} opacity="0.05" />
-        {/* Dots + Labels */}
-        {activeTrends.map((t) => {
-          const d = dotMap[t.id] || { cx: 0, cy: 0, lx: 0, ly: -10 };
-          const dotColor = DISRUPTION_PHASE_COLORS[t.phase] || COLORS.mutedBlue;
-          const labelX = d.cx + d.lx;
-          const labelY = d.cy + d.ly;
+        {/* Dots mit Nummer drin */}
+        {dots.map((d) => {
+          const dotColor = DISRUPTION_PHASE_COLORS[d.phase] || COLORS.mutedBlue;
           return (
-            <g key={t.id}>
-              <circle cx={d.cx} cy={d.cy} r={7} fill={dotColor} opacity="0.85" stroke={DISRUPTION_STATUS_COLORS[t.status]} strokeWidth="1.5" />
-              {(d.lx !== 0 || d.ly !== -10) && (
-                <line x1={d.cx} y1={d.cy} x2={labelX} y2={labelY + 3} stroke={COLORS.fadedBlue} strokeWidth="0.4" opacity="0.5" />
-              )}
-              <rect x={labelX - 12} y={labelY - 5} width="24" height="10" rx="2" fill="#0D1B2A" opacity="0.85" />
-              <text x={labelX} y={labelY + 3} fontSize="8" fill={COLORS.iceWhite} textAnchor="middle" fontFamily="monospace">{t.id}</text>
+            <g key={d.id}>
+              <circle cx={d.cx} cy={d.cy} r={dotR} fill={dotColor} opacity="0.9" stroke={DISRUPTION_STATUS_COLORS[d.status]} strokeWidth="1.5" />
+              <text x={d.cx} y={d.cy + 3.5} fontSize="9" fill="#0A1628" textAnchor="middle" fontWeight="bold" fontFamily="monospace">{d.num}</text>
             </g>
           );
         })}
