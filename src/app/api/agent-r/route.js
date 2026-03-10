@@ -1,43 +1,41 @@
-﻿// src/app/api/agent-r/route.js
-// Agent R API Route â€” Edge Runtime, Tool-Use-Loop, SSE Streaming
-// V1.1: Dashboard compression + rate limit handling
-// Based on: AGENT_R_TECH_SPEC_TEIL_2.md Â§2.3-2.5
+// src/app/api/agent-r/route.js
+// Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
+// V1.2: Mobile SSE fix — keepalive pings during Claude wait
+// Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
 import { TOOL_DEFINITIONS, executeTool } from '@/lib/agent-r-tools';
 
 export const runtime = 'edge';
 
-// Max tool-use rounds before forcing final answer (Spec Â§2.4.1)
-const MAX_TOOL_ROUNDS = 3; // Reduced from 5 to stay within rate limits
+// Max tool-use rounds before forcing final answer (Spec §2.4.1)
+const MAX_TOOL_ROUNDS = 3;
 
 // Max messages sent to Claude (keep context manageable)
-const MAX_HISTORY_MESSAGES = 10; // Reduced from 20 for token budget
+const MAX_HISTORY_MESSAGES = 10;
 
-// Claude model (Spec Â§2.2)
+// Claude model (Spec §2.2)
 const CLAUDE_MODEL = 'claude-sonnet-4-6';
 const CLAUDE_MAX_TOKENS = 8192;
 
 // Rate limit retry
-const RATE_LIMIT_WAIT_MS = 5000; // 5 seconds
+const RATE_LIMIT_WAIT_MS = 5000;
 const MAX_RETRIES = 2;
+
+// Keepalive ping interval (ms) — keeps Mobile Safari/Chrome from dropping SSE
+const PING_INTERVAL_MS = 3000;
 
 
 // ===== DASHBOARD COMPRESSION =====
-// Full dashboard.json is ~37KB (~10K tokens) â€” too much for 30K/min rate limit
-// Compress to ~3-5KB (~1-2K tokens) with only what Agent R needs in System Prompt
-// Full dashboard stays available via get_dashboard tool
 
 function compressDashboard(dashboard) {
   if (!dashboard) return null;
 
   return {
-    // Timing
     date: dashboard.date,
     generated_at: dashboard.generated_at,
     weekday: dashboard.weekday,
 
-    // Header (compact)
     header: {
       briefing_type: dashboard.header?.briefing_type,
       system_conviction: dashboard.header?.system_conviction,
@@ -46,7 +44,6 @@ function compressDashboard(dashboard) {
       data_quality: dashboard.header?.data_quality,
     },
 
-    // V16 essentials
     v16: {
       regime: dashboard.v16?.regime,
       current_drawdown: dashboard.v16?.current_drawdown,
@@ -56,20 +53,17 @@ function compressDashboard(dashboard) {
       top_5_weights: dashboard.v16?.top_5_weights,
     },
 
-    // Risk essentials
     risk: {
       portfolio_status: dashboard.risk?.portfolio_status,
       emergency_triggers: dashboard.risk?.emergency_triggers,
       alerts: dashboard.risk?.alerts,
     },
 
-    // Layers (scores only)
     layers: {
       fragility_state: dashboard.layers?.fragility_state,
       layer_scores: dashboard.layers?.layer_scores,
     },
 
-    // Execution (compact)
     execution: {
       execution_level: dashboard.execution?.execution_level,
       total_score: dashboard.execution?.total_score,
@@ -82,30 +76,24 @@ function compressDashboard(dashboard) {
       recommendation_short: dashboard.execution?.recommendation_short,
     },
 
-    // Agent R context (already compact)
     agent_r_context: dashboard.agent_r_context,
     agent_r_queue: dashboard.agent_r_queue,
 
-    // Digest (1-liners)
     digest: dashboard.digest,
 
-    // Action items (summary only)
     action_items: {
       summary: dashboard.action_items?.summary,
       prominent: dashboard.action_items?.prominent,
     },
 
-    // F6 (status only)
     f6: { status: dashboard.f6?.status },
 
-    // G7 (compact)
     g7_summary: {
       active_regime: dashboard.g7_summary?.active_regime,
       regime_label: dashboard.g7_summary?.regime_label,
       ewi_score: dashboard.g7_summary?.ewi_score,
     },
 
-    // Intelligence (compact)
     intelligence: {
       status: dashboard.intelligence?.status,
       consensus: dashboard.intelligence?.consensus,
@@ -116,14 +104,27 @@ function compressDashboard(dashboard) {
 
 
 // ===== COMPACT TOOL RESULTS =====
-// Truncate large tool results to stay within token budget
 
 function compactToolResult(result) {
   const str = JSON.stringify(result);
-  // If under 3KB, keep as-is
   if (str.length < 3000) return str;
-  // Truncate with note
-  return str.slice(0, 3000) + '\n... [truncated â€” use get_dashboard for full data]';
+  return str.slice(0, 3000) + '\n... [truncated — use get_dashboard for full data]';
+}
+
+
+// ===== KEEPALIVE PING HELPER =====
+// Starts sending { type: "ping" } every PING_INTERVAL_MS
+// Returns a stop function. Client ignores ping events.
+
+function startPing(send) {
+  const id = setInterval(() => {
+    try {
+      send({ type: 'ping' });
+    } catch {
+      // Stream already closed — ignore
+    }
+  }, PING_INTERVAL_MS);
+  return () => clearInterval(id);
 }
 
 
@@ -155,14 +156,9 @@ export async function POST(request) {
     );
   }
 
-  // Compress dashboard for System Prompt (full dashboard stays for tool execution)
   const compressedDashboard = compressDashboard(dashboard);
-
-  // Build system prompt with COMPRESSED dashboard
   const systemPrompt = buildSystemPrompt(compressedDashboard);
 
-  // Trim history to MAX_HISTORY_MESSAGES
-  // Convert from frontend format { role, text } to Claude format { role, content }
   const claudeMessages = messages
     .slice(-MAX_HISTORY_MESSAGES)
     .map(msg => ({
@@ -170,25 +166,32 @@ export async function POST(request) {
       content: msg.text || msg.content || '',
     }));
 
-  // SSE Stream response
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Controller already closed
+        }
       };
+
+      // Start keepalive pings immediately
+      const stopPing = startPing(send);
 
       try {
         let currentMessages = [...claudeMessages];
         let toolRound = 0;
 
         while (toolRound < MAX_TOOL_ROUNDS) {
-          // Call Claude with retry on rate limit
+          // Pings continue automatically during this await
           const response = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, TOOL_DEFINITIONS, false);
 
           if (!response.ok) {
             const errText = await response.text();
-            send({ type: 'error', error: `Claude API Error: ${response.status} â€” ${errText}` });
+            stopPing();
+            send({ type: 'error', error: `Claude API Error: ${response.status} — ${errText}` });
             send({ type: 'done' });
             controller.close();
             return;
@@ -196,16 +199,18 @@ export async function POST(request) {
 
           const result = await response.json();
 
-          // Check for tool_use blocks
           const toolUseBlocks = (result.content || []).filter(b => b.type === 'tool_use');
 
           if (toolUseBlocks.length === 0) {
-            // No tool calls â€” final answer
+            // No tool calls — final answer
             const textBlocks = (result.content || []).filter(b => b.type === 'text');
             const fullText = textBlocks.map(b => b.text).join('');
 
-            // Send in chunks to simulate streaming
-            const chunkSize = 20;
+            // Stop pings before sending text chunks
+            stopPing();
+
+            // Send in chunks — small delay between batches for mobile rendering
+            const chunkSize = 40;
             for (let i = 0; i < fullText.length; i += chunkSize) {
               send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
             }
@@ -214,7 +219,7 @@ export async function POST(request) {
             return;
           }
 
-          // Tool calls â€” execute in parallel
+          // Tool calls — notify client
           for (const block of toolUseBlocks) {
             send({
               type: 'tool_call',
@@ -222,7 +227,7 @@ export async function POST(request) {
             });
           }
 
-          // Execute tools â€” pass FULL dashboard for tool execution
+          // Execute tools — pings continue during this
           const toolResults = await Promise.all(
             toolUseBlocks.map(async (block) => {
               try {
@@ -243,7 +248,6 @@ export async function POST(request) {
             })
           );
 
-          // Append to messages
           currentMessages.push({
             role: 'assistant',
             content: result.content,
@@ -256,8 +260,10 @@ export async function POST(request) {
           toolRound++;
         }
 
-        // Max tool rounds reached â€” force final answer
+        // Max tool rounds reached — force final answer (streamed)
         const finalResponse = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, [], true);
+
+        stopPing();
 
         if (!finalResponse.ok) {
           const errText = await finalResponse.text();
@@ -272,6 +278,7 @@ export async function POST(request) {
         controller.close();
 
       } catch (error) {
+        stopPing();
         send({ type: 'error', error: error.message || 'Unbekannter Fehler' });
         send({ type: 'done' });
         controller.close();
@@ -296,7 +303,6 @@ async function callClaudeWithRetry(apiKey, systemPrompt, messages, tools, stream
     const response = await callClaude(apiKey, systemPrompt, messages, tools, stream);
 
     if (response.status === 429 && attempt < MAX_RETRIES) {
-      // Rate limited â€” wait and retry
       await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WAIT_MS * (attempt + 1)));
       continue;
     }
@@ -368,4 +374,3 @@ async function streamClaudeResponse(response, send) {
     }
   }
 }
-

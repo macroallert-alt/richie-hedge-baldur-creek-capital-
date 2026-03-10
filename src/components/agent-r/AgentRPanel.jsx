@@ -232,6 +232,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
       let buffer = '';
       let assistantText = '';
       let currentTools = [];
+      let gotDone = false;
 
       updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
 
@@ -248,6 +249,9 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
           try {
             const data = JSON.parse(line.slice(6));
+
+            // Ignore keepalive pings from server
+            if (data.type === 'ping') continue;
 
             if (data.type === 'text_delta') {
               assistantText += data.text;
@@ -279,6 +283,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
             }
 
             if (data.type === 'done') {
+              gotDone = true;
               setIsStreaming(false);
               setActiveTools([]);
             }
@@ -288,8 +293,12 @@ export default function AgentRPanel({ dashboard, onClose }) {
         }
       }
 
-      setIsStreaming(false);
-      setActiveTools([]);
+      // Robust fallback: if stream ended without explicit 'done' event,
+      // still finalize — this handles Mobile Safari dropping the connection
+      if (!gotDone) {
+        setIsStreaming(false);
+        setActiveTools([]);
+      }
 
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -451,7 +460,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
           </p>
         </div>
 
-        {/* Nudges \u2014 only show when no messages in active tab */}
+        {/* Nudges — only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
             <p className="text-caption text-muted-blue">PRIORIT{'\u00c4'}RE HINWEISE</p>
