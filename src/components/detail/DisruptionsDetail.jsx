@@ -33,8 +33,26 @@ function SCurveChart({ trends }) {
   const inflectionRight = 45;
   const activeTrends = trends.filter(t => t.status === 'ACTIVE' || t.status === 'WATCH');
 
+  // Label collision detection — offset overlapping labels
+  const positions = activeTrends.map(t => {
+    const x = t.s_curve_x || t.maturity;
+    const y = 100 / (1 + Math.exp(-0.08 * (x - 50)));
+    return { id: t.id, x, y, labelOffsetX: 0, labelOffsetY: -14 };
+  });
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+      const dx = Math.abs(positions[i].x - positions[j].x);
+      const dy = Math.abs(positions[i].y - positions[j].y);
+      if (dx < 6 && dy < 8) {
+        positions[j].labelOffsetX = (j % 2 === 0) ? 16 : -16;
+        positions[j].labelOffsetY = (j % 3 === 0) ? -20 : -8;
+      }
+    }
+  }
+  const posMap = Object.fromEntries(positions.map(p => [p.id, p]));
+
   return (
-    <div className="relative w-full h-64 bg-[#0D1B2A] rounded-lg border border-[#1E3A5F] overflow-hidden">
+    <div className="relative w-full bg-[#0D1B2A] rounded-lg border border-[#1E3A5F] overflow-hidden" style={{ height: 320 }}>
       <div
         className="absolute top-0 bottom-0 opacity-10"
         style={{ left: `${inflectionLeft}%`, width: `${inflectionRight - inflectionLeft}%`, backgroundColor: COLORS.signalYellow }}
@@ -51,12 +69,14 @@ function SCurveChart({ trends }) {
         const y = 100 / (1 + Math.exp(-0.08 * (x - 50)));
         const size = Math.max(8, Math.min(20, (t.relevance || 50) / 5));
         const momColor = t.momentum > 60 ? COLORS.signalGreen : t.momentum > 40 ? COLORS.signalYellow : COLORS.signalRed;
+        const pos = posMap[t.id] || { labelOffsetX: 0, labelOffsetY: -14 };
         return (
           <div key={t.id} className="absolute flex flex-col items-center"
             style={{ left: `${x}%`, bottom: `${y}%`, transform: 'translate(-50%, 50%)' }}>
             <div className="rounded-full border-2"
               style={{ width: size, height: size, backgroundColor: momColor, borderColor: DISRUPTION_STATUS_COLORS[t.status] || COLORS.mutedBlue, opacity: 0.9 }} />
-            <span className="text-[9px] mt-0.5 whitespace-nowrap" style={{ color: COLORS.iceWhite }}>{t.id}</span>
+            <span className="text-[9px] whitespace-nowrap px-0.5 rounded"
+              style={{ color: COLORS.iceWhite, backgroundColor: '#0D1B2ACC', position: 'relative', left: pos.labelOffsetX, top: pos.labelOffsetY + 14 }}>{t.id}</span>
           </div>
         );
       })}
@@ -355,43 +375,72 @@ function CrowdingMomentumScatter({ trends }) {
   const activeTrends = trends.filter(t => t.status === 'ACTIVE' || t.status === 'WATCH');
   if (activeTrends.length === 0) return null;
 
-  const w = 300, h = 200;
-  const pad = 30;
+  const w = 400, h = 300;
+  const pad = 35;
+
+  // Label collision detection — compute offsets
+  const dots = activeTrends.map(t => ({
+    id: t.id,
+    cx: pad + (t.momentum / 100) * (w - 2 * pad),
+    cy: h - pad - (t.crowding / 100) * (h - 2 * pad),
+    lx: 0, ly: -10,
+  }));
+  for (let i = 0; i < dots.length; i++) {
+    for (let j = i + 1; j < dots.length; j++) {
+      const dx = Math.abs(dots[i].cx - dots[j].cx);
+      const dy = Math.abs(dots[i].cy - dots[j].cy);
+      if (dx < 18 && dy < 14) {
+        const angles = [
+          { lx: 12, ly: -10 }, { lx: -12, ly: -10 },
+          { lx: 14, ly: 4 }, { lx: -14, ly: 4 },
+          { lx: 0, ly: 10 }, { lx: 16, ly: -6 },
+        ];
+        const pick = angles[j % angles.length];
+        dots[j].lx = pick.lx;
+        dots[j].ly = pick.ly;
+      }
+    }
+  }
+  const dotMap = Object.fromEntries(dots.map(d => [d.id, d]));
 
   return (
     <div className="rounded-lg border border-[#1E3A5F] p-3" style={{ backgroundColor: '#0D1B2A' }}>
       <div className="text-sm font-bold mb-2" style={{ color: COLORS.iceWhite }}>CROWDING vs. MOMENTUM</div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: 220 }}>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ maxHeight: 360 }}>
         {/* Quadranten */}
         <rect x={pad} y={pad} width={(w - 2 * pad) / 2} height={(h - 2 * pad) / 2} fill={`${COLORS.signalRed}08`} />
         <rect x={pad + (w - 2 * pad) / 2} y={pad} width={(w - 2 * pad) / 2} height={(h - 2 * pad) / 2} fill={`${COLORS.signalOrange}08`} />
         <rect x={pad} y={pad + (h - 2 * pad) / 2} width={(w - 2 * pad) / 2} height={(h - 2 * pad) / 2} fill={`${COLORS.fadedBlue}08`} />
         <rect x={pad + (w - 2 * pad) / 2} y={pad + (h - 2 * pad) / 2} width={(w - 2 * pad) / 2} height={(h - 2 * pad) / 2} fill={`${COLORS.signalGreen}08`} />
         {/* Quadrant Labels */}
-        <text x={pad + 4} y={pad + 12} fontSize="7" fill={COLORS.signalRed} opacity="0.5">EXIT ZONE</text>
-        <text x={w - pad - 4} y={pad + 12} fontSize="7" fill={COLORS.signalOrange} opacity="0.5" textAnchor="end">CROWDING RISK</text>
-        <text x={pad + 4} y={h - pad - 4} fontSize="7" fill={COLORS.fadedBlue} opacity="0.5">DORMANT</text>
-        <text x={w - pad - 4} y={h - pad - 4} fontSize="7" fill={COLORS.signalGreen} opacity="0.5" textAnchor="end">SWEET SPOT</text>
+        <text x={pad + 6} y={pad + 14} fontSize="9" fill={COLORS.signalRed} opacity="0.5">EXIT ZONE</text>
+        <text x={w - pad - 6} y={pad + 14} fontSize="9" fill={COLORS.signalOrange} opacity="0.5" textAnchor="end">CROWDING RISK</text>
+        <text x={pad + 6} y={h - pad - 6} fontSize="9" fill={COLORS.fadedBlue} opacity="0.5">DORMANT</text>
+        <text x={w - pad - 6} y={h - pad - 6} fontSize="9" fill={COLORS.signalGreen} opacity="0.5" textAnchor="end">SWEET SPOT</text>
         {/* Achsen */}
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={COLORS.fadedBlue} strokeWidth="0.5" />
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={COLORS.fadedBlue} strokeWidth="0.5" />
-        <text x={w / 2} y={h - 4} fontSize="7" fill={COLORS.fadedBlue} textAnchor="middle">Momentum &rarr;</text>
-        <text x={4} y={h / 2} fontSize="7" fill={COLORS.fadedBlue} textAnchor="middle" transform={`rotate(-90, 8, ${h / 2})`}>Crowding &rarr;</text>
+        <text x={w / 2} y={h - 6} fontSize="9" fill={COLORS.fadedBlue} textAnchor="middle">Momentum &rarr;</text>
+        <text x={6} y={h / 2} fontSize="9" fill={COLORS.fadedBlue} textAnchor="middle" transform={`rotate(-90, 10, ${h / 2})`}>Crowding &rarr;</text>
         {/* Mittellinien */}
         <line x1={pad + (w - 2 * pad) / 2} y1={pad} x2={pad + (w - 2 * pad) / 2} y2={h - pad} stroke={COLORS.fadedBlue} strokeWidth="0.3" strokeDasharray="3,3" />
         <line x1={pad} y1={pad + (h - 2 * pad) / 2} x2={w - pad} y2={pad + (h - 2 * pad) / 2} stroke={COLORS.fadedBlue} strokeWidth="0.3" strokeDasharray="3,3" />
         {/* Danger Zone (Crowding >75) */}
         <rect x={pad} y={pad} width={w - 2 * pad} height={(h - 2 * pad) * 0.25} fill={COLORS.signalRed} opacity="0.05" />
-        {/* Dots */}
+        {/* Dots + Labels */}
         {activeTrends.map((t) => {
-          const cx = pad + (t.momentum / 100) * (w - 2 * pad);
-          const cy = h - pad - (t.crowding / 100) * (h - 2 * pad);
-          const r = 6;
+          const d = dotMap[t.id] || { cx: 0, cy: 0, lx: 0, ly: -10 };
           const dotColor = DISRUPTION_PHASE_COLORS[t.phase] || COLORS.mutedBlue;
+          const labelX = d.cx + d.lx;
+          const labelY = d.cy + d.ly;
           return (
             <g key={t.id}>
-              <circle cx={cx} cy={cy} r={r} fill={dotColor} opacity="0.8" stroke={DISRUPTION_STATUS_COLORS[t.status]} strokeWidth="1.5" />
-              <text x={cx} y={cy - r - 2} fontSize="7" fill={COLORS.iceWhite} textAnchor="middle">{t.id}</text>
+              <circle cx={d.cx} cy={d.cy} r={7} fill={dotColor} opacity="0.85" stroke={DISRUPTION_STATUS_COLORS[t.status]} strokeWidth="1.5" />
+              {(d.lx !== 0 || d.ly !== -10) && (
+                <line x1={d.cx} y1={d.cy} x2={labelX} y2={labelY + 3} stroke={COLORS.fadedBlue} strokeWidth="0.4" opacity="0.5" />
+              )}
+              <rect x={labelX - 12} y={labelY - 5} width="24" height="10" rx="2" fill="#0D1B2A" opacity="0.85" />
+              <text x={labelX} y={labelY + 3} fontSize="8" fill={COLORS.iceWhite} textAnchor="middle" fontFamily="monospace">{t.id}</text>
             </g>
           );
         })}
