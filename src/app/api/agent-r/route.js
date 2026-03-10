@@ -15,8 +15,8 @@ const MAX_TOOL_ROUNDS = 3; // Reduced from 5 to stay within rate limits
 const MAX_HISTORY_MESSAGES = 10; // Reduced from 20 for token budget
 
 // Claude model (Spec Â§2.2)
-const CLAUDE_MODEL = 'claude-sonnet-4-5-20250929';
-const CLAUDE_MAX_TOKENS = 4096;
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
+const CLAUDE_MAX_TOKENS = 8192;
 
 // Rate limit retry
 const RATE_LIMIT_WAIT_MS = 5000; // 5 seconds
