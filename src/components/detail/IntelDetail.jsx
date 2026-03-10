@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { COLORS } from '@/lib/constants';
@@ -162,8 +162,35 @@ function SourceCard({ card }) {
             </div>
           )}
 
-          {/* Top claim full text */}
-          {card.top_claim && (
+          {/* All Claims List */}
+          {card.claims && card.claims.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <span className="text-caption text-muted-blue">All Claims ({card.claims.length}):</span>
+              {card.claims.map((cl, idx) => {
+                const clFresh = FRESHNESS_CONFIG[cl.freshness] || FRESHNESS_CONFIG.FRESH;
+                return (
+                  <div key={idx} className="rounded-lg bg-white/[0.02] border border-white/5 p-2" style={{ opacity: clFresh.opacity }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-caption px-1 py-0.5 rounded ${clFresh.bg}`} style={{ color: clFresh.color }}>
+                        {clFresh.label}
+                      </span>
+                      <span className="text-caption text-muted-blue">{cl.content_date}</span>
+                      <span className="text-caption text-muted-blue">N:{cl.novelty_score}</span>
+                      {cl.direction && (
+                        <span className="text-caption" style={{ color: cl.direction === "BULLISH" ? COLORS.signalGreen : cl.direction === "BEARISH" ? COLORS.signalRed : COLORS.mutedBlue }}>
+                          {cl.direction === "BULLISH" ? "\u25B2" : cl.direction === "BEARISH" ? "\u25BC" : "\u2014"} {cl.intensity}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-caption text-ice-white/80">{cl.claim_text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* No claims fallback */}
+          {(!card.claims || card.claims.length === 0) && card.top_claim && (
             <div className="mt-2">
               <span className="text-caption text-muted-blue">Top Claim: </span>
               <p className="text-caption text-ice-white/80 mt-0.5">&quot;{card.top_claim}&quot;</p>
