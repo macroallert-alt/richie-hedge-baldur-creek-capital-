@@ -282,6 +282,7 @@ export function getMaterialityLabel(deltaPp) {
 export const CIRCLES = [
   { id: 'dashboard', name: 'Home', icon: 'LayoutDashboard', route: '/dashboard' },
   { id: 'cio', name: 'CIO', icon: 'FileText', route: '/cio' },
+  { id: 'briefing', name: 'Briefing', icon: 'Newspaper', route: '/briefing' },
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
   { id: 'signals', name: 'Signals', icon: 'Radio', route: '/signals' },
   { id: 'portfolio', name: 'Portfolio', icon: 'PieChart', route: '/portfolio' },
