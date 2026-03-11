@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, AlertTriangle, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useNudges } from '@/hooks/useNudges';
 import { TOOL_LABELS } from '@/lib/constants';
 
@@ -64,6 +65,62 @@ function getTabTitle(messages) {
 }
 
 
+// ===== Dashboard compression for API calls (keeps payload <30KB) =====
+function compressDashboardForSend(d) {
+  if (!d) return null;
+  return {
+    date: d.date,
+    generated_at: d.generated_at,
+    weekday: d.weekday,
+    header: {
+      briefing_type: d.header?.briefing_type,
+      system_conviction: d.header?.system_conviction,
+      risk_ampel: d.header?.risk_ampel,
+      v16_regime: d.header?.v16_regime,
+      data_quality: d.header?.data_quality,
+    },
+    v16: {
+      regime: d.v16?.regime,
+      current_drawdown: d.v16?.current_drawdown,
+      regime_confidence: d.v16?.regime_confidence,
+      dd_protect_status: d.v16?.dd_protect_status,
+      current_weights: d.v16?.current_weights,
+      top_5_weights: d.v16?.top_5_weights,
+    },
+    risk: {
+      portfolio_status: d.risk?.portfolio_status,
+      emergency_triggers: d.risk?.emergency_triggers,
+      alerts: (d.risk?.alerts || []).slice(0, 5),
+    },
+    layers: {
+      fragility_state: d.layers?.fragility_state,
+      layer_scores: d.layers?.layer_scores,
+    },
+    execution: {
+      execution_level: d.execution?.execution_level,
+      total_score: d.execution?.total_score,
+      max_score: d.execution?.max_score,
+      recommendation_short: d.execution?.recommendation_short,
+    },
+    agent_r_context: d.agent_r_context,
+    digest: d.digest,
+    action_items: {
+      summary: d.action_items?.summary,
+      prominent: (d.action_items?.prominent || []).slice(0, 3),
+    },
+    g7_summary: {
+      active_regime: d.g7_summary?.active_regime,
+      regime_label: d.g7_summary?.regime_label,
+      ewi_score: d.g7_summary?.ewi_score,
+    },
+    intelligence: {
+      status: d.intelligence?.status,
+      divergences_count: d.intelligence?.divergences_count,
+    },
+  };
+}
+
+
 export default function AgentRPanel({ dashboard, onClose }) {
   const nudges = useNudges(dashboard);
   const [input, setInput] = useState('');
@@ -72,6 +129,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeTools, setActiveTools] = useState([]);
   const [error, setError] = useState(null);
+  const [renderKey, setRenderKey] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
@@ -216,7 +274,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: updatedMessages,
-          dashboard,
+          dashboard: compressDashboardForSend(dashboard),
         }),
         signal: abortRef.current.signal,
       });
@@ -231,6 +289,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
       let buffer = '';
       let assistantText = '';
       let currentTools = [];
+      let gotDone = false;
 
       updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
 
@@ -247,6 +306,9 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
           try {
             const data = JSON.parse(line.slice(6));
+
+            // Ignore keepalive pings from server
+            if (data.type === 'ping') continue;
 
             if (data.type === 'text_delta') {
               assistantText += data.text;
@@ -278,8 +340,25 @@ export default function AgentRPanel({ dashboard, onClose }) {
             }
 
             if (data.type === 'done') {
+              gotDone = true;
+              // Force final text update — ensures ReactMarkdown gets
+              // the COMPLETE text for proper table/GFM rendering.
+              // Without this, Mobile React may batch-skip the last
+              // text_delta update, leaving partial markdown.
+              const finalText = assistantText;
+              updateActiveMessages(prev => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (updated[lastIdx]?.role === 'assistant') {
+                  updated[lastIdx] = { ...updated[lastIdx], text: finalText };
+                }
+                return updated;
+              });
               setIsStreaming(false);
               setActiveTools([]);
+              // Increment renderKey to force ReactMarkdown re-mount
+              // with complete text — fixes Mobile table rendering
+              setRenderKey(k => k + 1);
             }
           } catch {
             // Skip
@@ -287,8 +366,22 @@ export default function AgentRPanel({ dashboard, onClose }) {
         }
       }
 
-      setIsStreaming(false);
-      setActiveTools([]);
+      // Robust fallback: if stream ended without explicit 'done' event,
+      // still finalize — this handles Mobile Safari dropping the connection
+      if (!gotDone) {
+        const finalText = assistantText;
+        updateActiveMessages(prev => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (updated[lastIdx]?.role === 'assistant') {
+            updated[lastIdx] = { ...updated[lastIdx], text: finalText };
+          }
+          return updated;
+        });
+        setIsStreaming(false);
+        setActiveTools([]);
+        setRenderKey(k => k + 1);
+      }
 
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -450,7 +543,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
           </p>
         </div>
 
-        {/* Nudges \u2014 only show when no messages in active tab */}
+        {/* Nudges — only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
             <p className="text-caption text-muted-blue">PRIORIT{'\u00c4'}RE HINWEISE</p>
@@ -517,8 +610,27 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   <p className="text-body text-ice-white whitespace-pre-wrap">{msg.text}</p>
                 ) : (
                   <div className="text-body text-ice-white agent-r-markdown">
-                    {msg.text ? (
+                    {/* While streaming the LAST message: render as plain text.
+                        This prevents remarkGfm from seeing incomplete tables
+                        and caching them as paragraph text.
+                        Once streaming ends (isStreaming=false), ReactMarkdown
+                        gets the COMPLETE text and parses tables correctly. */}
+                    {isStreaming && i === messages.length - 1 ? (
+                      msg.text ? (
+                        <>
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          <span className="inline-block w-1.5 h-4 bg-baldur-blue animate-pulse ml-0.5 align-text-bottom" />
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-muted-blue">
+                          <Loader2 size={14} className="animate-spin" />
+                          <span className="text-caption">Agent R denkt nach...</span>
+                        </span>
+                      )
+                    ) : msg.text ? (
                       <ReactMarkdown
+                        key={renderKey}
+                        remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                           strong: ({ children }) => <strong className="text-ice-white font-semibold">{children}</strong>,
@@ -533,13 +645,17 @@ export default function AgentRPanel({ dashboard, onClose }) {
                             ? <code className="bg-white/10 px-1 py-0.5 rounded text-caption font-mono text-baldur-blue">{children}</code>
                             : <pre className="bg-white/5 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto"><code className="text-caption font-mono">{children}</code></pre>,
                           table: ({ children }) => (
-                            <div className="overflow-x-auto my-2">
-                              <table className="text-caption border-collapse w-full">{children}</table>
+                            <div className="relative my-2">
+                              <div className="overflow-x-auto rounded-lg border border-white/10"
+                                   style={{ WebkitOverflowScrolling: 'touch' }}>
+                                <table className="text-caption border-collapse" style={{ minWidth: '500px' }}>{children}</table>
+                              </div>
+                              <p className="text-center text-faded-blue mt-1 lg:hidden" style={{ fontSize: '10px' }}>{'\u2190'} swipe {'\u2192'}</p>
                             </div>
                           ),
-                          thead: ({ children }) => <thead className="border-b border-white/10">{children}</thead>,
-                          th: ({ children }) => <th className="text-left px-2 py-1 text-muted-blue font-medium">{children}</th>,
-                          td: ({ children }) => <td className="px-2 py-1 text-ice-white border-b border-white/5">{children}</td>,
+                          thead: ({ children }) => <thead className="bg-white/5 border-b border-white/10 sticky top-0">{children}</thead>,
+                          th: ({ children }) => <th className="text-left px-3 py-1.5 text-muted-blue font-medium whitespace-nowrap">{children}</th>,
+                          td: ({ children }) => <td className="px-3 py-1.5 text-ice-white border-b border-white/5" style={{ minWidth: '100px' }}>{children}</td>,
                           blockquote: ({ children }) => (
                             <blockquote className="border-l-2 border-signal-yellow/50 pl-3 my-2 text-muted-blue italic">
                               {children}
@@ -550,16 +666,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
                       >
                         {msg.text}
                       </ReactMarkdown>
-                    ) : isStreaming && i === messages.length - 1 ? (
-                      <span className="inline-flex items-center gap-1 text-muted-blue">
-                        <Loader2 size={14} className="animate-spin" />
-                        <span className="text-caption">Agent R denkt nach...</span>
-                      </span>
                     ) : null}
-
-                    {isStreaming && i === messages.length - 1 && msg.text && (
-                      <span className="inline-block w-1.5 h-4 bg-baldur-blue animate-pulse ml-0.5 align-text-bottom" />
-                    )}
                   </div>
                 )}
               </div>
