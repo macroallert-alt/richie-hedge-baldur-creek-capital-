@@ -1,6 +1,6 @@
 // src/app/api/agent-r/route.js
 // Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
-// V1.2: Mobile SSE fix — keepalive pings during Claude wait
+// V1.3: Mobile SSE fix — async delay between chunks prevents buffer swallowing
 // Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
@@ -127,6 +127,9 @@ function startPing(send) {
   return () => clearInterval(id);
 }
 
+// ===== ASYNC DELAY =====
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 export async function POST(request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -209,11 +212,23 @@ export async function POST(request) {
             // Stop pings before sending text chunks
             stopPing();
 
-            // Send in chunks — small delay between batches for mobile rendering
-            const chunkSize = 40;
+            // V1.3 Mobile Fix: Send in chunks with periodic async yields.
+            // Mobile Safari/Chrome buffer SSE events aggressively.
+            // Without yields, all chunks arrive as one blob and the client
+            // ReadableStream.read() returns them concatenated — the split('\n')
+            // may fail to parse individual SSE events if the browser closes
+            // the connection before the client processes the buffer.
+            const chunkSize = 80;
             for (let i = 0; i < fullText.length; i += chunkSize) {
               send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
+              // Yield to event loop every 5 chunks — lets Mobile browsers
+              // flush their SSE buffer and fire onmessage/read() callbacks
+              if ((i / chunkSize) % 5 === 4) {
+                await delay(1);
+              }
             }
+            // Ensure final text chunks are flushed before done signal
+            await delay(50);
             send({ type: 'done' });
             controller.close();
             return;
@@ -274,6 +289,8 @@ export async function POST(request) {
         }
 
         await streamClaudeResponse(finalResponse, send);
+        // Ensure stream is flushed before done
+        await delay(50);
         send({ type: 'done' });
         controller.close();
 
