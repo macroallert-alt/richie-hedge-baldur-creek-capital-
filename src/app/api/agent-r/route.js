@@ -1,6 +1,6 @@
 // src/app/api/agent-r/route.js
 // Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
-// V1.3: Mobile SSE fix — async delay between chunks prevents buffer swallowing
+// V1.4: Mobile fix — pings stay alive until first text arrives, async yields between chunks
 // Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
@@ -23,7 +23,7 @@ const RATE_LIMIT_WAIT_MS = 5000;
 const MAX_RETRIES = 2;
 
 // Keepalive ping interval (ms) — keeps Mobile Safari/Chrome from dropping SSE
-const PING_INTERVAL_MS = 3000;
+const PING_INTERVAL_MS = 2500;
 
 
 // ===== DASHBOARD COMPRESSION =====
@@ -113,15 +113,13 @@ function compactToolResult(result) {
 
 
 // ===== KEEPALIVE PING HELPER =====
-// Starts sending { type: "ping" } every PING_INTERVAL_MS
-// Returns a stop function. Client ignores ping events.
 
 function startPing(send) {
   const id = setInterval(() => {
     try {
       send({ type: 'ping' });
     } catch {
-      // Stream already closed — ignore
+      // Stream already closed
     }
   }, PING_INTERVAL_MS);
   return () => clearInterval(id);
@@ -129,6 +127,41 @@ function startPing(send) {
 
 // ===== ASYNC DELAY =====
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+// ===== SEND TEXT WITH MOBILE-SAFE CHUNKING =====
+// Sends fullText in chunks with periodic async yields so Mobile browsers
+// can flush their SSE buffer. Pings are stopped only AFTER first chunk sent.
+
+async function sendTextChunked(fullText, send, stopPing) {
+  const chunkSize = 80;
+  let pingsStopped = false;
+
+  for (let i = 0; i < fullText.length; i += chunkSize) {
+    // Stop pings after sending the first real text chunk
+    // (keeps connection alive until content actually flows)
+    if (!pingsStopped) {
+      stopPing();
+      pingsStopped = true;
+    }
+
+    send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
+
+    // Yield to event loop every 5 chunks — lets Mobile browsers
+    // flush their SSE buffer and fire read() callbacks
+    if ((i / chunkSize) % 5 === 4) {
+      await delay(1);
+    }
+  }
+
+  // If text was empty, still stop pings
+  if (!pingsStopped) {
+    stopPing();
+  }
+
+  // Ensure final chunks are flushed before caller sends 'done'
+  await delay(50);
+}
 
 
 export async function POST(request) {
@@ -180,7 +213,7 @@ export async function POST(request) {
         }
       };
 
-      // Start keepalive pings immediately
+      // Start keepalive pings immediately — critical for Mobile
       const stopPing = startPing(send);
 
       try {
@@ -188,7 +221,7 @@ export async function POST(request) {
         let toolRound = 0;
 
         while (toolRound < MAX_TOOL_ROUNDS) {
-          // Pings continue automatically during this await
+          // Pings continue automatically during Claude API wait
           const response = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, TOOL_DEFINITIONS, false);
 
           if (!response.ok) {
@@ -205,30 +238,12 @@ export async function POST(request) {
           const toolUseBlocks = (result.content || []).filter(b => b.type === 'tool_use');
 
           if (toolUseBlocks.length === 0) {
-            // No tool calls — final answer
+            // No tool calls — this is the final answer
             const textBlocks = (result.content || []).filter(b => b.type === 'text');
             const fullText = textBlocks.map(b => b.text).join('');
 
-            // Stop pings before sending text chunks
-            stopPing();
-
-            // V1.3 Mobile Fix: Send in chunks with periodic async yields.
-            // Mobile Safari/Chrome buffer SSE events aggressively.
-            // Without yields, all chunks arrive as one blob and the client
-            // ReadableStream.read() returns them concatenated — the split('\n')
-            // may fail to parse individual SSE events if the browser closes
-            // the connection before the client processes the buffer.
-            const chunkSize = 80;
-            for (let i = 0; i < fullText.length; i += chunkSize) {
-              send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
-              // Yield to event loop every 5 chunks — lets Mobile browsers
-              // flush their SSE buffer and fire onmessage/read() callbacks
-              if ((i / chunkSize) % 5 === 4) {
-                await delay(1);
-              }
-            }
-            // Ensure final text chunks are flushed before done signal
-            await delay(50);
+            // Send text with mobile-safe chunking (stops pings internally)
+            await sendTextChunked(fullText, send, stopPing);
             send({ type: 'done' });
             controller.close();
             return;
@@ -276,11 +291,11 @@ export async function POST(request) {
         }
 
         // Max tool rounds reached — force final answer (streamed)
+        // Pings keep running during the Claude API call
         const finalResponse = await callClaudeWithRetry(apiKey, systemPrompt, currentMessages, [], true);
 
-        stopPing();
-
         if (!finalResponse.ok) {
+          stopPing();
           const errText = await finalResponse.text();
           send({ type: 'error', error: `Claude API Error: ${finalResponse.status}` });
           send({ type: 'done' });
@@ -288,8 +303,8 @@ export async function POST(request) {
           return;
         }
 
-        await streamClaudeResponse(finalResponse, send);
-        // Ensure stream is flushed before done
+        // Stream Claude response — pings stop after first text arrives
+        await streamClaudeResponse(finalResponse, send, stopPing);
         await delay(50);
         send({ type: 'done' });
         controller.close();
@@ -353,12 +368,16 @@ async function callClaude(apiKey, systemPrompt, messages, tools, stream) {
 }
 
 
-// ===== STREAM CLAUDE RESPONSE =====
+// ===== STREAM CLAUDE RESPONSE (Mobile-Safe) =====
+// Pings stay alive until the first text_delta arrives from Claude's stream.
+// This prevents Mobile Safari from killing the connection during the
+// gap between the last ping and Claude's first streamed token.
 
-async function streamClaudeResponse(response, send) {
+async function streamClaudeResponse(response, send, stopPing) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let pingsStopped = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -373,16 +392,25 @@ async function streamClaudeResponse(response, send) {
       if (!line.startsWith('data: ')) continue;
       const data = line.slice(6).trim();
 
-      if (data === '[DONE]') return;
+      if (data === '[DONE]') {
+        if (!pingsStopped) stopPing();
+        return;
+      }
 
       try {
         const parsed = JSON.parse(data);
 
         if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+          // Stop pings on first real content
+          if (!pingsStopped) {
+            stopPing();
+            pingsStopped = true;
+          }
           send({ type: 'text_delta', text: parsed.delta.text });
         }
 
         if (parsed.type === 'message_stop') {
+          if (!pingsStopped) stopPing();
           return;
         }
       } catch {
@@ -390,4 +418,7 @@ async function streamClaudeResponse(response, send) {
       }
     }
   }
+
+  // Stream ended without explicit stop — clean up pings
+  if (!pingsStopped) stopPing();
 }
