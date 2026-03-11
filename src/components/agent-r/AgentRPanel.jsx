@@ -610,26 +610,9 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   <p className="text-body text-ice-white whitespace-pre-wrap">{msg.text}</p>
                 ) : (
                   <div className="text-body text-ice-white agent-r-markdown">
-                    {/* While streaming the LAST message: render as plain text.
-                        This prevents remarkGfm from seeing incomplete tables
-                        and caching them as paragraph text.
-                        Once streaming ends (isStreaming=false), ReactMarkdown
-                        gets the COMPLETE text and parses tables correctly. */}
-                    {isStreaming && i === messages.length - 1 ? (
-                      msg.text ? (
-                        <>
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
-                          <span className="inline-block w-1.5 h-4 bg-baldur-blue animate-pulse ml-0.5 align-text-bottom" />
-                        </>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-muted-blue">
-                          <Loader2 size={14} className="animate-spin" />
-                          <span className="text-caption">Agent R denkt nach...</span>
-                        </span>
-                      )
-                    ) : msg.text ? (
+                    {msg.text ? (
                       <ReactMarkdown
-                        key={renderKey}
+                        key={isStreaming && i === messages.length - 1 ? 'streaming' : `done-${renderKey}`}
                         remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -666,7 +649,16 @@ export default function AgentRPanel({ dashboard, onClose }) {
                       >
                         {msg.text}
                       </ReactMarkdown>
+                    ) : isStreaming && i === messages.length - 1 ? (
+                      <span className="inline-flex items-center gap-1 text-muted-blue">
+                        <Loader2 size={14} className="animate-spin" />
+                        <span className="text-caption">Agent R denkt nach...</span>
+                      </span>
                     ) : null}
+
+                    {isStreaming && i === messages.length - 1 && msg.text && (
+                      <span className="inline-block w-1.5 h-4 bg-baldur-blue animate-pulse ml-0.5 align-text-bottom" />
+                    )}
                   </div>
                 )}
               </div>
