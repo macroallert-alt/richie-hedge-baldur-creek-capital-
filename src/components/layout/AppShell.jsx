@@ -18,6 +18,7 @@ import G7Detail from '@/components/detail/G7Detail';
 import TradingDeskDetail from '@/components/detail/TradingDeskDetail';
 import RotationDetail from '@/components/detail/RotationDetail';
 import DisruptionsDetail from '@/components/detail/DisruptionsDetail';
+import BriefingDetail from '@/components/detail/BriefingDetail';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -28,6 +29,7 @@ import { useDashboardContext } from '@/context/DashboardContext';
 const PAGE_COMPONENTS = {
   dashboard: DashboardHub,
   cio: CIODetail,
+  briefing: BriefingDetail,
   risk: RiskDetail,
   signals: SignalsDetail,
   'trading-desk': TradingDeskDetail,
