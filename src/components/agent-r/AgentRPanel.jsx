@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Loader2, AlertTriangle, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { useNudges } from '@/hooks/useNudges';
 import { TOOL_LABELS } from '@/lib/constants';
 
@@ -232,7 +231,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
       let buffer = '';
       let assistantText = '';
       let currentTools = [];
-      let gotDone = false;
 
       updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
 
@@ -249,9 +247,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
           try {
             const data = JSON.parse(line.slice(6));
-
-            // Ignore keepalive pings from server
-            if (data.type === 'ping') continue;
 
             if (data.type === 'text_delta') {
               assistantText += data.text;
@@ -283,7 +278,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
             }
 
             if (data.type === 'done') {
-              gotDone = true;
               setIsStreaming(false);
               setActiveTools([]);
             }
@@ -293,12 +287,8 @@ export default function AgentRPanel({ dashboard, onClose }) {
         }
       }
 
-      // Robust fallback: if stream ended without explicit 'done' event,
-      // still finalize — this handles Mobile Safari dropping the connection
-      if (!gotDone) {
-        setIsStreaming(false);
-        setActiveTools([]);
-      }
+      setIsStreaming(false);
+      setActiveTools([]);
 
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -460,7 +450,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
           </p>
         </div>
 
-        {/* Nudges — only show when no messages in active tab */}
+        {/* Nudges \u2014 only show when no messages in active tab */}
         {nudges.length > 0 && messages.length === 0 && (
           <div className="px-4 py-3 space-y-2 border-b border-white/5 flex-shrink-0 overflow-y-auto max-h-[30vh]">
             <p className="text-caption text-muted-blue">PRIORIT{'\u00c4'}RE HINWEISE</p>
@@ -529,7 +519,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   <div className="text-body text-ice-white agent-r-markdown">
                     {msg.text ? (
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                           strong: ({ children }) => <strong className="text-ice-white font-semibold">{children}</strong>,
@@ -544,17 +533,13 @@ export default function AgentRPanel({ dashboard, onClose }) {
                             ? <code className="bg-white/10 px-1 py-0.5 rounded text-caption font-mono text-baldur-blue">{children}</code>
                             : <pre className="bg-white/5 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto"><code className="text-caption font-mono">{children}</code></pre>,
                           table: ({ children }) => (
-                            <div className="relative my-2">
-                              <div className="overflow-x-auto rounded-lg border border-white/10"
-                                   style={{ WebkitOverflowScrolling: 'touch' }}>
-                                <table className="text-caption border-collapse" style={{ minWidth: '500px' }}>{children}</table>
-                              </div>
-                              <p className="text-center text-faded-blue mt-1 lg:hidden" style={{ fontSize: '10px' }}>{'\u2190'} swipe {'\u2192'}</p>
+                            <div className="overflow-x-auto my-2">
+                              <table className="text-caption border-collapse w-full">{children}</table>
                             </div>
                           ),
-                          thead: ({ children }) => <thead className="bg-white/5 border-b border-white/10 sticky top-0">{children}</thead>,
-                          th: ({ children }) => <th className="text-left px-3 py-1.5 text-muted-blue font-medium whitespace-nowrap">{children}</th>,
-                          td: ({ children }) => <td className="px-3 py-1.5 text-ice-white border-b border-white/5" style={{ minWidth: '100px' }}>{children}</td>,
+                          thead: ({ children }) => <thead className="border-b border-white/10">{children}</thead>,
+                          th: ({ children }) => <th className="text-left px-2 py-1 text-muted-blue font-medium">{children}</th>,
+                          td: ({ children }) => <td className="px-2 py-1 text-ice-white border-b border-white/5">{children}</td>,
                           blockquote: ({ children }) => (
                             <blockquote className="border-l-2 border-signal-yellow/50 pl-3 my-2 text-muted-blue italic">
                               {children}
