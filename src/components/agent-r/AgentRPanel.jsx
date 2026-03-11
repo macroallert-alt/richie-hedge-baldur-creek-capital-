@@ -129,7 +129,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeTools, setActiveTools] = useState([]);
   const [error, setError] = useState(null);
-  const [renderKey, setRenderKey] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
@@ -356,9 +355,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
               });
               setIsStreaming(false);
               setActiveTools([]);
-              // Increment renderKey to force ReactMarkdown re-mount
-              // with complete text — fixes Mobile table rendering
-              setRenderKey(k => k + 1);
             }
           } catch {
             // Skip
@@ -380,7 +376,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
         });
         setIsStreaming(false);
         setActiveTools([]);
-        setRenderKey(k => k + 1);
       }
 
     } catch (err) {
@@ -612,7 +607,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
                   <div className="text-body text-ice-white agent-r-markdown">
                     {msg.text ? (
                       <ReactMarkdown
-                        key={isStreaming && i === messages.length - 1 ? 'streaming' : `done-${renderKey}`}
                         remarkPlugins={[remarkGfm]}
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
