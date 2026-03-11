@@ -1,8 +1,7 @@
 // src/app/api/agent-r/route.js
 // Agent R API Route — Edge Runtime, Tool-Use-Loop, SSE Streaming
-// V1.5: Always non-streaming Claude calls + chunked SSE send.
-//       Eliminates Mobile Safari stream-parsing issues entirely.
-//       Pings stay alive until first text chunk.
+// V1.6: MAX_TOOL_ROUNDS=2 (fits Edge 25s timeout), always non-streaming,
+//       chunked SSE send, pings alive until first text.
 // Based on: AGENT_R_TECH_SPEC_TEIL_2.md §2.3-2.5
 
 import { buildSystemPrompt } from '@/lib/agent-r-prompt';
@@ -10,8 +9,9 @@ import { TOOL_DEFINITIONS, executeTool } from '@/lib/agent-r-tools';
 
 export const runtime = 'edge';
 
-// Max tool-use rounds before forcing final answer (Spec §2.4.1)
-const MAX_TOOL_ROUNDS = 3;
+// Max tool-use rounds before forcing final answer
+// 2 rounds = up to 6 tools + 3 Claude calls = fits Edge 25s timeout
+const MAX_TOOL_ROUNDS = 2;
 
 // Max messages sent to Claude (keep context manageable)
 const MAX_HISTORY_MESSAGES = 10;
@@ -132,8 +132,6 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 // ===== SEND TEXT WITH MOBILE-SAFE CHUNKING =====
-// Sends fullText in chunks with periodic async yields so Mobile browsers
-// can flush their SSE buffer. Pings are stopped only AFTER first chunk sent.
 
 async function sendTextChunked(fullText, send, stopPing) {
   const chunkSize = 80;
@@ -147,7 +145,6 @@ async function sendTextChunked(fullText, send, stopPing) {
 
     send({ type: 'text_delta', text: fullText.slice(i, i + chunkSize) });
 
-    // Yield every 5 chunks for Mobile browser SSE buffer flush
     if ((i / chunkSize) % 5 === 4) {
       await delay(1);
     }
@@ -215,17 +212,13 @@ export async function POST(request) {
       try {
         let currentMessages = [...claudeMessages];
 
-        // Tool-use loop: up to MAX_TOOL_ROUNDS rounds
-        // ALL Claude calls use stream:false for Mobile compatibility
         for (let toolRound = 0; toolRound <= MAX_TOOL_ROUNDS; toolRound++) {
-          // On the last extra round (toolRound === MAX_TOOL_ROUNDS),
-          // we force no tools to get a final text answer
           const useTools = toolRound < MAX_TOOL_ROUNDS;
 
           const response = await callClaudeWithRetry(
             apiKey, systemPrompt, currentMessages,
             useTools ? TOOL_DEFINITIONS : [],
-            false  // NEVER stream — always JSON response
+            false
           );
 
           if (!response.ok) {
@@ -240,7 +233,6 @@ export async function POST(request) {
           const result = await response.json();
           const toolUseBlocks = (result.content || []).filter(b => b.type === 'tool_use');
 
-          // If no tool calls → final text answer
           if (toolUseBlocks.length === 0) {
             const textBlocks = (result.content || []).filter(b => b.type === 'text');
             const fullText = textBlocks.map(b => b.text).join('');
@@ -251,7 +243,6 @@ export async function POST(request) {
             return;
           }
 
-          // Tool calls — notify client
           for (const block of toolUseBlocks) {
             send({
               type: 'tool_call',
@@ -259,7 +250,6 @@ export async function POST(request) {
             });
           }
 
-          // Execute tools — pings continue during this
           const toolResults = await Promise.all(
             toolUseBlocks.map(async (block) => {
               try {
@@ -288,12 +278,8 @@ export async function POST(request) {
             role: 'user',
             content: toolResults,
           });
-
-          // If this was the last allowed tool round, the next iteration
-          // (toolRound === MAX_TOOL_ROUNDS) will force a text-only response
         }
 
-        // Should not reach here, but safety net
         stopPing();
         send({ type: 'done' });
         controller.close();
