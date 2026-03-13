@@ -25,9 +25,6 @@ const ZONE_COLORS = {
   gray:   { fill: '#8B9DC3', opacity: 0.05 },
 };
 
-// Lead-Lag config per cycle (from config.py CYCLE_DEFINITIONS.lead_relationships)
-// lead_months: how many months the indicator LEADS the primary asset
-// direction: "positive" = both move same way, "negative" = inverted
 const LEAD_LAG_CONFIG = {
   LIQUIDITY:    { asset: 'DBC', lead_months: 7.5, direction: 'positive', r_sq: 0.46 },
   CREDIT:       { asset: 'HYG', lead_months: 0.5, direction: 'negative', r_sq: 0.85 },
@@ -91,18 +88,36 @@ function alignIcon(a) {
   return '➖';
 }
 
-// ===== Z-SCORE NORMALIZATION =====
+// ===== ROLLING Z-SCORE (5 year = 60 months window) =====
 
-function zScoreNormalize(values) {
-  const valid = values.filter(v => v != null);
-  if (valid.length < 2) return values.map(() => null);
-  const mean = valid.reduce((s, v) => s + v, 0) / valid.length;
-  const std = Math.sqrt(valid.reduce((s, v) => s + (v - mean) ** 2, 0) / valid.length);
-  if (std === 0) return values.map(() => 0);
-  return values.map(v => v != null ? (v - mean) / std : null);
+function rollingZScore(values, window = 60) {
+  const result = [];
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] == null) {
+      result.push(null);
+      continue;
+    }
+    // Collect window of valid values ending at i
+    const windowVals = [];
+    for (let j = Math.max(0, i - window + 1); j <= i; j++) {
+      if (values[j] != null) windowVals.push(values[j]);
+    }
+    if (windowVals.length < 12) {
+      result.push(null);
+      continue;
+    }
+    const mean = windowVals.reduce((s, v) => s + v, 0) / windowVals.length;
+    const std = Math.sqrt(windowVals.reduce((s, v) => s + (v - mean) ** 2, 0) / windowVals.length);
+    if (std === 0) {
+      result.push(0);
+    } else {
+      result.push((values[i] - mean) / std);
+    }
+  }
+  return result;
 }
 
-// ===== DATE SHIFT: Add months to "YYYY-MM" =====
+// ===== DATE SHIFT =====
 
 function shiftMonth(ym, months) {
   const y = parseInt(ym.slice(0, 4));
@@ -113,16 +128,37 @@ function shiftMonth(ym, months) {
   return `${ny}-${String(nm).padStart(2, '0')}`;
 }
 
+// ===== SIMPLE 12M SMOOTHING (for asset in lead-lag) =====
+
+function smooth12M(dateValPairs) {
+  if (dateValPairs.length < 12) return dateValPairs;
+  const result = [];
+  for (let i = 0; i < dateValPairs.length; i++) {
+    if (i < 11) {
+      result.push({ date: dateValPairs[i].date, value: null });
+    } else {
+      let sum = 0;
+      let count = 0;
+      for (let j = i - 11; j <= i; j++) {
+        if (dateValPairs[j].value != null) {
+          sum += dateValPairs[j].value;
+          count++;
+        }
+      }
+      result.push({ date: dateValPairs[i].date, value: count > 0 ? sum / count : null });
+    }
+  }
+  return result;
+}
+
 // ===== COLLAPSIBLE SECTION =====
 
 function Section({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-4">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-2 border-b border-white/10"
-      >
+      <button onClick={() => setOpen(!open)}
+              className="w-full flex items-center justify-between py-2 border-b border-white/10">
         <span className="text-label uppercase tracking-wider text-muted-blue">{title}</span>
         <span className="text-caption text-muted-blue">{open ? '▾' : '▸'}</span>
       </button>
@@ -136,20 +172,13 @@ function Section({ title, children, defaultOpen = true }) {
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div style={{
-      backgroundColor: '#0A1628',
-      border: '1px solid #4A5A7A',
-      borderRadius: '6px',
-      padding: '8px 12px',
-      fontSize: '11px',
-      maxWidth: '240px',
-    }}>
+    <div style={{ backgroundColor: '#0A1628', border: '1px solid #4A5A7A', borderRadius: '6px', padding: '8px 12px', fontSize: '11px', maxWidth: '240px' }}>
       <div style={{ color: COLORS.mutedBlue, marginBottom: '4px', fontWeight: 600 }}>{label}</div>
       {payload.map((entry, i) => {
         if (entry.value == null) return null;
         return (
           <div key={i} style={{ color: entry.color, fontSize: '10px' }}>
-            {entry.name}: {Number(entry.value).toFixed(2)} σ
+            {entry.name}: {Number(entry.value).toFixed(2)}σ
           </div>
         );
       })}
@@ -161,7 +190,6 @@ function ChartTooltip({ active, payload, label }) {
 
 function CycleClock({ cyclePosition, phase, phaseColor }) {
   if (!cyclePosition || !cyclePosition.typical_duration_months) return null;
-
   const pct = Math.min(cyclePosition.pct_complete || 0, 150);
   const months = cyclePosition.months_since_cycle_start || 0;
   const typical = cyclePosition.typical_duration_months;
@@ -180,8 +208,7 @@ function CycleClock({ cyclePosition, phase, phaseColor }) {
         </span>
       </div>
       <div className="relative h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#1a2a44' }}>
-        <div className="h-full rounded-full transition-all"
-             style={{ width: `${barWidth}%`, backgroundColor: isOverextended ? COLORS.signalRed : phaseColor, opacity: 0.8 }} />
+        <div className="h-full rounded-full" style={{ width: `${barWidth}%`, backgroundColor: isOverextended ? COLORS.signalRed : phaseColor, opacity: 0.8 }} />
       </div>
       <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px', color: COLORS.fadedBlue }}>
         <span>{inPhaseMonths > 0 ? `${inPhaseMonths} Mo in Phase` : ''}</span>
@@ -217,50 +244,52 @@ function PoliticalChart() {
   );
 }
 
-// ===== LEAD-LAG OVERLAY CHART =====
+// ===== LEAD-LAG OVERLAY CHART (Rolling 5Y Z-Score on Smoothed) =====
 
 function LeadLagChart({ cycleId, chartData }) {
   const ll = LEAD_LAG_CONFIG[cycleId];
-  if (!ll || !chartData || !chartData.indicator || chartData.indicator.length < 24) {
-    return null;
-  }
-  if (!chartData.asset_overlay || chartData.asset_overlay.length < 24) {
-    return null;
-  }
-  if (ll.lead_months < 1) return null; // No meaningful lead to show
+  if (!ll || !chartData || ll.lead_months < 1) return null;
+
+  // Use smoothed indicator if available, fall back to raw
+  const indSource = (chartData.smoothed && chartData.smoothed.length > 24)
+    ? chartData.smoothed.filter(pt => pt.value != null)
+    : chartData.indicator;
+
+  if (!indSource || indSource.length < 24) return null;
+  if (!chartData.asset_overlay || chartData.asset_overlay.length < 24) return null;
 
   const leadMonths = Math.round(ll.lead_months);
   const isNegative = ll.direction === 'negative';
 
+  // Smooth the asset too (12M MA) for cleaner comparison
+  const assetSmoothed = smooth12M(chartData.asset_overlay.filter(pt => pt.value != null));
+
   // Build indicator map: shift dates forward by lead_months
   const indShifted = {};
-  chartData.indicator.forEach(pt => {
+  indSource.forEach(pt => {
     if (pt.value != null) {
-      const shiftedDate = shiftMonth(pt.date, leadMonths);
-      indShifted[shiftedDate] = pt.value;
+      indShifted[shiftMonth(pt.date, leadMonths)] = pt.value;
     }
   });
 
-  // Build asset map (unshifted)
+  // Build asset map
   const assetMap = {};
-  chartData.asset_overlay.forEach(pt => {
-    if (pt.value != null) {
-      assetMap[pt.date] = pt.value;
-    }
+  assetSmoothed.forEach(pt => {
+    if (pt.value != null) assetMap[pt.date] = pt.value;
   });
 
-  // Find overlapping dates
+  // Get all dates, sorted
   const allDates = [...new Set([...Object.keys(indShifted), ...Object.keys(assetMap)])].sort();
 
-  // Extract raw values for z-score
+  // Extract values aligned to dates
   const indVals = allDates.map(d => indShifted[d] ?? null);
   const assetVals = allDates.map(d => assetMap[d] ?? null);
 
-  // Normalize both to z-score
-  let indZ = zScoreNormalize(indVals);
-  const assetZ = zScoreNormalize(assetVals);
+  // Rolling 5Y Z-Score (60 months)
+  let indZ = rollingZScore(indVals, 60);
+  const assetZ = rollingZScore(assetVals, 60);
 
-  // Invert indicator if negative correlation
+  // Invert if negative correlation
   if (isNegative) {
     indZ = indZ.map(v => v != null ? -v : null);
   }
@@ -268,107 +297,75 @@ function LeadLagChart({ cycleId, chartData }) {
   // Build merged data
   const merged = allDates.map((d, i) => ({
     date: d,
-    indicator_shifted: indZ[i],
-    asset: assetZ[i],
+    indicator_shifted: indZ[i] != null ? Math.round(indZ[i] * 100) / 100 : null,
+    asset: assetZ[i] != null ? Math.round(assetZ[i] * 100) / 100 : null,
   })).filter(d => d.indicator_shifted !== null || d.asset !== null);
 
   if (merged.length < 12) return null;
 
   const tickInterval = Math.max(1, Math.floor(merged.length / 10));
-
-  // Find NOW (today's YYYY-MM)
   const now = new Date();
   const nowYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-  // Find the preview zone: from NOW to end of shifted indicator
-  // The shifted indicator extends lead_months beyond actual data end
-  const lastAssetDate = chartData.asset_overlay[chartData.asset_overlay.length - 1]?.date;
-  const previewStart = nowYM;
-  const previewEnd = merged[merged.length - 1]?.date;
-
   const phaseColor = CYCLE_PHASE_COLORS[chartData.current_phase] || COLORS.baldurBlue;
+
+  // Preview zone: NOW to end of shifted indicator
+  const previewEnd = merged[merged.length - 1]?.date;
 
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-1">
         <span className="text-caption font-semibold" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
-          Lead-Lag Overlay (Z-Score)
+          Lead-Lag Overlay
         </span>
         <span className="text-caption text-muted-blue" style={{ fontSize: '9px' }}>
-          {ll.asset} vs {CYCLE_META[cycleId]?.indicator} shifted +{ll.lead_months}Mo
-          {isNegative ? ' (inverted)' : ''} | R²={ll.r_sq}
+          {ll.asset} vs Indicator +{ll.lead_months}Mo{isNegative ? ' (inv)' : ''} | R²={ll.r_sq}
         </span>
       </div>
       <div className="text-caption text-muted-blue mb-1" style={{ fontSize: '9px' }}>
-        ◀ Normalized (σ) — Wenn die Kurven synchron laufen, ist der Lead valide.
-        {isNegative
-          ? ' Indikator invertiert (steigender Spread = fallender Preis).'
-          : ' Beide laufen in gleicher Richtung.'}
+        Rolling 5Y Z-Score auf geglätteten Daten.
+        {isNegative ? ' Indikator invertiert.' : ''} Synchrone Kurven = valider Lead.
       </div>
-      <ResponsiveContainer width="100%" height={180}>
+      <ResponsiveContainer width="100%" height={200}>
         <LineChart data={merged} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1a2a44" />
 
-          {/* Preview zone: between NOW and end of shifted indicator */}
-          {previewStart && previewEnd && previewStart < previewEnd && (
-            <ReferenceArea
-              x1={previewStart}
-              x2={previewEnd}
-              fill={phaseColor}
-              fillOpacity={0.06}
-              ifOverflow="extendDomain"
-            />
+          {/* Preview zone */}
+          {nowYM && previewEnd && nowYM < previewEnd && (
+            <ReferenceArea x1={nowYM} x2={previewEnd} fill={phaseColor} fillOpacity={0.08} ifOverflow="extendDomain" />
           )}
 
-          {/* NOW marker */}
-          <ReferenceLine
-            x={nowYM}
-            stroke={COLORS.iceWhite}
-            strokeDasharray="4 4"
-            strokeWidth={1.5}
-            label={{ value: 'NOW', fill: COLORS.iceWhite, fontSize: 10, position: 'top' }}
-          />
+          {/* Zero line */}
+          <ReferenceLine y={0} stroke="#4A5A7A" strokeDasharray="2 2" strokeWidth={0.5} />
 
-          <XAxis
-            dataKey="date"
-            tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
-            interval={tickInterval}
-            tickFormatter={d => d.slice(0, 4)}
-          />
-          <YAxis
-            tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
-            tickFormatter={v => `${v.toFixed(1)}σ`}
-            width={40}
-            domain={['auto', 'auto']}
-          />
+          {/* NOW marker */}
+          <ReferenceLine x={nowYM} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5}
+                         label={{ value: 'NOW', fill: COLORS.iceWhite, fontSize: 10, position: 'top' }} />
+
+          <XAxis dataKey="date" tick={{ fill: COLORS.mutedBlue, fontSize: 9 }} interval={tickInterval}
+                 tickFormatter={d => d.slice(0, 4)} />
+          <YAxis tick={{ fill: COLORS.mutedBlue, fontSize: 9 }} tickFormatter={v => `${v.toFixed(1)}σ`}
+                 width={40} domain={['auto', 'auto']} />
           <Tooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: '10px', color: COLORS.mutedBlue }} iconSize={8} />
 
-          {/* Asset (unshifted) — the "reality" */}
-          <Line
-            type="monotone" dataKey="asset"
-            stroke="#8B9DC3" strokeWidth={2} dot={false}
-            name={`${ll.asset} (actual)`} connectNulls strokeOpacity={0.7}
-          />
+          {/* Asset (actual, unshifted) */}
+          <Line type="monotone" dataKey="asset" stroke="#8B9DC3" strokeWidth={2} dot={false}
+                name={`${ll.asset}`} connectNulls strokeOpacity={0.8} />
 
-          {/* Indicator (shifted forward by lead) — the "prediction" */}
-          <Line
-            type="monotone" dataKey="indicator_shifted"
-            stroke={phaseColor} strokeWidth={2.5} dot={false}
-            name={`Indicator (+${ll.lead_months}Mo${isNegative ? ', inv' : ''})`}
-            connectNulls strokeOpacity={0.9}
-          />
+          {/* Indicator (shifted + smoothed + rolling z-score) */}
+          <Line type="monotone" dataKey="indicator_shifted" stroke={phaseColor} strokeWidth={2.5} dot={false}
+                name={`Indicator +${ll.lead_months}Mo`} connectNulls strokeOpacity={0.9} />
         </LineChart>
       </ResponsiveContainer>
       <div className="text-caption mt-1 px-2 py-1 rounded" style={{ fontSize: '9px', backgroundColor: `${phaseColor}10`, color: phaseColor }}>
-        Rechts von NOW: Der Indikator zeigt schon wohin {ll.asset} in ~{ll.lead_months} Monaten gehen wird.
-        {isNegative ? ` (invertiert: steigender Indikator = fallender ${ll.asset})` : ''}
+        Rechts von NOW: Indikator zeigt wohin {ll.asset} in ~{ll.lead_months} Mo geht.
+        {isNegative ? ` (invertiert)` : ''}
       </div>
     </div>
   );
 }
 
-// ===== RAW DATA CHART (existing, simplified) =====
+// ===== RAW DATA CHART =====
 
 function RawDataChart({ cycleId, chartData, yFormat, yLabel }) {
   if (!chartData || !chartData.indicator || chartData.indicator.length === 0) {
@@ -397,7 +394,7 @@ function RawDataChart({ cycleId, chartData, yFormat, yLabel }) {
   const phaseZones = chartData.phase_zones || [];
   const nowDate = merged.length > 0 ? merged[merged.length - 1].date : null;
 
-  const formatYAxis = (value, fmt) => {
+  const fmtYAxis = (value, fmt) => {
     if (value == null) return '';
     switch (fmt) {
       case 'trillions': return `$${(value / 1e6).toFixed(1)}T`;
@@ -411,7 +408,7 @@ function RawDataChart({ cycleId, chartData, yFormat, yLabel }) {
   return (
     <div>
       <div className="text-caption text-muted-blue mb-1" style={{ fontSize: '9px' }}>
-        ◀ {yLabel || 'Indicator'} &nbsp;|&nbsp; {assetTicker} Price ($) ▶
+        ◀ {yLabel || 'Indicator'} &nbsp;|&nbsp; {assetTicker} ($) ▶
       </div>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={merged} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -423,12 +420,12 @@ function RawDataChart({ cycleId, chartData, yFormat, yLabel }) {
           {nowDate && <ReferenceLine x={nowDate} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5}
                                      label={{ value: 'NOW', fill: COLORS.iceWhite, fontSize: 10, position: 'top' }} />}
           <XAxis dataKey="date" tick={{ fill: COLORS.mutedBlue, fontSize: 9 }} interval={tickInterval} tickFormatter={d => d.slice(0, 4)} />
-          <YAxis yAxisId="left" tick={{ fill: COLORS.mutedBlue, fontSize: 9 }} tickFormatter={v => formatYAxis(v, yFormat)} width={55} />
+          <YAxis yAxisId="left" tick={{ fill: COLORS.mutedBlue, fontSize: 9 }} tickFormatter={v => fmtYAxis(v, yFormat)} width={55} />
           <YAxis yAxisId="right" orientation="right" tick={{ fill: '#6B7280', fontSize: 9 }} tickFormatter={v => `$${v.toFixed(0)}`} width={45} />
           <Tooltip />
           <Legend wrapperStyle={{ fontSize: '10px', color: COLORS.mutedBlue }} iconSize={8} />
-          <Line yAxisId="right" type="monotone" dataKey="asset" stroke="#6B7280" strokeWidth={1} dot={false} name={assetTicker || 'Asset'} connectNulls strokeOpacity={0.4} />
-          <Line yAxisId="left" type="monotone" dataKey="indicator" stroke={COLORS.mutedBlue} strokeWidth={1} dot={false} name="Raw Data" connectNulls strokeOpacity={0.5} />
+          <Line yAxisId="right" type="monotone" dataKey="asset" stroke="#6B7280" strokeWidth={1} dot={false} name={assetTicker} connectNulls strokeOpacity={0.4} />
+          <Line yAxisId="left" type="monotone" dataKey="indicator" stroke={COLORS.mutedBlue} strokeWidth={1} dot={false} name="Raw" connectNulls strokeOpacity={0.5} />
           <Line yAxisId="left" type="monotone" dataKey="smoothed" stroke={phaseColor} strokeWidth={3} dot={false} name="Cycle Wave" connectNulls strokeOpacity={0.9} />
         </LineChart>
       </ResponsiveContainer>
@@ -439,7 +436,10 @@ function RawDataChart({ cycleId, chartData, yFormat, yLabel }) {
 // ===== CYCLE CARD =====
 
 function CycleCard({ cycleId, phaseData, chartData }) {
-  const [viewMode, setViewMode] = useState('leadlag'); // 'leadlag' | 'raw' | 'hide'
+  const ll = LEAD_LAG_CONFIG[cycleId];
+  const hasLeadLag = ll && ll.lead_months >= 1 && chartData?.indicator?.length > 24 && chartData?.asset_overlay?.length > 24;
+  const [viewMode, setViewMode] = useState(hasLeadLag ? 'leadlag' : 'raw');
+
   const meta = CYCLE_META[cycleId] || {};
   const phase = phaseData?.phase || 'UNKNOWN';
   const confidence = phaseData?.confidence;
@@ -448,8 +448,6 @@ function CycleCard({ cycleId, phaseData, chartData }) {
   const phaseColor = CYCLE_PHASE_COLORS[phase] || COLORS.fadedBlue;
   const tierColor = CYCLE_TIER_COLORS[meta.tier] || COLORS.mutedBlue;
   const cyclePosition = chartData?.cycle_position;
-  const ll = LEAD_LAG_CONFIG[cycleId];
-  const hasLeadLag = ll && ll.lead_months >= 1 && chartData?.indicator?.length > 24 && chartData?.asset_overlay?.length > 24;
 
   return (
     <div className="rounded-lg p-3 mb-3" style={{ backgroundColor: `${phaseColor}10`, borderLeft: `3px solid ${phaseColor}` }}>
@@ -459,14 +457,11 @@ function CycleCard({ cycleId, phaseData, chartData }) {
           <span style={{ fontSize: '16px' }}>{meta.icon}</span>
           <span className="text-sm font-semibold text-ice-white">{meta.name}</span>
           <span className="text-caption px-1.5 py-0.5 rounded font-mono"
-                style={{ backgroundColor: `${tierColor}20`, color: tierColor, fontSize: '10px' }}>
-            T{meta.tier}
-          </span>
+                style={{ backgroundColor: `${tierColor}20`, color: tierColor, fontSize: '10px' }}>T{meta.tier}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-caption" title="V16 Alignment">{alignIcon(alignment)}</span>
-          {inDanger && <span className="text-caption" title="In Danger Zone">⚠️</span>}
-          {/* View mode toggle */}
+          <span className="text-caption">{alignIcon(alignment)}</span>
+          {inDanger && <span className="text-caption">⚠️</span>}
           <div className="flex gap-1">
             {hasLeadLag && (
               <button onClick={() => setViewMode(viewMode === 'leadlag' ? 'hide' : 'leadlag')}
@@ -491,7 +486,7 @@ function CycleCard({ cycleId, phaseData, chartData }) {
         <CycleClock cyclePosition={cyclePosition} phase={phase} phaseColor={phaseColor} />
       )}
 
-      {/* Phase + Indicator values */}
+      {/* Indicator values */}
       <div className="flex items-center justify-between mb-1">
         <div className="text-caption text-muted-blue">
           {meta.indicator}: {fmtVal(phaseData?.indicator_value, meta.unit)}
@@ -516,10 +511,8 @@ function CycleCard({ cycleId, phaseData, chartData }) {
       {/* Danger Zone */}
       {phaseData?.danger_zone?.zone_name && (
         <div className="text-caption mt-1 px-2 py-1 rounded"
-             style={{
-               backgroundColor: inDanger ? `${COLORS.signalRed}15` : `${COLORS.signalOrange}10`,
-               color: inDanger ? COLORS.signalRed : COLORS.signalOrange,
-             }}>
+             style={{ backgroundColor: inDanger ? `${COLORS.signalRed}15` : `${COLORS.signalOrange}10`,
+                      color: inDanger ? COLORS.signalRed : COLORS.signalOrange }}>
           {inDanger ? '⚠ IN ZONE: ' : '→ '}{phaseData.danger_zone.zone_name}
           {phaseData.danger_zone.distance_absolute != null && !inDanger && (
             <span> (Dist: {phaseData.danger_zone.distance_absolute})</span>
@@ -540,11 +533,10 @@ function CycleCard({ cycleId, phaseData, chartData }) {
         <div className="mt-3"><PoliticalChart /></div>
       )}
 
-      {/* Footer stats */}
       {chartData && viewMode !== 'hide' && (
         <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px', color: COLORS.fadedBlue }}>
           <span>{(chartData.phase_zones_count || 0)} phases | {(chartData.smoothed_count || 0)} smooth</span>
-          <span>{chartData.indicator_count || 0} pts | {chartData.asset_ticker || '—'} ({chartData.asset_count || 0} pts)</span>
+          <span>{chartData.indicator_count || 0} pts | {chartData.asset_ticker} ({chartData.asset_count || 0} pts)</span>
         </div>
       )}
     </div>
@@ -563,10 +555,7 @@ export default function CyclesDetail({ dashboard }) {
     if (!CHART_URL) return;
     setChartLoading(true);
     fetch(`${CHART_URL}?t=${Date.now()}`, { cache: 'no-store' })
-      .then(r => {
-        if (!r.ok) throw new Error(`Chart fetch failed: ${r.status}`);
-        return r.json();
-      })
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then(data => { setChartDataAll(data); setChartError(null); })
       .catch(err => setChartError(err.message))
       .finally(() => setChartLoading(false));
@@ -592,7 +581,6 @@ export default function CyclesDetail({ dashboard }) {
 
   return (
     <div className="space-y-4">
-      {/* ═══ ALIGNMENT HEADER ═══ */}
       <GlassCard>
         <div className="flex items-center justify-between mb-4">
           <span className="text-label uppercase tracking-wider text-muted-blue">🔄 Cycle Alignment Dashboard</span>
@@ -631,7 +619,6 @@ export default function CyclesDetail({ dashboard }) {
         {chartError && <div className="mt-2 text-caption" style={{ color: COLORS.signalOrange }}>Chart-Fehler: {chartError}</div>}
       </GlassCard>
 
-      {/* ═══ TIER 1 ═══ */}
       <GlassCard>
         <Section title="Tier 1 — Structural Cycles" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 1).map(id => (
@@ -640,7 +627,6 @@ export default function CyclesDetail({ dashboard }) {
         </Section>
       </GlassCard>
 
-      {/* ═══ TIER 2 ═══ */}
       <GlassCard>
         <Section title="Tier 2 — Cyclical Indicators" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 2).map(id => (
@@ -649,7 +635,6 @@ export default function CyclesDetail({ dashboard }) {
         </Section>
       </GlassCard>
 
-      {/* ═══ TIER 3 ═══ */}
       <GlassCard>
         <Section title="Tier 3 — Supplementary" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 3).map(id => (
@@ -658,7 +643,6 @@ export default function CyclesDetail({ dashboard }) {
         </Section>
       </GlassCard>
 
-      {/* ═══ ALIGNMENT MATRIX ═══ */}
       <GlassCard>
         <Section title="V16 Alignment Matrix" defaultOpen={false}>
           <div className="space-y-1">
@@ -673,9 +657,7 @@ export default function CyclesDetail({ dashboard }) {
                   <span className="text-caption font-mono" style={{ color: phColor }}>{phaseLabel(ph)}</span>
                   <span className="text-caption">
                     {alignIcon(al)}{' '}
-                    <span style={{ color: al === 'ALIGNED' ? COLORS.signalGreen : al === 'DIVERGED' ? COLORS.signalRed : COLORS.mutedBlue }}>
-                      {al}
-                    </span>
+                    <span style={{ color: al === 'ALIGNED' ? COLORS.signalGreen : al === 'DIVERGED' ? COLORS.signalRed : COLORS.mutedBlue }}>{al}</span>
                   </span>
                 </div>
               );
