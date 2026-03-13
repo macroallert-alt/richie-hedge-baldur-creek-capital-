@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend,
+  CartesianGrid, Legend, ReferenceArea, ReferenceLine,
 } from 'recharts';
 import GlassCard from '@/components/shared/GlassCard';
 import {
@@ -17,17 +17,25 @@ import {
 
 const CHART_URL = process.env.NEXT_PUBLIC_CYCLES_CHART_URL;
 
+const ZONE_COLORS = {
+  green:  { fill: '#22C55E', opacity: 0.08 },
+  yellow: { fill: '#EAB308', opacity: 0.08 },
+  orange: { fill: '#F97316', opacity: 0.10 },
+  red:    { fill: '#EF4444', opacity: 0.10 },
+  gray:   { fill: '#8B9DC3', opacity: 0.05 },
+};
+
 const CYCLE_META = {
-  LIQUIDITY:    { name: 'Global Liquidity',         icon: '💧', tier: 1, unit: '$T',  indicator: 'Fed Net Liq',      yFormat: 'trillions' },
-  CREDIT:       { name: 'Credit Cycle',             icon: '💳', tier: 1, unit: 'bps', indicator: 'HY OAS',           yFormat: 'number' },
-  COMMODITY:    { name: 'Commodity Supercycle',      icon: '🛢️', tier: 1, unit: '',    indicator: 'CRB Real (DBC/CPI)', yFormat: 'decimal2' },
-  CHINA_CREDIT: { name: 'China Credit Impulse',     icon: '🇨🇳', tier: 1, unit: '',    indicator: 'Cu/Au Ratio',      yFormat: 'decimal4' },
-  DOLLAR:       { name: 'US Dollar Cycle',           icon: '💵', tier: 2, unit: '',    indicator: 'DXY (DTWEXBGS)',   yFormat: 'number' },
-  BUSINESS:     { name: 'Business Cycle',            icon: '🏭', tier: 2, unit: '%',   indicator: 'INDPRO YoY',       yFormat: 'percent' },
-  FED_RATES:    { name: 'Fed / Interest Rate',       icon: '🏦', tier: 2, unit: '%',   indicator: 'Real FFR',         yFormat: 'percent' },
-  EARNINGS:     { name: 'Earnings / Profit',         icon: '📊', tier: 2, unit: '%',   indicator: 'Corp Profits YoY', yFormat: 'percent' },
-  TRADE:        { name: 'Global Trade / Shipping',   icon: '🚢', tier: 3, unit: '%',   indicator: 'CASS Freight YoY', yFormat: 'percent' },
-  POLITICAL:    { name: 'Political / Presidential',  icon: '🗳️', tier: 3, unit: '',    indicator: 'Calendar Year',    yFormat: 'number' },
+  LIQUIDITY:    { name: 'Global Liquidity',         icon: '💧', tier: 1, unit: '$T',  indicator: 'Fed Net Liq',      yFormat: 'trillions', yLabel: 'Net Liquidity ($T)' },
+  CREDIT:       { name: 'Credit Cycle',             icon: '💳', tier: 1, unit: 'bps', indicator: 'HY OAS',           yFormat: 'number',    yLabel: 'HY OAS (bps) — higher = more stress' },
+  COMMODITY:    { name: 'Commodity Supercycle',      icon: '🛢️', tier: 1, unit: '',    indicator: 'CRB Real (DBC/CPI)', yFormat: 'decimal2', yLabel: 'CRB Real Index' },
+  CHINA_CREDIT: { name: 'China Credit Impulse',     icon: '🇨🇳', tier: 1, unit: '',    indicator: 'Cu/Au Ratio',      yFormat: 'decimal4',  yLabel: 'Cu/Au Ratio — higher = more risk appetite' },
+  DOLLAR:       { name: 'US Dollar Cycle',           icon: '💵', tier: 2, unit: '',    indicator: 'DXY (DTWEXBGS)',   yFormat: 'number',    yLabel: 'Trade-Weighted Dollar' },
+  BUSINESS:     { name: 'Business Cycle',            icon: '🏭', tier: 2, unit: '%',   indicator: 'INDPRO YoY',       yFormat: 'percent',   yLabel: 'Industrial Production YoY (%)' },
+  FED_RATES:    { name: 'Fed / Interest Rate',       icon: '🏦', tier: 2, unit: '%',   indicator: 'Real FFR',         yFormat: 'percent',   yLabel: 'Real Fed Funds Rate (%)' },
+  EARNINGS:     { name: 'Earnings / Profit',         icon: '📊', tier: 2, unit: '%',   indicator: 'Corp Profits YoY', yFormat: 'percent',   yLabel: 'Corporate Profits YoY (%)' },
+  TRADE:        { name: 'Global Trade / Shipping',   icon: '🚢', tier: 3, unit: '%',   indicator: 'CASS Freight YoY', yFormat: 'percent',   yLabel: 'CASS Freight YoY (%)' },
+  POLITICAL:    { name: 'Political / Presidential',  icon: '🗳️', tier: 3, unit: '',    indicator: 'Calendar Year',    yFormat: 'number',    yLabel: 'Avg Historical Return (%)' },
 };
 
 const CYCLE_ORDER = [
@@ -109,7 +117,7 @@ function Section({ title, children, defaultOpen = true }) {
 
 // ===== CUSTOM TOOLTIP =====
 
-function ChartTooltip({ active, payload, label, yFormat }) {
+function ChartTooltip({ active, payload, label, yFormat, yLabel }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div style={{
@@ -118,20 +126,69 @@ function ChartTooltip({ active, payload, label, yFormat }) {
       borderRadius: '6px',
       padding: '8px 12px',
       fontSize: '11px',
+      maxWidth: '220px',
     }}>
-      <div style={{ color: COLORS.mutedBlue, marginBottom: '4px' }}>{label}</div>
-      {payload.map((entry, i) => (
-        <div key={i} style={{ color: entry.color }}>
-          {entry.name}: {entry.name === 'Asset'
-            ? `$${Number(entry.value).toFixed(2)}`
-            : formatTooltipVal(entry.value, yFormat)}
-        </div>
-      ))}
+      <div style={{ color: COLORS.mutedBlue, marginBottom: '4px', fontWeight: 600 }}>{label}</div>
+      {payload.map((entry, i) => {
+        if (entry.value == null) return null;
+        const val = entry.name === 'Asset'
+          ? `$${Number(entry.value).toFixed(2)}`
+          : formatTooltipVal(entry.value, yFormat);
+        return (
+          <div key={i} style={{ color: entry.color, fontSize: '10px' }}>
+            {entry.name}: {val}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-// ===== POLITICAL CYCLE CHART (synthetic sine) =====
+// ===== CYCLE CLOCK (progress bar) =====
+
+function CycleClock({ cyclePosition, phase, phaseColor }) {
+  if (!cyclePosition || !cyclePosition.typical_duration_months) return null;
+
+  const pct = Math.min(cyclePosition.pct_complete || 0, 150);
+  const months = cyclePosition.months_since_cycle_start || 0;
+  const typical = cyclePosition.typical_duration_months;
+  const remaining = cyclePosition.estimated_months_remaining || 0;
+  const inPhaseMonths = cyclePosition.months_in_phase || 0;
+
+  const barWidth = Math.min(pct, 100);
+  const isOverextended = pct > 100;
+
+  return (
+    <div className="mb-3">
+      <div className="flex items-center justify-between text-caption mb-1">
+        <span style={{ color: phaseColor, fontWeight: 600 }}>
+          {phaseLabel(phase)}
+        </span>
+        <span className="text-muted-blue font-mono" style={{ fontSize: '10px' }}>
+          Mo {months}/{typical} ({pct.toFixed(0)}%)
+          {isOverextended && <span style={{ color: COLORS.signalRed }}> OVEREXTENDED</span>}
+        </span>
+      </div>
+      {/* Progress bar */}
+      <div className="relative h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#1a2a44' }}>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{
+            width: `${barWidth}%`,
+            backgroundColor: isOverextended ? COLORS.signalRed : phaseColor,
+            opacity: 0.8,
+          }}
+        />
+      </div>
+      <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px', color: COLORS.fadedBlue }}>
+        <span>{inPhaseMonths > 0 ? `${inPhaseMonths} Mo in Phase` : ''}</span>
+        <span>{remaining > 0 ? `~${remaining} Mo verbleibend` : ''}</span>
+      </div>
+    </div>
+  );
+}
+
+// ===== POLITICAL CYCLE CHART =====
 
 function PoliticalChart() {
   const currentYear = new Date().getFullYear();
@@ -139,8 +196,10 @@ function PoliticalChart() {
   for (let y = currentYear - 12; y <= currentYear + 4; y++) {
     const cycleYear = ((y - 2025) % 4 + 4) % 4 + 1;
     const avgReturn = { 1: 6.5, 2: 4.2, 3: 16.3, 4: 7.5 }[cycleYear];
+    const color = { 1: 'yellow', 2: 'yellow', 3: 'green', 4: 'green' }[cycleYear];
     data.push({ date: String(y), value: avgReturn, year: cycleYear });
   }
+  const nowYear = String(currentYear);
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -148,6 +207,7 @@ function PoliticalChart() {
         <XAxis dataKey="date" tick={{ fill: COLORS.mutedBlue, fontSize: 10 }} interval={1} />
         <YAxis tick={{ fill: COLORS.mutedBlue, fontSize: 10 }} tickFormatter={v => `${v}%`} />
         <Tooltip content={<ChartTooltip yFormat="percent" />} />
+        <ReferenceLine x={nowYear} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{ value: 'NOW', fill: COLORS.iceWhite, fontSize: 10, position: 'top' }} />
         <Line type="monotone" dataKey="value" stroke={COLORS.signalYellow} strokeWidth={2}
               dot={{ r: 3, fill: COLORS.signalYellow }} name="Avg Return" />
       </LineChart>
@@ -155,9 +215,9 @@ function PoliticalChart() {
   );
 }
 
-// ===== CYCLE CHART =====
+// ===== CYCLE CHART WITH SMOOTHED + PHASE ZONES =====
 
-function CycleChart({ cycleId, chartData, yFormat }) {
+function CycleChart({ cycleId, chartData, yFormat, yLabel }) {
   if (!chartData || !chartData.indicator || chartData.indicator.length === 0) {
     return (
       <div className="text-caption text-muted-blue py-4 text-center">
@@ -166,94 +226,127 @@ function CycleChart({ cycleId, chartData, yFormat }) {
     );
   }
 
-  // Merge indicator, ma, asset into single array by date
+  // Build merged data
   const indMap = {};
-  chartData.indicator.forEach(pt => { indMap[pt.date] = { ...indMap[pt.date], date: pt.date, indicator: pt.value }; });
-  (chartData.ma_12m || []).forEach(pt => { if (pt.value != null) indMap[pt.date] = { ...indMap[pt.date], date: pt.date, ma: pt.value }; });
+  chartData.indicator.forEach(pt => {
+    indMap[pt.date] = { ...indMap[pt.date], date: pt.date, indicator: pt.value };
+  });
+  (chartData.ma_12m || []).forEach(pt => {
+    if (pt.value != null) indMap[pt.date] = { ...indMap[pt.date], date: pt.date, ma: pt.value };
+  });
+  (chartData.smoothed || []).forEach(pt => {
+    if (pt.value != null) indMap[pt.date] = { ...indMap[pt.date], date: pt.date, smoothed: pt.value };
+  });
 
   const assetMap = {};
   (chartData.asset_overlay || []).forEach(pt => { assetMap[pt.date] = pt.value; });
 
-  // Build merged data sorted by date
   const allDates = [...new Set([...Object.keys(indMap), ...Object.keys(assetMap)])].sort();
   const merged = allDates.map(d => ({
     date: d,
     indicator: indMap[d]?.indicator ?? null,
     ma: indMap[d]?.ma ?? null,
+    smoothed: indMap[d]?.smoothed ?? null,
     asset: assetMap[d] ?? null,
   })).filter(d => d.indicator !== null || d.asset !== null);
 
-  // Thin out labels for readability (show every 24th month = every 2 years)
   const tickInterval = Math.max(1, Math.floor(merged.length / 10));
-
   const assetTicker = chartData.asset_ticker || '';
   const phaseColor = CYCLE_PHASE_COLORS[chartData.current_phase] || COLORS.fadedBlue;
+  const phaseZones = chartData.phase_zones || [];
+
+  // NOW marker — last date in data
+  const nowDate = merged.length > 0 ? merged[merged.length - 1].date : null;
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={merged} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1a2a44" />
-        <XAxis
-          dataKey="date"
-          tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
-          interval={tickInterval}
-          tickFormatter={d => d.slice(0, 4)}
-        />
-        <YAxis
-          yAxisId="left"
-          tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
-          tickFormatter={v => formatYAxis(v, yFormat)}
-          width={55}
-        />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tick={{ fill: '#6B7280', fontSize: 9 }}
-          tickFormatter={v => `$${v.toFixed(0)}`}
-          width={45}
-        />
-        <Tooltip content={<ChartTooltip yFormat={yFormat} />} />
-        <Legend
-          wrapperStyle={{ fontSize: '10px', color: COLORS.mutedBlue }}
-          iconSize={8}
-        />
-        {/* Asset Overlay — background, gray, right axis */}
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="asset"
-          stroke="#6B7280"
-          strokeWidth={1}
-          dot={false}
-          name={assetTicker || 'Asset'}
-          connectNulls
-          strokeOpacity={0.5}
-        />
-        {/* 12M MA — dashed */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="ma"
-          stroke={COLORS.signalYellow}
-          strokeWidth={1.5}
-          strokeDasharray="4 3"
-          dot={false}
-          name="12M MA"
-          connectNulls
-        />
-        {/* Primary Indicator — solid, colored by phase */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="indicator"
-          stroke={phaseColor}
-          strokeWidth={2}
-          dot={false}
-          name="Indicator"
-          connectNulls
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div>
+      {/* Y-axis label */}
+      <div className="text-caption text-muted-blue mb-1" style={{ fontSize: '9px' }}>
+        ◀ {yLabel || 'Indicator'} &nbsp;|&nbsp; {assetTicker} Price ($) ▶
+      </div>
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={merged} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#1a2a44" />
+
+          {/* Phase Zones as colored background bands */}
+          {phaseZones.map((zone, i) => {
+            const zc = ZONE_COLORS[zone.color] || ZONE_COLORS.gray;
+            return (
+              <ReferenceArea
+                key={i}
+                x1={zone.start}
+                x2={zone.end}
+                fill={zc.fill}
+                fillOpacity={zc.opacity}
+                ifOverflow="extendDomain"
+              />
+            );
+          })}
+
+          {/* NOW marker */}
+          {nowDate && (
+            <ReferenceLine
+              x={nowDate}
+              stroke={COLORS.iceWhite}
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              label={{ value: 'NOW', fill: COLORS.iceWhite, fontSize: 10, position: 'top' }}
+            />
+          )}
+
+          <XAxis
+            dataKey="date"
+            tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
+            interval={tickInterval}
+            tickFormatter={d => d.slice(0, 4)}
+          />
+          <YAxis
+            yAxisId="left"
+            tick={{ fill: COLORS.mutedBlue, fontSize: 9 }}
+            tickFormatter={v => formatYAxis(v, yFormat)}
+            width={55}
+          />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fill: '#6B7280', fontSize: 9 }}
+            tickFormatter={v => `$${v.toFixed(0)}`}
+            width={45}
+          />
+          <Tooltip content={<ChartTooltip yFormat={yFormat} yLabel={yLabel} />} />
+          <Legend wrapperStyle={{ fontSize: '10px', color: COLORS.mutedBlue }} iconSize={8} />
+
+          {/* Layer 1: Asset Overlay — gray, background, right axis */}
+          <Line
+            yAxisId="right" type="monotone" dataKey="asset"
+            stroke="#6B7280" strokeWidth={1} dot={false}
+            name={assetTicker || 'Asset'} connectNulls strokeOpacity={0.4}
+          />
+
+          {/* Layer 2: Raw Indicator — thin line */}
+          <Line
+            yAxisId="left" type="monotone" dataKey="indicator"
+            stroke={COLORS.mutedBlue} strokeWidth={1} dot={false}
+            name="Raw Data" connectNulls strokeOpacity={0.5}
+          />
+
+          {/* Layer 3: 12M MA — dashed */}
+          <Line
+            yAxisId="left" type="monotone" dataKey="ma"
+            stroke={COLORS.signalYellow} strokeWidth={1.5}
+            strokeDasharray="4 3" dot={false}
+            name="12M MA" connectNulls
+          />
+
+          {/* Layer 4: Smoothed (2x MA) — THE CYCLE WAVE, thick, colored by phase */}
+          <Line
+            yAxisId="left" type="monotone" dataKey="smoothed"
+            stroke={phaseColor} strokeWidth={3} dot={false}
+            name="Cycle Wave" connectNulls strokeOpacity={0.9}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -268,6 +361,7 @@ function CycleCard({ cycleId, phaseData, chartData }) {
   const inDanger = phaseData?.in_danger_zone;
   const phaseColor = CYCLE_PHASE_COLORS[phase] || COLORS.fadedBlue;
   const tierColor = CYCLE_TIER_COLORS[meta.tier] || COLORS.mutedBlue;
+  const cyclePosition = chartData?.cycle_position;
 
   return (
     <div
@@ -302,32 +396,34 @@ function CycleCard({ cycleId, phaseData, chartData }) {
         </div>
       </div>
 
+      {/* Cycle Clock */}
+      {cyclePosition && cyclePosition.typical_duration_months > 0 && (
+        <CycleClock cyclePosition={cyclePosition} phase={phase} phaseColor={phaseColor} />
+      )}
+
       {/* Phase + Confidence */}
       <div className="flex items-center justify-between mb-1">
-        <span className="font-mono font-bold text-sm" style={{ color: phaseColor }}>
-          {phaseLabel(phase)}
-        </span>
+        <div className="text-caption text-muted-blue">
+          {meta.indicator}: {fmtVal(phaseData?.indicator_value, meta.unit)}
+          {phaseData?.velocity != null && phaseData?.velocity !== '' && (
+            <span style={{ color: velColor(phaseData.velocity) }}>
+              {velArrow(phaseData.velocity)} vel: {Number(phaseData.velocity).toFixed(4)}
+            </span>
+          )}
+        </div>
         {confidence != null && (
           <span className="text-caption text-muted-blue font-mono">{confidence}% conf</span>
         )}
       </div>
 
-      {/* Indicator values */}
-      <div className="text-caption text-muted-blue">
-        {meta.indicator}: {fmtVal(phaseData?.indicator_value, meta.unit)}
-        {phaseData?.velocity != null && phaseData?.velocity !== '' && (
-          <span style={{ color: velColor(phaseData.velocity) }}>
-            {velArrow(phaseData.velocity)} vel: {Number(phaseData.velocity).toFixed(4)}
-          </span>
-        )}
-      </div>
+      {/* MA + Percentile */}
       {phaseData?.indicator_12m_ma != null && phaseData?.indicator_12m_ma !== '' && (
         <div className="text-caption text-muted-blue">
           12M MA: {fmtVal(phaseData.indicator_12m_ma, meta.unit)}
+          {phaseData?.percentile != null && (
+            <span> | Pctl: {phaseData.percentile}%</span>
+          )}
         </div>
-      )}
-      {phaseData?.percentile != null && (
-        <div className="text-caption text-muted-blue">Percentile: {phaseData.percentile}%</div>
       )}
 
       {/* Danger Zone */}
@@ -352,11 +448,16 @@ function CycleCard({ cycleId, phaseData, chartData }) {
           {cycleId === 'POLITICAL' ? (
             <PoliticalChart />
           ) : (
-            <CycleChart cycleId={cycleId} chartData={chartData} yFormat={meta.yFormat} />
+            <CycleChart cycleId={cycleId} chartData={chartData} yFormat={meta.yFormat} yLabel={meta.yLabel} />
           )}
           {chartData && (
-            <div className="text-caption text-muted-blue mt-1 text-right" style={{ fontSize: '9px' }}>
-              {chartData.indicator_count || 0} pts | Asset: {chartData.asset_ticker || '—'} ({chartData.asset_count || 0} pts)
+            <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px', color: COLORS.fadedBlue }}>
+              <span>
+                {(chartData.phase_zones_count || 0)} phases | {(chartData.smoothed_count || 0)} smooth pts
+              </span>
+              <span>
+                {chartData.indicator_count || 0} pts | {chartData.asset_ticker || '—'} ({chartData.asset_count || 0} pts)
+              </span>
             </div>
           )}
         </div>
@@ -373,7 +474,6 @@ export default function CyclesDetail({ dashboard }) {
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState(null);
 
-  // Fetch chart data
   useEffect(() => {
     if (!CHART_URL) return;
     setChartLoading(true);
@@ -386,9 +486,7 @@ export default function CyclesDetail({ dashboard }) {
         setChartDataAll(data);
         setChartError(null);
       })
-      .catch(err => {
-        setChartError(err.message);
-      })
+      .catch(err => setChartError(err.message))
       .finally(() => setChartLoading(false));
   }, []);
 
@@ -423,7 +521,6 @@ export default function CyclesDetail({ dashboard }) {
           <span className="text-caption text-muted-blue">{cy.date}</span>
         </div>
 
-        {/* Big Score */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-4xl font-mono font-bold" style={{ color: labelColor }}>
@@ -443,7 +540,6 @@ export default function CyclesDetail({ dashboard }) {
           </div>
         </div>
 
-        {/* Bull / Bear / Neutral Bar */}
         <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-3">
           {cy.bullish > 0 && (
             <div style={{ flex: cy.bullish, backgroundColor: COLORS.signalGreen }} title={`${cy.bullish} Bullish`} />
@@ -461,7 +557,6 @@ export default function CyclesDetail({ dashboard }) {
           <span style={{ color: COLORS.signalRed }}>● {cy.bearish || 0} Bearish</span>
         </div>
 
-        {/* Danger Zone Alert */}
         {dzCount > 0 && (
           <div className="mt-3 px-3 py-2 rounded text-sm"
                style={{ backgroundColor: `${COLORS.signalOrange}15`, color: COLORS.signalOrange }}>
@@ -469,21 +564,15 @@ export default function CyclesDetail({ dashboard }) {
           </div>
         )}
 
-        {/* One-Liner */}
         {cy.one_liner && (
           <div className="mt-3 text-caption text-muted-blue font-mono">{cy.one_liner}</div>
         )}
 
-        {/* Chart loading status */}
-        {chartLoading && (
-          <div className="mt-2 text-caption text-muted-blue">Lade Chart-Daten...</div>
-        )}
-        {chartError && (
-          <div className="mt-2 text-caption text-signalOrange">Chart-Daten Fehler: {chartError}</div>
-        )}
+        {chartLoading && <div className="mt-2 text-caption text-muted-blue">Lade Chart-Daten...</div>}
+        {chartError && <div className="mt-2 text-caption" style={{ color: COLORS.signalOrange }}>Chart-Daten Fehler: {chartError}</div>}
       </GlassCard>
 
-      {/* ═══ TIER 1: STRUCTURAL ═══ */}
+      {/* ═══ TIER 1 ═══ */}
       <GlassCard>
         <Section title="Tier 1 — Structural Cycles" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 1).map(id => (
@@ -492,7 +581,7 @@ export default function CyclesDetail({ dashboard }) {
         </Section>
       </GlassCard>
 
-      {/* ═══ TIER 2: CYCLICAL ═══ */}
+      {/* ═══ TIER 2 ═══ */}
       <GlassCard>
         <Section title="Tier 2 — Cyclical Indicators" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 2).map(id => (
@@ -501,7 +590,7 @@ export default function CyclesDetail({ dashboard }) {
         </Section>
       </GlassCard>
 
-      {/* ═══ TIER 3: SUPPLEMENTARY ═══ */}
+      {/* ═══ TIER 3 ═══ */}
       <GlassCard>
         <Section title="Tier 3 — Supplementary" defaultOpen={true}>
           {CYCLE_ORDER.filter(id => CYCLE_META[id]?.tier === 3).map(id => (
