@@ -122,9 +122,10 @@ function compressDashboardForSend(d) {
 
 
 // ===== STREAMING FLUSH INTERVAL (ms) =====
-// On Mobile Safari, rapid setState calls get batched/dropped.
-// We buffer text in a ref and flush to React state at this interval.
 const FLUSH_INTERVAL_MS = 150;
+
+// ===== MAX RETRIES for Mobile Safari connection drops =====
+const MAX_STREAM_RETRIES = 2;
 
 
 export default function AgentRPanel({ dashboard, onClose }) {
@@ -144,12 +145,16 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const agentCtx = dashboard?.agent_r_context || {};
 
   // ===== STREAMING BUFFER REFS =====
-  // These hold the latest streaming state without triggering React re-renders.
-  // A periodic flush (setInterval) pushes them into React state.
   const streamTextRef = useRef('');
   const streamToolsRef = useRef([]);
   const streamDirtyRef = useRef(false);
   const flushTimerRef = useRef(null);
+  const activeTabIdRef = useRef(null);
+
+  // Keep activeTabIdRef in sync so async functions can read it
+  useEffect(() => {
+    activeTabIdRef.current = activeTabId;
+  }, [activeTabId]);
 
   // Current tab's messages
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -242,11 +247,9 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
   // ===== Scroll input into view on focus (mobile keyboard fallback) =====
   const handleInputFocus = useCallback(() => {
-    // Delay to let keyboard animation finish
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, 300);
-    // Second attempt after keyboard fully open
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, 600);
@@ -255,7 +258,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
   // ===== Update messages in active tab =====
   const updateActiveMessages = useCallback((updater) => {
     setTabs(prev => prev.map(tab => {
-      if (tab.id !== activeTabId) return tab;
+      if (tab.id !== activeTabIdRef.current) return tab;
       const newMessages = typeof updater === 'function' ? updater(tab.messages) : updater;
       return {
         ...tab,
@@ -263,11 +266,10 @@ export default function AgentRPanel({ dashboard, onClose }) {
         title: getTabTitle(newMessages),
       };
     }));
-  }, [activeTabId]);
+  }, []);
 
 
   // ===== FLUSH: Push buffered stream data into React state =====
-  // Called periodically during streaming AND once at the end.
   const flushStreamBuffer = useCallback(() => {
     if (!streamDirtyRef.current) return;
     streamDirtyRef.current = false;
@@ -276,7 +278,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
     const tools = streamToolsRef.current;
 
     setTabs(prev => prev.map(tab => {
-      if (tab.id !== activeTabId) return tab;
+      if (tab.id !== activeTabIdRef.current) return tab;
       const msgs = [...tab.messages];
       const lastIdx = msgs.length - 1;
       if (lastIdx >= 0 && msgs[lastIdx]?.role === 'assistant') {
@@ -284,17 +286,15 @@ export default function AgentRPanel({ dashboard, onClose }) {
       }
       return { ...tab, messages: msgs, title: getTabTitle(msgs) };
     }));
-  }, [activeTabId]);
+  }, []);
 
-  // Start periodic flush timer
   const startFlushTimer = useCallback(() => {
-    stopFlushTimer();
+    if (flushTimerRef.current) clearInterval(flushTimerRef.current);
     flushTimerRef.current = setInterval(() => {
       flushStreamBuffer();
     }, FLUSH_INTERVAL_MS);
   }, [flushStreamBuffer]);
 
-  // Stop periodic flush timer
   const stopFlushTimer = useCallback(() => {
     if (flushTimerRef.current) {
       clearInterval(flushTimerRef.current);
@@ -302,13 +302,86 @@ export default function AgentRPanel({ dashboard, onClose }) {
     }
   }, []);
 
-  // Cleanup flush timer on unmount
   useEffect(() => {
     return () => stopFlushTimer();
   }, [stopFlushTimer]);
 
 
-  // ===== Send message to Agent R API =====
+  // =================================================================
+  // READ SSE STREAM — returns { gotDone, hadToolCalls, hadText }
+  // =================================================================
+  const readSSEStream = useCallback(async (response) => {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let gotDone = false;
+    let hadToolCalls = false;
+    let hadText = false;
+
+    startFlushTimer();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.type === 'ping') continue;
+
+            if (data.type === 'text_delta') {
+              streamTextRef.current += data.text;
+              streamDirtyRef.current = true;
+              hadText = true;
+            }
+
+            if (data.type === 'tool_call') {
+              streamToolsRef.current = [...streamToolsRef.current, data.tool];
+              streamDirtyRef.current = true;
+              hadToolCalls = true;
+              setActiveTools([...streamToolsRef.current]);
+            }
+
+            if (data.type === 'error') {
+              setError(data.error);
+            }
+
+            if (data.type === 'done') {
+              gotDone = true;
+              stopFlushTimer();
+              streamDirtyRef.current = true;
+              flushStreamBuffer();
+            }
+          } catch {
+            // Skip malformed SSE lines
+          }
+        }
+      }
+    } finally {
+      stopFlushTimer();
+    }
+
+    // Final flush if we didn't get a done event
+    if (!gotDone) {
+      streamDirtyRef.current = true;
+      flushStreamBuffer();
+    }
+
+    return { gotDone, hadToolCalls, hadText };
+  }, [startFlushTimer, stopFlushTimer, flushStreamBuffer]);
+
+
+  // =================================================================
+  // SEND MESSAGE — with automatic retry for Mobile Safari drops
+  // =================================================================
   const handleSend = useCallback(async (overrideText) => {
     const text = overrideText || input.trim();
     if (!text || isStreaming) return;
@@ -329,106 +402,91 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
     abortRef.current = new AbortController();
 
+    const compressedDashboard = compressDashboardForSend(dashboard);
+
     try {
-      const response = await fetch('/api/agent-r', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages,
-          dashboard: compressDashboardForSend(dashboard),
-        }),
-        signal: abortRef.current.signal,
-      });
+      let attempt = 0;
+      let success = false;
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `API Error: ${response.status}`);
-      }
+      while (attempt <= MAX_STREAM_RETRIES && !success) {
+        if (attempt > 0) {
+          // Retry: reset buffers for fresh attempt
+          streamTextRef.current = '';
+          streamToolsRef.current = [];
+          streamDirtyRef.current = false;
+          // Clear tool display from previous dropped attempt
+          setActiveTools([]);
+        }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let gotDone = false;
+        const response = await fetch('/api/agent-r', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: updatedMessages,
+            dashboard: compressedDashboard,
+          }),
+          signal: abortRef.current.signal,
+        });
 
-      // Add empty assistant message placeholder
-      updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `API Error: ${response.status}`);
+        }
 
-      // Start periodic flush — this is the key Mobile Safari fix.
-      // Instead of calling setTabs() on every 80-byte chunk (50-100x),
-      // we buffer in refs and flush to React state every 150ms.
-      startFlushTimer();
+        // On first attempt, add empty assistant placeholder
+        if (attempt === 0) {
+          updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const result = await readSSEStream(response);
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-
-          try {
-            const data = JSON.parse(line.slice(6));
-
-            // Ignore keepalive pings from server
-            if (data.type === 'ping') continue;
-
-            if (data.type === 'text_delta') {
-              // Buffer text — do NOT call setState here
-              streamTextRef.current += data.text;
-              streamDirtyRef.current = true;
-            }
-
-            if (data.type === 'tool_call') {
-              streamToolsRef.current = [...streamToolsRef.current, data.tool];
-              streamDirtyRef.current = true;
-              // Tool calls are infrequent — also update the activeTools
-              // display state immediately (this is just 1-3 calls total)
-              setActiveTools([...streamToolsRef.current]);
-            }
-
-            if (data.type === 'error') {
-              setError(data.error);
-            }
-
-            if (data.type === 'done') {
-              gotDone = true;
-              // Stop periodic flush
-              stopFlushTimer();
-              // Force one final flush with complete text
-              streamDirtyRef.current = true;
-              flushStreamBuffer();
-              // Small delay to let React process the final state update,
-              // then clear streaming state
-              setTimeout(() => {
-                setIsStreaming(false);
-                setActiveTools([]);
-              }, 50);
-            }
-          } catch {
-            // Skip malformed SSE lines
+        if (result.gotDone) {
+          // Server sent 'done' — stream completed successfully
+          success = true;
+        } else if (result.hadText) {
+          // Stream dropped but we got text — good enough, show it
+          success = true;
+        } else if (result.hadToolCalls && !result.hadText) {
+          // *** MOBILE SAFARI CONNECTION DROP ***
+          // Tool calls were displayed but no text came through.
+          // The server finished tool execution + Claude call, but
+          // Safari killed the connection before text_delta arrived.
+          // RETRY: send same messages. Server re-runs everything.
+          // On retry, Claude often responds faster (API caching).
+          attempt++;
+          if (attempt <= MAX_STREAM_RETRIES) {
+            // Update UI to show retry is happening
+            streamTextRef.current = '';
+            streamToolsRef.current = [];
+            streamDirtyRef.current = true;
+            flushStreamBuffer();
           }
+        } else {
+          // No tool calls, no text, no done — unknown issue
+          success = true;
         }
       }
 
-      // Robust fallback: if stream ended without explicit 'done' event,
-      // still finalize — this handles Mobile Safari dropping the connection
-      if (!gotDone) {
-        stopFlushTimer();
-        streamDirtyRef.current = true;
-        flushStreamBuffer();
-        setTimeout(() => {
-          setIsStreaming(false);
-          setActiveTools([]);
-        }, 50);
+      // Finalize
+      if (!success && !streamTextRef.current) {
+        // All retries exhausted, still no text
+        setError('Verbindung unterbrochen. Bitte erneut versuchen.');
+        updateActiveMessages(prev => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
+          return updated;
+        });
       }
+
+      setTimeout(() => {
+        setIsStreaming(false);
+        setActiveTools([]);
+      }, 50);
 
     } catch (err) {
       stopFlushTimer();
       if (err.name === 'AbortError') {
-        // If we have buffered text, flush it before cleanup
         if (streamTextRef.current) {
           streamDirtyRef.current = true;
           flushStreamBuffer();
@@ -442,7 +500,6 @@ export default function AgentRPanel({ dashboard, onClose }) {
         }
       } else {
         setError(err.message);
-        // Flush any partial text we have
         if (streamTextRef.current) {
           streamDirtyRef.current = true;
           flushStreamBuffer();
@@ -458,7 +515,7 @@ export default function AgentRPanel({ dashboard, onClose }) {
       setIsStreaming(false);
       setActiveTools([]);
     }
-  }, [input, isStreaming, messages, dashboard, updateActiveMessages, startFlushTimer, stopFlushTimer, flushStreamBuffer]);
+  }, [input, isStreaming, messages, dashboard, updateActiveMessages, readSSEStream, stopFlushTimer, flushStreamBuffer]);
 
   // ===== Tab Management =====
   const handleNewTab = () => {
