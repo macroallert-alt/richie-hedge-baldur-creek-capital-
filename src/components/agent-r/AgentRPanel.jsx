@@ -121,6 +121,12 @@ function compressDashboardForSend(d) {
 }
 
 
+// ===== STREAMING FLUSH INTERVAL (ms) =====
+// On Mobile Safari, rapid setState calls get batched/dropped.
+// We buffer text in a ref and flush to React state at this interval.
+const FLUSH_INTERVAL_MS = 150;
+
+
 export default function AgentRPanel({ dashboard, onClose }) {
   const nudges = useNudges(dashboard);
   const [input, setInput] = useState('');
@@ -136,6 +142,14 @@ export default function AgentRPanel({ dashboard, onClose }) {
   const panelRef = useRef(null);
   const inputAreaRef = useRef(null);
   const agentCtx = dashboard?.agent_r_context || {};
+
+  // ===== STREAMING BUFFER REFS =====
+  // These hold the latest streaming state without triggering React re-renders.
+  // A periodic flush (setInterval) pushes them into React state.
+  const streamTextRef = useRef('');
+  const streamToolsRef = useRef([]);
+  const streamDirtyRef = useRef(false);
+  const flushTimerRef = useRef(null);
 
   // Current tab's messages
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -251,6 +265,49 @@ export default function AgentRPanel({ dashboard, onClose }) {
     }));
   }, [activeTabId]);
 
+
+  // ===== FLUSH: Push buffered stream data into React state =====
+  // Called periodically during streaming AND once at the end.
+  const flushStreamBuffer = useCallback(() => {
+    if (!streamDirtyRef.current) return;
+    streamDirtyRef.current = false;
+
+    const text = streamTextRef.current;
+    const tools = streamToolsRef.current;
+
+    setTabs(prev => prev.map(tab => {
+      if (tab.id !== activeTabId) return tab;
+      const msgs = [...tab.messages];
+      const lastIdx = msgs.length - 1;
+      if (lastIdx >= 0 && msgs[lastIdx]?.role === 'assistant') {
+        msgs[lastIdx] = { ...msgs[lastIdx], text, toolCalls: [...tools] };
+      }
+      return { ...tab, messages: msgs, title: getTabTitle(msgs) };
+    }));
+  }, [activeTabId]);
+
+  // Start periodic flush timer
+  const startFlushTimer = useCallback(() => {
+    stopFlushTimer();
+    flushTimerRef.current = setInterval(() => {
+      flushStreamBuffer();
+    }, FLUSH_INTERVAL_MS);
+  }, [flushStreamBuffer]);
+
+  // Stop periodic flush timer
+  const stopFlushTimer = useCallback(() => {
+    if (flushTimerRef.current) {
+      clearInterval(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+  }, []);
+
+  // Cleanup flush timer on unmount
+  useEffect(() => {
+    return () => stopFlushTimer();
+  }, [stopFlushTimer]);
+
+
   // ===== Send message to Agent R API =====
   const handleSend = useCallback(async (overrideText) => {
     const text = overrideText || input.trim();
@@ -259,6 +316,11 @@ export default function AgentRPanel({ dashboard, onClose }) {
     setInput('');
     setError(null);
     setActiveTools([]);
+
+    // Reset stream buffers
+    streamTextRef.current = '';
+    streamToolsRef.current = [];
+    streamDirtyRef.current = false;
 
     const userMsg = { role: 'user', text };
     const updatedMessages = [...messages, userMsg];
@@ -286,11 +348,15 @@ export default function AgentRPanel({ dashboard, onClose }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let assistantText = '';
-      let currentTools = [];
       let gotDone = false;
 
+      // Add empty assistant message placeholder
       updateActiveMessages(prev => [...prev, { role: 'assistant', text: '', toolCalls: [] }]);
+
+      // Start periodic flush — this is the key Mobile Safari fix.
+      // Instead of calling setTabs() on every 80-byte chunk (50-100x),
+      // we buffer in refs and flush to React state every 150ms.
+      startFlushTimer();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -310,28 +376,17 @@ export default function AgentRPanel({ dashboard, onClose }) {
             if (data.type === 'ping') continue;
 
             if (data.type === 'text_delta') {
-              assistantText += data.text;
-              updateActiveMessages(prev => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (updated[lastIdx]?.role === 'assistant') {
-                  updated[lastIdx] = { ...updated[lastIdx], text: assistantText };
-                }
-                return updated;
-              });
+              // Buffer text — do NOT call setState here
+              streamTextRef.current += data.text;
+              streamDirtyRef.current = true;
             }
 
             if (data.type === 'tool_call') {
-              currentTools = [...currentTools, data.tool];
-              setActiveTools([...currentTools]);
-              updateActiveMessages(prev => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (updated[lastIdx]?.role === 'assistant') {
-                  updated[lastIdx] = { ...updated[lastIdx], toolCalls: [...currentTools] };
-                }
-                return updated;
-              });
+              streamToolsRef.current = [...streamToolsRef.current, data.tool];
+              streamDirtyRef.current = true;
+              // Tool calls are infrequent — also update the activeTools
+              // display state immediately (this is just 1-3 calls total)
+              setActiveTools([...streamToolsRef.current]);
             }
 
             if (data.type === 'error') {
@@ -340,24 +395,20 @@ export default function AgentRPanel({ dashboard, onClose }) {
 
             if (data.type === 'done') {
               gotDone = true;
-              // Force final text update — ensures ReactMarkdown gets
-              // the COMPLETE text for proper table/GFM rendering.
-              // Without this, Mobile React may batch-skip the last
-              // text_delta update, leaving partial markdown.
-              const finalText = assistantText;
-              updateActiveMessages(prev => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (updated[lastIdx]?.role === 'assistant') {
-                  updated[lastIdx] = { ...updated[lastIdx], text: finalText };
-                }
-                return updated;
-              });
-              setIsStreaming(false);
-              setActiveTools([]);
+              // Stop periodic flush
+              stopFlushTimer();
+              // Force one final flush with complete text
+              streamDirtyRef.current = true;
+              flushStreamBuffer();
+              // Small delay to let React process the final state update,
+              // then clear streaming state
+              setTimeout(() => {
+                setIsStreaming(false);
+                setActiveTools([]);
+              }, 50);
             }
           } catch {
-            // Skip
+            // Skip malformed SSE lines
           }
         }
       }
@@ -365,40 +416,49 @@ export default function AgentRPanel({ dashboard, onClose }) {
       // Robust fallback: if stream ended without explicit 'done' event,
       // still finalize — this handles Mobile Safari dropping the connection
       if (!gotDone) {
-        const finalText = assistantText;
-        updateActiveMessages(prev => {
-          const updated = [...prev];
-          const lastIdx = updated.length - 1;
-          if (updated[lastIdx]?.role === 'assistant') {
-            updated[lastIdx] = { ...updated[lastIdx], text: finalText };
-          }
-          return updated;
-        });
-        setIsStreaming(false);
-        setActiveTools([]);
+        stopFlushTimer();
+        streamDirtyRef.current = true;
+        flushStreamBuffer();
+        setTimeout(() => {
+          setIsStreaming(false);
+          setActiveTools([]);
+        }, 50);
       }
 
     } catch (err) {
+      stopFlushTimer();
       if (err.name === 'AbortError') {
-        updateActiveMessages(prev => {
-          const updated = [...prev];
-          const lastIdx = updated.length - 1;
-          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
-          return updated;
-        });
+        // If we have buffered text, flush it before cleanup
+        if (streamTextRef.current) {
+          streamDirtyRef.current = true;
+          flushStreamBuffer();
+        } else {
+          updateActiveMessages(prev => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
+            return updated;
+          });
+        }
       } else {
         setError(err.message);
-        updateActiveMessages(prev => {
-          const updated = [...prev];
-          const lastIdx = updated.length - 1;
-          if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
-          return updated;
-        });
+        // Flush any partial text we have
+        if (streamTextRef.current) {
+          streamDirtyRef.current = true;
+          flushStreamBuffer();
+        } else {
+          updateActiveMessages(prev => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (updated[lastIdx]?.role === 'assistant' && !updated[lastIdx].text) updated.pop();
+            return updated;
+          });
+        }
       }
       setIsStreaming(false);
       setActiveTools([]);
     }
-  }, [input, isStreaming, messages, dashboard, updateActiveMessages]);
+  }, [input, isStreaming, messages, dashboard, updateActiveMessages, startFlushTimer, stopFlushTimer, flushStreamBuffer]);
 
   // ===== Tab Management =====
   const handleNewTab = () => {
