@@ -293,6 +293,7 @@ export const CIRCLES = [
   { id: 'intel', name: 'Intel', icon: 'Search', route: '/intel' },
   { id: 'g7', name: 'G7', icon: 'Globe', route: '/g7' },
   { id: 'disruptions', name: 'Disruptions', icon: 'Zap', route: '/disruptions' },
+  { id: 'cycles', name: 'Cycles', icon: 'TrendingUp', route: '/cycles' },
 ];
 
 // ===== DISRUPTION PHASE → COLOR =====
@@ -397,4 +398,87 @@ export const G7_RELATIONSHIP_COLORS = {
   ENABLES: COLORS.signalGreen,
   DECELERATES: COLORS.signalRed,
   DISRUPTS: COLORS.signalRed,
+};
+
+// =====================================================================
+// CYCLES CIRCLE (Cycles Circle Spec §11.4)
+// =====================================================================
+
+// ===== CYCLE ALIGNMENT → COLOR =====
+export const CYCLE_ALIGNMENT_COLORS = {
+  ALIGNED:  COLORS.signalGreen,
+  SHIFTING: COLORS.signalYellow,
+  DIVERGED: COLORS.signalRed,
+};
+
+// ===== CYCLE PHASE → COLOR =====
+export const CYCLE_PHASE_COLORS = {
+  // Expansive (Green)
+  EXPANSION:       COLORS.signalGreen,
+  EARLY_RECOVERY:  COLORS.signalGreen,
+  RECOVERY:        COLORS.signalGreen,
+  MID_BULL:        COLORS.signalGreen,
+  EARLY_BULL:      COLORS.signalGreen,
+  EARLY_STIMULUS:  COLORS.signalGreen,
+  EASING:          COLORS.signalGreen,
+  NEUTRAL:         COLORS.signalGreen,
+  PRE_ELECTION:    COLORS.signalGreen,
+  // Selective (Yellow)
+  LATE_EXPANSION:  COLORS.signalYellow,
+  PEAK:            COLORS.signalYellow,
+  PLATEAU:         COLORS.signalYellow,
+  LATE:            COLORS.signalYellow,
+  OVERINVESTMENT:  COLORS.signalYellow,
+  TIGHTENING:      COLORS.signalYellow,
+  RESTRICTIVE:     COLORS.signalYellow,
+  MIDTERM:         COLORS.signalYellow,
+  POST_INAUGURATION: COLORS.signalYellow,
+  ELECTION:        COLORS.signalYellow,
+  PRE_PIVOT:       COLORS.signalYellow,
+  WITHDRAWAL:      COLORS.signalYellow,
+  PIVOT:           COLORS.signalYellow,
+  REPAIR:          COLORS.signalYellow,
+  // Defensive (Orange)
+  CONTRACTION:     COLORS.signalOrange,
+  DETERIORATION:   COLORS.signalOrange,
+  STRENGTHENING:   COLORS.signalOrange,
+  WEAKENING:       COLORS.signalOrange,
+  BEAR:            COLORS.signalOrange,
+  // Crisis (Red)
+  TROUGH:          COLORS.signalRed,
+  DISTRESS:        COLORS.signalRed,
+  RECESSION:       COLORS.signalRed,
+  COLLAPSE:        COLORS.signalRed,
+  EUPHORIA:        COLORS.signalRed,
+};
+
+// ===== CYCLE TIER → COLOR =====
+export const CYCLE_TIER_COLORS = {
+  1: COLORS.signalGreen,
+  2: COLORS.signalYellow,
+  3: COLORS.mutedBlue,
+};
+
+// ===== CYCLE DATA QUALITY → COLOR =====
+export const CYCLE_DATA_QUALITY_COLORS = {
+  GOOD:         COLORS.signalGreen,
+  LIMITED:      COLORS.signalYellow,
+  INSUFFICIENT: COLORS.signalRed,
+};
+
+// ===== DANGER ZONE SEVERITY → COLOR =====
+export const DANGER_ZONE_COLORS = {
+  EXTREME:              COLORS.signalRed,
+  DANGER:               COLORS.signalRed,
+  ELEVATED:             COLORS.signalOrange,
+  RAPID_DETERIORATION:  COLORS.signalOrange,
+  RECESSION_RISK:       COLORS.signalRed,
+  SEVERE:               COLORS.signalRed,
+  HIGHLY_RESTRICTIVE:   COLORS.signalRed,
+  RECESSION_SIGNAL:     COLORS.signalRed,
+  TRADE_COLLAPSE:       COLORS.signalRed,
+  DEMAND_COLLAPSE:      COLORS.signalRed,
+  EUPHORIA:             COLORS.signalYellow,
+  WEAK_PERIOD:          COLORS.signalYellow,
+  EARNINGS_RECESSION:   COLORS.signalOrange,
 };
