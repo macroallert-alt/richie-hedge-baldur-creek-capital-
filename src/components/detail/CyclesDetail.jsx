@@ -54,6 +54,46 @@ const CLUSTER_ORDER = [
   'MONETARY_POLICY_CLUSTER', 'CURRENCY_CLUSTER',
 ];
 
+// ── V5.1: Cluster-Erklärungen ──
+const CLUSTER_EXPLANATIONS = {
+  CREDIT_CLUSTER: {
+    short: 'Kreditbedingungen',
+    what: 'Misst wie leicht Unternehmen an Geld kommen — HY Spreads, Liquidität, Unternehmensgewinne.',
+    why: 'Credit ist der härteste Frühindikator. Wenn Credit kippt, folgt historisch der Rest.',
+  },
+  REAL_ECONOMY_CLUSTER: {
+    short: 'Realwirtschaft',
+    what: 'Misst ob Fabriken produzieren, Güter verschifft werden, China investiert — Industrieproduktion, Frachtraten, Cu/Au Ratio.',
+    why: 'Entscheidet ob ein Rücksetzer eine Korrektur (-10%) oder ein Crash (-30%) wird.',
+  },
+  MONETARY_POLICY_CLUSTER: {
+    short: 'Geldpolitik',
+    what: 'Misst wie restriktiv die Fed ist — Real Fed Funds Rate (Leitzins minus Inflation).',
+    why: 'Ein Fed-Pivot (restriktiv → locker) ist das stärkste Einzelsignal. Wenn die Fed dreht, dreht alles.',
+  },
+  CURRENCY_CLUSTER: {
+    short: 'US-Dollar',
+    what: 'Misst die Stärke des US-Dollars (DXY Trade-Weighted Index).',
+    why: 'Starker Dollar = schlecht für Commodities, Schwellenländer, Gold. Schwacher Dollar = Risk-On Umfeld.',
+  },
+};
+
+// ── V5.1: Kausalketten ──
+const PRIMARY_CHAIN = ['LIQUIDITY', 'CREDIT', 'BUSINESS'];
+
+const CASCADE_CHAINS = [
+  { from: 'LIQUIDITY', to: 'CREDIT' },
+  { from: 'LIQUIDITY', to: 'BUSINESS' },
+  { from: 'CREDIT', to: 'BUSINESS' },
+  { from: 'CHINA_CREDIT', to: 'COMMODITY' },
+  { from: 'CHINA_CREDIT', to: 'BUSINESS' },
+  { from: 'FED_RATES', to: 'DOLLAR' },
+  { from: 'DOLLAR', to: 'COMMODITY' },
+  { from: 'BUSINESS', to: 'EARNINGS' },
+  { from: 'EARNINGS', to: 'FED_RATES' },
+  { from: 'COMMODITY', to: 'FED_RATES' },
+];
+
 // Asset display categories
 const ASSET_CATEGORIES = [
   { label: 'Edelmetalle', tickers: ['GLD', 'SLV', 'GDX', 'GDXJ', 'SIL', 'PLATINUM'] },
@@ -123,6 +163,11 @@ function excessColor(val) {
   return val > 0.001 ? COLORS.signalGreen : val < -0.001 ? COLORS.signalRed : COLORS.fadedBlue;
 }
 
+// ── V5.1: cycleName Helper ──
+function cycleName(id) {
+  return CYCLE_META[id]?.name || id;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // SHARED UI COMPONENTS
 // ═══════════════════════════════════════════════════════════════
@@ -181,6 +226,339 @@ function Dropdown({ value, onChange, options, label }) {
   );
 }
 
+// ── V5.1: ClusterInfo — ⓘ Button neben bestehendem Dropdown ──
+function ClusterInfo({ clusterId }) {
+  const [open, setOpen] = useState(false);
+  const info = CLUSTER_EXPLANATIONS[clusterId];
+  if (!info) return null;
+
+  return (
+    <>
+      <button onClick={() => setOpen(!open)}
+              style={{
+                backgroundColor: open ? '#1a3050' : 'transparent',
+                border: '1px solid #4A5A7A',
+                borderRadius: '50%',
+                width: '20px', height: '20px',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                color: COLORS.mutedBlue, fontSize: '11px', cursor: 'pointer',
+                marginLeft: '6px', flexShrink: 0,
+              }}>
+        ⓘ
+      </button>
+      {open && (
+        <div className="rounded px-3 py-2 mb-2 mt-1"
+             style={{ backgroundColor: '#0d1f38', border: '1px solid #1a3050', fontSize: '11px', lineHeight: '1.5' }}>
+          <div style={{ color: COLORS.iceWhite, fontWeight: 600, marginBottom: '4px' }}>
+            {CLUSTER_LABELS[clusterId]} — {info.short}
+          </div>
+          <div style={{ color: COLORS.mutedBlue, marginBottom: '3px' }}>
+            <strong style={{ color: COLORS.fadedBlue }}>Was:</strong> {info.what}
+          </div>
+          <div style={{ color: COLORS.mutedBlue }}>
+            <strong style={{ color: COLORS.fadedBlue }}>Warum:</strong> {info.why}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// V5.1: EXECUTIVE SUMMARY
+// ═══════════════════════════════════════════════════════════════
+
+function ExecutiveSummary({ transData, regimeData, condReturnsData }) {
+  const cascade = transData?.cascade_speed?.current || {};
+  const assessment = transData?.overall_assessment || {};
+  const positions = transData?.phase_positions || {};
+  const severity = cascade.severity || 'CALM';
+  const severityColor = SEVERITY_COLORS[severity] || COLORS.fadedBlue;
+
+  // 1. Kippende Zyklen namentlich
+  const transitioned = cascade.transitioned_cycles || [];
+  const tippedNames = transitioned.map(t => cycleName(t.cycle || t));
+
+  // 2. Cascade Speed
+  const cascadeSpeed = cascade.cascade_speed;
+
+  // 3. V16 Growth%
+  const v16Dual = regimeData?.v16_transition_probability?.by_dual_cluster || {};
+  let v16Growth = null;
+  let v16Key = null;
+  for (const [key, val] of Object.entries(v16Dual)) {
+    if (val && typeof val === 'object' && val.n_months > 0) {
+      const g = val.v16_stays_growth_6m;
+      if (typeof g === 'number') {
+        v16Growth = g;
+        v16Key = key;
+        break;
+      }
+    }
+  }
+
+  // 4. Extended Cycles
+  const extendedIds = assessment.extended_cycles || [];
+  const extendedCount = extendedIds.length;
+
+  // 5. Kritischster Zyklus (LATE_PHASE oder EXTENDED mit niedrigstem remaining_median)
+  let criticalCycle = null;
+  let criticalRemaining = Infinity;
+  const criticalOrder = ['CREDIT', 'LIQUIDITY', 'COMMODITY', 'BUSINESS', 'DOLLAR'];
+  for (const cid of criticalOrder) {
+    const pp = positions[cid];
+    if (!pp) continue;
+    if ((pp.status === 'EXTENDED' || pp.status === 'LATE_PHASE') && (pp.remaining_median ?? Infinity) < criticalRemaining) {
+      criticalCycle = cid;
+      criticalRemaining = pp.remaining_median;
+    }
+  }
+
+  // 6. Crisis-Risiko bei Credit BEARISH (find key with double BEARISH)
+  let crisisRisk = null;
+  for (const [key, val] of Object.entries(v16Dual)) {
+    const lk = key.toLowerCase();
+    if (lk.includes('bearish') && (lk.match(/bearish/g) || []).length >= 2) {
+      if (val && typeof val.v16_to_crisis_6m === 'number') {
+        crisisRisk = val.v16_to_crisis_6m;
+        break;
+      }
+    }
+  }
+
+  // 7. Top 3 Asset-Signale aus Cluster-Marginals
+  const marginals = regimeData?.cluster_conditional_returns?.cluster_marginals || {};
+  const baselines = condReturnsData?.baselines || {};
+  const assetMap = {}; // ticker → best signal
+  for (const clusterKey of CLUSTER_ORDER) {
+    const clusterM = marginals[clusterKey] || {};
+    for (const [bucket, bData] of Object.entries(clusterM)) {
+      if (!bData?.assets) continue;
+      for (const [ticker, horizons] of Object.entries(bData.assets)) {
+        const d = horizons?.['6m'];
+        if (!d || !d.significant) continue;
+        const bl = baselines[ticker]?.baseline_6m;
+        const totalReturn = (bl != null && d.avg_excess != null) ? bl + d.avg_excess : d.avg;
+        const strength = d.signal_strength || 0;
+        if (!assetMap[ticker] || strength > assetMap[ticker].strength) {
+          assetMap[ticker] = { ticker, totalReturn, strength, excess: d.avg_excess };
+        }
+      }
+    }
+  }
+  const topAssets = Object.values(assetMap)
+    .sort((a, b) => b.strength - a.strength)
+    .slice(0, 3);
+
+  // Build summary parts
+  const parts = [];
+
+  if (tippedNames.length > 0) {
+    parts.push(<span key="tipped"><strong style={{ color: COLORS.signalOrange }}>{tippedNames.length} Zykl{tippedNames.length === 1 ? 'us' : 'en'} kipp{tippedNames.length === 1 ? 't' : 'en'} gerade</strong>{' '}({tippedNames.join(', ')}) — Cascade Speed {cascadeSpeed ?? '?'} ({severity}).</span>);
+  } else {
+    parts.push(<span key="no-tip">Kein Zyklus im aktiven Kipp-Prozess — Cascade Speed {cascadeSpeed ?? '?'} ({severity}).</span>);
+  }
+
+  if (v16Growth != null) {
+    const g = (v16Growth * 100).toFixed(0);
+    const gColor = v16Growth > 0.7 ? COLORS.signalGreen : v16Growth < 0.5 ? COLORS.signalRed : COLORS.signalYellow;
+    parts.push(<span key="v16">{' '}V16 bleibt zu <strong style={{ color: gColor }}>{g}%</strong> in GROWTH (6-Monats-Horizont).</span>);
+  }
+
+  if (extendedCount > 0) {
+    parts.push(<span key="ext">{' '}<strong style={{ color: COLORS.signalOrange }}>{extendedCount} von 9</strong> Zyklen über Median-Dauer ({extendedIds.map(id => cycleName(id)).join(', ')}).</span>);
+  }
+
+  if (criticalCycle) {
+    const pp = positions[criticalCycle];
+    parts.push(<span key="crit">{' '}{cycleName(criticalCycle)} bei <strong style={{ color: COLORS.signalRed }}>{pp?.phase_position_pct ?? '?'}%</strong> Phase-Position — typisch noch <strong>~{criticalRemaining} Monate</strong> bis Phasenwechsel.</span>);
+  }
+
+  if (crisisRisk != null) {
+    const cr = (crisisRisk * 100).toFixed(0);
+    parts.push(<span key="crisis">{' '}Wenn Credit + Real Economy → BEARISH: <strong style={{ color: COLORS.signalRed }}>{cr}% Crisis-Risiko</strong> (6M).</span>);
+  }
+
+  if (topAssets.length > 0) {
+    const assetParts = topAssets.map((a, i) => (
+      <span key={`ta-${i}`} style={{ color: (a.totalReturn || 0) >= 0 ? COLORS.signalGreen : COLORS.signalRed, fontWeight: 600 }}>
+        {a.ticker} {fmtPct(a.totalReturn)}
+      </span>
+    ));
+    parts.push(
+      <span key="assets">{' '}Stärkste Signale (6M Gesamt-Return): {assetParts.reduce((acc, el, i) => {
+        if (i === 0) return [el];
+        return [...acc, ', ', el];
+      }, [])}.</span>
+    );
+  }
+
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-label uppercase tracking-wider text-muted-blue">Executive Summary</span>
+        <span className="px-2 py-1 rounded text-sm font-bold font-mono"
+              style={{ backgroundColor: `${severityColor}20`, color: severityColor }}>
+          {severity}
+        </span>
+      </div>
+
+      <div className="px-3 py-3 rounded" style={{ backgroundColor: `${severityColor}08`, borderLeft: `3px solid ${severityColor}` }}>
+        <div className="text-sm text-ice-white" style={{ lineHeight: '1.7' }}>
+          {parts}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// V5.1: CASCADE CHAIN
+// ═══════════════════════════════════════════════════════════════
+
+function CascadeChain({ transData }) {
+  const cascade = transData?.cascade_speed?.current || {};
+  const positions = transData?.phase_positions || {};
+  const condDurations = transData?.conditional_remaining_durations || {};
+  const transitioned = cascade.transitioned_cycles || [];
+
+  // Helper: is cycle tipped?
+  const tippedMap = {};
+  transitioned.forEach(t => {
+    const cid = t.cycle || t;
+    tippedMap[cid] = t.month || '?';
+  });
+
+  // Status label + color for a cycle
+  function cycleStatus(cid) {
+    if (tippedMap[cid]) return { label: 'GEKIPPT', color: COLORS.signalRed };
+    const pp = positions[cid] || {};
+    const s = pp.status;
+    if (s === 'EXTENDED') return { label: 'EXTENDED', color: COLORS.signalOrange };
+    if (s === 'LATE_PHASE') return { label: 'SPÄT', color: COLORS.signalYellow };
+    if (s === 'MID_PHASE') return { label: 'MITTE', color: COLORS.baldurBlue || '#4A90D9' };
+    if (s === 'EARLY_PHASE') return { label: 'FRÜH', color: COLORS.signalGreen };
+    return { label: '—', color: COLORS.fadedBlue };
+  }
+
+  // Get median months between two cycles from conditional_remaining_durations
+  function chainMedian(from, to) {
+    const key = `${from}_warns_${to}`;
+    const d = condDurations[key]?.remaining_months_stats;
+    return d?.median ?? '?';
+  }
+
+  return (
+    <GlassCard>
+      <Section title="Cascade Chain — Kausalketten-Hierarchie" defaultOpen={true}>
+        <InfoBox>
+          Zyklen kippen nicht zufällig gleichzeitig — sie folgen einer Hierarchie. Liquidity kippt zuerst, dann Credit, dann Business.
+          Die Zahlen zeigen wie viele Monate typischerweise zwischen den Kipppunkten liegen. So sehen Sie frühzeitig was als nächstes kommt.
+        </InfoBox>
+
+        {/* Teil 1: Hauptkaskade LIQUIDITY → CREDIT → BUSINESS */}
+        <div className="mb-4">
+          <div className="text-caption text-muted-blue mb-2" style={{ fontSize: '10px' }}>Hauptkaskade</div>
+          <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
+            {PRIMARY_CHAIN.map((cid, idx) => {
+              const meta = CYCLE_META[cid] || {};
+              const st = cycleStatus(cid);
+              const pp = positions[cid] || {};
+
+              return (
+                <div key={cid} className="flex items-center">
+                  {/* Cycle Box */}
+                  <div className="rounded-lg px-3 py-2 shrink-0" style={{
+                    backgroundColor: `${st.color}12`,
+                    border: `1px solid ${st.color}40`,
+                    minWidth: '120px',
+                  }}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <span style={{ fontSize: '14px' }}>{meta.icon}</span>
+                      <span className="text-caption font-semibold text-ice-white" style={{ fontSize: '11px' }}>
+                        {cid}
+                      </span>
+                    </div>
+                    <div className="text-caption font-mono font-bold" style={{ color: st.color, fontSize: '11px' }}>
+                      {st.label}
+                    </div>
+                    <div className="text-caption font-mono" style={{ color: COLORS.mutedBlue, fontSize: '10px' }}>
+                      {pp.phase_position_pct != null ? `${pp.phase_position_pct}%` : '—'}
+                      {pp.remaining_median != null ? ` | ~${pp.remaining_median}Mo` : ''}
+                    </div>
+                    {tippedMap[cid] && (
+                      <div className="text-caption font-mono" style={{ color: COLORS.signalRed, fontSize: '9px' }}>
+                        seit {tippedMap[cid]}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Arrow between boxes */}
+                  {idx < PRIMARY_CHAIN.length - 1 && (
+                    <div className="flex flex-col items-center px-2 shrink-0" style={{ minWidth: '60px' }}>
+                      <div style={{ color: COLORS.fadedBlue, fontSize: '18px', lineHeight: 1 }}>→</div>
+                      <div className="text-caption font-mono" style={{ color: COLORS.mutedBlue, fontSize: '9px' }}>
+                        ~{chainMedian(PRIMARY_CHAIN[idx], PRIMARY_CHAIN[idx + 1])} Mo
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Teil 2: Alle 10 Kausalketten als Tabelle */}
+        <div>
+          <div className="text-caption text-muted-blue mb-2" style={{ fontSize: '10px' }}>Alle Kausalketten (10 Paare)</div>
+          <div className="space-y-1">
+            {/* Header */}
+            <div className="flex items-center gap-2 pb-1 border-b border-white/10" style={{ fontSize: '9px' }}>
+              <span className="text-caption text-muted-blue font-mono w-32 shrink-0">Von → Nach</span>
+              <span className="text-caption text-muted-blue font-mono w-14 text-center shrink-0">Median</span>
+              <span className="text-caption text-muted-blue font-mono w-16 text-center shrink-0">Min/Max</span>
+              <span className="text-caption text-muted-blue font-mono w-10 text-center shrink-0">n</span>
+              <span className="text-caption text-muted-blue font-mono w-14 text-center shrink-0">Status</span>
+            </div>
+
+            {CASCADE_CHAINS.map(({ from, to }) => {
+              const key = `${from}_warns_${to}`;
+              const d = condDurations[key]?.remaining_months_stats || {};
+              const isActive = !!tippedMap[from];
+
+              return (
+                <div key={key} className="flex items-center gap-2 py-0.5" style={{ fontSize: '10px' }}>
+                  <span className="text-caption font-mono w-32 shrink-0" style={{ color: COLORS.iceWhite }}>
+                    {from.split('_')[0]} → {to.split('_')[0]}
+                  </span>
+                  <span className="text-caption font-mono w-14 text-center shrink-0" style={{ color: COLORS.iceWhite }}>
+                    {d.median != null ? `${d.median} Mo` : '—'}
+                  </span>
+                  <span className="text-caption font-mono w-16 text-center shrink-0" style={{ color: COLORS.fadedBlue }}>
+                    {d.min != null ? `${d.min}–${d.max}` : '—'}
+                  </span>
+                  <span className="text-caption font-mono w-10 text-center shrink-0" style={{ color: COLORS.fadedBlue }}>
+                    {d.n_events ?? '—'}
+                  </span>
+                  <span className="text-caption font-mono w-14 text-center shrink-0">
+                    {isActive ? (
+                      <span className="px-1.5 py-0.5 rounded" style={{ backgroundColor: `${COLORS.signalRed}20`, color: COLORS.signalRed, fontSize: '9px' }}>
+                        AKTIV
+                      </span>
+                    ) : (
+                      <span style={{ color: COLORS.fadedBlue }}>—</span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Section>
+    </GlassCard>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 1. THREAT LEVEL BLOCK
 // ═══════════════════════════════════════════════════════════════
@@ -227,8 +605,9 @@ function ThreatLevelBlock({ transData, regimeData }) {
       </div>
 
       <InfoBox>
-        Kombiniert Cascade Speed, Confirmation Score und V16 Transition Probability zu einer Gesamteinschätzung.
-        Grün (CALM) = kein Handlungsbedarf. Gelb (MODERATE) = erhöhte Wachsamkeit. Orange (CASCADE) = defensiv positionieren. Rot (CRISIS) = Krisenmodus.
+        Gesamteinschätzung der Zyklen-Engine. Kombiniert drei Signale: Cascade Speed (wie schnell kippen Zyklen?),
+        Confirmation Score (wie viele sind bullish vs bearish?) und V16 Transition (wie wahrscheinlich wechselt das Regime?).
+        Wenn alle drei warnen → maximale Vorsicht.
       </InfoBox>
 
       {/* Main verdict */}
@@ -294,8 +673,10 @@ function PhasePositionBars({ transData }) {
     <GlassCard>
       <Section title="Phase Positions — Wo steht jeder Zyklus?" defaultOpen={true}>
         <InfoBox>
-          Zeigt wie weit jeder der 9 Zyklen durch seine aktuelle Phase ist.
-          100% = historische Median-Dauer erreicht. Über 100% = Phase dauert länger als üblich — Wechsel wird wahrscheinlicher.
+          Jeder wirtschaftliche Zyklus durchläuft Phasen (Expansion → Late Expansion → Contraction → Recovery).
+          Der Balken zeigt wie weit die aktuelle Phase fortgeschritten ist. Bei 100% ist die historische Median-Dauer erreicht.
+          Über 100% = die Phase dauert länger als üblich — ein Wechsel wird statistisch wahrscheinlicher.
+          Wenn ein Zyklus auf EXTENDED steht, sollten Sie die nächste Phase bereits einplanen.
         </InfoBox>
 
         <div className="space-y-2">
@@ -374,8 +755,9 @@ function CascadeTimeline({ transData }) {
     <GlassCard>
       <Section title="Cascade Speed — Historische Kipp-Geschwindigkeit" defaultOpen={true}>
         <InfoBox>
-          Historische Kipp-Geschwindigkeit über 20 Jahre. Unter 0.2 = ruhig (CALM).
-          0.2–0.5 = mehrere Zyklen drehen (MODERATE). Über 0.5 = schnelle Kaskade (CASCADE) — erhöhtes Crash-Risiko.
+          Zeigt wie schnell wirtschaftliche Zyklen in der Vergangenheit gleichzeitig gekippt sind.
+          Schnelles Kippen (mehrere Zyklen in wenigen Monaten) ging historisch Crashs voraus. Langsames Kippen führte eher zu Soft Landings.
+          Aktueller Wert im Kontext von 20 Jahren Geschichte.
         </InfoBox>
 
         <ResponsiveContainer width="100%" height={220}>
@@ -462,13 +844,23 @@ function RegimeHeatmap({ regimeData, condReturnsData }) {
     <GlassCard>
       <Section title="Regime Heatmap — Welche Assets profitieren?" defaultOpen={true}>
         <InfoBox>
-          Zeigt den historisch erwarteten 6M-Return für jedes Asset bei aktuellem Cluster-Zustand.
-          Grüne Zellen = überdurchschnittlich (positiver Excess). Rote Zellen = unterdurchschnittlich.
-          Zahl = Gesamt-Return (Baseline + Excess). Nur signifikante Zellen sind farbig.
+          Historische 6-Monats-Returns für jedes Asset bei aktuellem Cluster-Zustand. Grün = Asset performt besser als üblich in diesem Regime.
+          Rot = schlechter als üblich. Zahl = erwarteter Gesamt-Return. Nur statistisch signifikante Zellen (kein Zufall) sind farbig — der Rest ist Noise.
+          Wählen Sie einen Cluster um zu sehen welche Assets bei dessen aktuellem Zustand profitieren.
         </InfoBox>
 
-        <Dropdown value={selectedCluster} onChange={setSelectedCluster}
-                  options={clusterOptions} label="Cluster" />
+        {/* Dropdown + ⓘ ClusterInfo */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-caption text-muted-blue">Cluster:</span>
+          <select value={selectedCluster} onChange={e => setSelectedCluster(e.target.value)}
+                  style={{ backgroundColor: '#0d1f38', color: COLORS.iceWhite, border: '1px solid #4A5A7A',
+                           borderRadius: '4px', padding: '3px 8px', fontSize: '11px', outline: 'none' }}>
+            {clusterOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ClusterInfo clusterId={selectedCluster} />
+        </div>
 
         {buckets.length === 0 ? (
           <div className="text-caption text-muted-blue py-4 text-center">Keine Marginal-Daten für diesen Cluster</div>
@@ -577,13 +969,23 @@ function ConditionalReturnsChart({ regimeData, condReturnsData }) {
     <GlassCard>
       <Section title="Conditional Returns — Top Assets nach Signal" defaultOpen={true}>
         <InfoBox>
-          Die Assets mit dem stärksten signifikanten Signal im aktuellen Regime (6M Horizont).
-          Balken = Excess Return über Baseline. Zahl = Gesamt-Return (Baseline + Excess).
-          Whiskers zeigen P10/P90 (Tail-Risk Bandbreite).
+          Die Assets mit den stärksten statistisch belastbaren Signalen im aktuellen Regime (6-Monats-Horizont).
+          Balken = wie viel besser oder schlechter als der langfristige Durchschnitt. Zahl rechts = erwarteter Gesamt-Return.
+          Nur Signale die nicht zufällig sind werden gezeigt. Wenn ein Asset hier grün erscheint, hat es in vergleichbaren historischen Phasen überdurchschnittlich performt.
         </InfoBox>
 
-        <Dropdown value={selectedCluster} onChange={setSelectedCluster}
-                  options={clusterOptions} label="Cluster" />
+        {/* Dropdown + ⓘ ClusterInfo */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-caption text-muted-blue">Cluster:</span>
+          <select value={selectedCluster} onChange={e => setSelectedCluster(e.target.value)}
+                  style={{ backgroundColor: '#0d1f38', color: COLORS.iceWhite, border: '1px solid #4A5A7A',
+                           borderRadius: '4px', padding: '3px 8px', fontSize: '11px', outline: 'none' }}>
+            {clusterOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ClusterInfo clusterId={selectedCluster} />
+        </div>
 
         {chartData.length === 0 ? (
           <div className="text-caption text-muted-blue py-4 text-center">Keine signifikanten Returns für diesen Cluster</div>
@@ -681,8 +1083,9 @@ function V16TransitionBar({ regimeData }) {
     <GlassCard>
       <Section title="V16 Transition — Regime-Wechsel-Wahrscheinlichkeit" defaultOpen={true}>
         <InfoBox>
-          Historische Wahrscheinlichkeit dass V16 in den nächsten 6 Monaten in GROWTH bleibt, zu STRESS wechselt, oder in CRISIS fällt.
-          Basiert auf dem Credit × Real Economy Dual-Cluster-Zustand. Mehr Grün = sicherer.
+          V16 ist unser Kern-Handelssystem (34% CAGR, 18 Jahre Backtest). Es wechselt zwischen Regimes: GROWTH (normal, investiert),
+          STRESS (vorsichtig, reduziert) und CRISIS (defensiv, Cash). Diese Balken zeigen: Bei welcher Zyklen-Kombination bleibt V16 in GROWTH,
+          und wann kippt es? Die erste Zeile ist der aktuelle Zustand — die anderen zeigen was bei Verschlechterung passiert.
         </InfoBox>
 
         {bars.length === 0 ? (
@@ -746,9 +1149,9 @@ function AnaloguesTimeline({ regimeData }) {
     <GlassCard>
       <Section title="Historische Analogien — Wann sah es zuletzt so aus?" defaultOpen={true}>
         <InfoBox>
-          Die 5 historisch ähnlichsten Perioden zum aktuellen Cluster-Zustand.
-          Zeigt was danach mit SPY, Gold und Treasuries passierte (6M Forward).
-          Similarity Score = wie nah der damalige Zustand am heutigen war (1.0 = identisch).
+          Die Engine sucht in 20 Jahren Geschichte nach Perioden mit ähnlicher Zyklen-Konstellation.
+          Similarity 1.0 = identischer Zustand. Zeigt was danach mit den wichtigsten Assets passierte (6M Forward).
+          Nicht als Prognose zu verstehen — sondern als Kontext: &quot;In ähnlichen Situationen passierte historisch X.&quot;
         </InfoBox>
 
         <div className="space-y-2">
@@ -804,8 +1207,9 @@ function CrashVsCorrection({ regimeData }) {
     <GlassCard>
       <Section title="Crash vs. Korrektur — Wie schlimm kann es werden?" defaultOpen={true}>
         <InfoBox>
-          Credit + Business Dual-State bestimmt ob ein Rücksetzer eine -10% Korrektur oder ein -30% Crash wird.
-          Zeigt historische Drawdowns bei verschiedenen Kombinationen. Worst = schlimmster jemals gemessener Fall.
+          Nicht jeder Rücksetzer ist ein Crash. Der entscheidende Unterschied: Steht Credit UND Business gleichzeitig auf BEARISH?
+          Wenn ja → historisch -25% bis -35% Drawdown (Crash). Wenn nur Credit bearish aber Business hält → eher -8% bis -15% (Korrektur).
+          Die Entry Zone zeigt ab welchem Drawdown historisch gute Einstiegspunkte waren.
         </InfoBox>
 
         <div className="space-y-2">
@@ -1135,9 +1539,9 @@ function CycleNarrative({ transData }) {
     <GlassCard>
       <Section title="Zyklen-Analyse — KI-Synthese" defaultOpen={true}>
         <InfoBox>
-          Wöchentlich generierte Zusammenfassung der gesamten Zyklen-Engine.
-          Destilliert alle Berechnungen — Phase Positions, Cascade Speed, V16 Transition, Conditional Returns,
-          historische Analogien — in eine verständliche Einschätzung mit konkreten Handlungsimplikationen.
+          Wöchentlich von KI generierte Zusammenfassung aller Zyklen-Berechnungen. Destilliert Phase Positions,
+          Cascade Speed, V16 Transition, Conditional Returns und historische Analogien in eine verständliche Einschätzung.
+          Geschrieben aus der Perspektive eines Chief Investment Officers.
         </InfoBox>
 
         <div className="px-4 py-3 rounded" style={{ backgroundColor: '#0d1f38', borderLeft: `3px solid ${COLORS.baldurBlue || '#4A90D9'}` }}>
@@ -1256,8 +1660,14 @@ export default function CyclesDetail({ dashboard }) {
         {error && <div className="mt-2 text-caption" style={{ color: COLORS.signalOrange }}>Fehler: {error}</div>}
       </GlassCard>
 
+      {/* V5.1: Executive Summary — nach Header, vor Threat Level */}
+      {transData && <ExecutiveSummary transData={transData} regimeData={regimeData} condReturnsData={condReturnsData} />}
+
       {/* Threat Level */}
       {transData && <ThreatLevelBlock transData={transData} regimeData={regimeData} />}
+
+      {/* V5.1: Cascade Chain — nach Threat Level, vor Phase Positions */}
+      {transData && <CascadeChain transData={transData} />}
 
       {/* Phase Positions */}
       {transData && <PhasePositionBars transData={transData} />}
