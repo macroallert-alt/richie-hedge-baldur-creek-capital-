@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, ReferenceLine, ReferenceArea,
+  CartesianGrid, ReferenceLine, ReferenceArea, ReferenceDot,
 } from 'recharts';
 import GlassCard from '@/components/shared/GlassCard';
 import {
@@ -357,13 +357,85 @@ function CrashVsCorrection({regimeData}){
 // ═══════════════════════════════════════════════════════════════
 
 function PhaseLifecycleChart({chartData}){
-  if(!chartData)return null;const ind=chartData.indicator||[];const sm=chartData.smoothed||[];const ma=chartData.ma_12m||[];const pz=chartData.phase_zones||[];
-  if(ind.length<24)return null;const smMap={};sm.forEach(p=>{if(p.value!=null)smMap[p.date]=p.value;});const maMap={};ma.forEach(p=>{if(p.value!=null)maMap[p.date]=p.value;});
+  if(!chartData)return null;
+  const ind=chartData.indicator||[];const sm=chartData.smoothed||[];const ma=chartData.ma_12m||[];const pz=chartData.phase_zones||[];
+  if(ind.length<24)return null;
+  const smMap={};sm.forEach(p=>{if(p.value!=null)smMap[p.date]=p.value;});
+  const maMap={};ma.forEach(p=>{if(p.value!=null)maMap[p.date]=p.value;});
   const merged=ind.map(p=>({date:p.date,indicator:p.value,smoothed:smMap[p.date]??null,ma:maMap[p.date]??null})).filter(d=>d.indicator!=null);
-  if(merged.length<24)return null;const ti=Math.max(1,Math.floor(merged.length/10));
+  if(merged.length<24)return null;
+  const ti=Math.max(1,Math.floor(merged.length/10));
+
+  // Phase zone backgrounds
   const za=pz.map((z,i)=>({x1:z.start,x2:z.end,color:z.color==='green'?COLORS.signalGreen:z.color==='yellow'?COLORS.signalYellow:z.color==='orange'?COLORS.signalOrange:z.color==='red'?COLORS.signalRed:'#4A5A7A',key:i}));
-  return(<div className="mt-3"><ResponsiveContainer width="100%" height={180}><LineChart data={merged} margin={{top:5,right:10,left:0,bottom:5}}><CartesianGrid strokeDasharray="3 3" stroke="#1a2a44"/>{za.map(z=><ReferenceArea key={z.key} x1={z.x1} x2={z.x2} fill={z.color} fillOpacity={0.06} ifOverflow="extendDomain"/>)}<XAxis dataKey="date" tick={{fill:COLORS.mutedBlue,fontSize:9}} interval={ti} tickFormatter={d=>d?.slice(0,4)}/><YAxis tick={{fill:COLORS.mutedBlue,fontSize:9}} width={45} tickFormatter={v=>typeof v==='number'?v.toFixed(1):''}/><Tooltip content={<ChartTooltip/>}/><Line type="monotone" dataKey="indicator" stroke={COLORS.iceWhite} strokeWidth={1} dot={false} name="Indikator" connectNulls strokeOpacity={0.5}/><Line type="monotone" dataKey="smoothed" stroke={COLORS.baldurBlue||'#4A90D9'} strokeWidth={2} dot={false} name="Geglättet" connectNulls/><Line type="monotone" dataKey="ma" stroke={COLORS.signalYellow} strokeWidth={1} dot={false} name="12M Ø" connectNulls strokeOpacity={0.6} strokeDasharray="4 4"/></LineChart></ResponsiveContainer>
-    <div className="flex gap-3 mt-1 flex-wrap" style={{fontSize:'9px'}}><span style={{color:COLORS.signalGreen}}>■ Expansion</span><span style={{color:COLORS.signalYellow}}>■ Übergang</span><span style={{color:COLORS.signalRed}}>■ Kontraktion</span><span style={{color:COLORS.iceWhite,opacity:0.5}}>— Indikator</span><span style={{color:COLORS.baldurBlue||'#4A90D9'}}>— Geglättet</span><span style={{color:COLORS.signalYellow}}>-- 12M Ø</span></div>
+
+  // NOW-Marker: last data point date
+  const nowDate=merged[merged.length-1]?.date;
+
+  // Crossover points: where smoothed crosses MA (sign change)
+  const crossovers=[];
+  for(let i=1;i<merged.length;i++){
+    const prev=merged[i-1];const cur=merged[i];
+    if(prev.smoothed!=null&&prev.ma!=null&&cur.smoothed!=null&&cur.ma!=null){
+      const prevDiff=prev.smoothed-prev.ma;const curDiff=cur.smoothed-cur.ma;
+      if(prevDiff*curDiff<0){
+        // Sign changed — crossover at current point
+        crossovers.push({date:cur.date,value:cur.smoothed,bullish:curDiff>0});
+      }
+    }
+  }
+
+  // Direction arrow: smoothed velocity over last 3 months
+  const smVals=merged.filter(d=>d.smoothed!=null);
+  let dirLabel='→';let dirColor=COLORS.mutedBlue;
+  if(smVals.length>=4){
+    const last=smVals[smVals.length-1].smoothed;
+    const prev3=smVals[smVals.length-4].smoothed;
+    if(prev3&&prev3!==0){
+      const vel=(last-prev3)/Math.abs(prev3);
+      if(vel>0.005){dirLabel='↗';dirColor=COLORS.signalGreen;}
+      else if(vel<-0.005){dirLabel='↘';dirColor=COLORS.signalRed;}
+      else{dirLabel='→';dirColor=COLORS.signalYellow;}
+    }
+  }
+
+  return(<div className="mt-3">
+    <ResponsiveContainer width="100%" height={180}>
+      <LineChart data={merged} margin={{top:5,right:10,left:0,bottom:5}}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1a2a44"/>
+        {za.map(z=><ReferenceArea key={z.key} x1={z.x1} x2={z.x2} fill={z.color} fillOpacity={0.06} ifOverflow="extendDomain"/>)}
+        <XAxis dataKey="date" tick={{fill:COLORS.mutedBlue,fontSize:9}} interval={ti} tickFormatter={d=>d?.slice(0,4)}/>
+        <YAxis tick={{fill:COLORS.mutedBlue,fontSize:9}} width={45} tickFormatter={v=>typeof v==='number'?v.toFixed(1):''}/>
+        <Tooltip content={<ChartTooltip/>}/>
+        {/* NOW marker */}
+        {nowDate&&<ReferenceLine x={nowDate} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{value:'JETZT',fill:COLORS.iceWhite,fontSize:9,position:'top'}}/>}
+        {/* Crossover dots */}
+        {crossovers.map((c,i)=><ReferenceDot key={`cx${i}`} x={c.date} y={c.value} r={3} fill={c.bullish?COLORS.signalGreen:COLORS.signalRed} stroke={c.bullish?COLORS.signalGreen:COLORS.signalRed} strokeWidth={1} ifOverflow="extendDomain"/>)}
+        <Line type="monotone" dataKey="indicator" stroke={COLORS.iceWhite} strokeWidth={1} dot={false} name="Indikator" connectNulls strokeOpacity={0.5}/>
+        <Line type="monotone" dataKey="smoothed" stroke={COLORS.baldurBlue||'#4A90D9'} strokeWidth={2} dot={false} name="Geglättet" connectNulls/>
+        <Line type="monotone" dataKey="ma" stroke={COLORS.signalYellow} strokeWidth={1} dot={false} name="12M Ø" connectNulls strokeOpacity={0.6} strokeDasharray="4 4"/>
+      </LineChart>
+    </ResponsiveContainer>
+    {/* Direction arrow badge */}
+    <div className="flex items-center justify-between mt-1">
+      <div className="flex gap-3 flex-wrap" style={{fontSize:'9px'}}>
+        <span style={{color:COLORS.signalGreen}}>■ Expansion</span>
+        <span style={{color:COLORS.signalYellow}}>■ Übergang</span>
+        <span style={{color:COLORS.signalRed}}>■ Kontraktion</span>
+        <span style={{color:COLORS.iceWhite,opacity:0.5}}>— Indikator</span>
+        <span style={{color:COLORS.baldurBlue||'#4A90D9'}}>— Geglättet</span>
+        <span style={{color:COLORS.signalYellow}}>-- 12M Ø</span>
+      </div>
+      <div className="flex items-center gap-1 px-2 py-0.5 rounded" style={{backgroundColor:`${dirColor}15`,border:`1px solid ${dirColor}30`}}>
+        <span style={{color:dirColor,fontSize:'14px',lineHeight:1}}>{dirLabel}</span>
+        <span style={{color:dirColor,fontSize:'9px',fontFamily:'monospace'}}>Trend</span>
+      </div>
+    </div>
+    {/* Crossover legend */}
+    {crossovers.length>0&&<div className="flex gap-3 mt-1" style={{fontSize:'9px'}}>
+      <span style={{color:COLORS.signalGreen}}>● Bullish Kreuzung</span>
+      <span style={{color:COLORS.signalRed}}>● Bearish Kreuzung</span>
+    </div>}
   </div>);
 }
 
