@@ -158,184 +158,132 @@ function CascadeChain({transData}){
   const statusCol=cid=>tippedMap[cid]?COLORS.signalRed:STATUS_COLORS[positions[cid]?.status]||COLORS.fadedBlue;
 
   return(
-    <GlassCard><Section title="Kausalkette — Welcher Zyklus führt welchen?" defaultOpen={true}>
-      <InfoToggle>Zyklen kippen nicht zufällig gleichzeitig — sie folgen einer Hierarchie. Liquidity kippt zuerst, dann Credit, dann Business. Die Zahlen zeigen wie viele Monate typischerweise zwischen den Kipppunkten liegen. &quot;AKTIV&quot; = der führende Zyklus hat bereits gekippt.</InfoToggle>
-      <div className="mb-4">
-        <div className="text-caption text-muted-blue mb-2" style={{fontSize:'10px',fontWeight:600}}>Hauptkaskade: Liquidität → Credit → Realwirtschaft</div>
-        <div className="space-y-1">
-          {PRIMARY_CHAIN.map((cid,idx)=>{const meta=CYCLE_META[cid]||{};const pp=positions[cid]||{};const isTipped=!!tippedMap[cid];const sc=statusCol(cid);
-            return(<div key={cid}><div className="flex items-center gap-2 px-3 py-2 rounded" style={{backgroundColor:`${sc}10`,borderLeft:`3px solid ${sc}`}}><span style={{fontSize:'14px'}}>{meta.icon}</span><div className="flex-1 min-w-0"><div className="text-caption font-semibold text-ice-white">{cycleName(cid)}</div><div className="text-caption font-mono" style={{color:sc,fontSize:'10px'}}>{isTipped?`Gekippt seit ${tippedMap[cid]}`:`${statusLabel(pp.status)} — ${pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200):'?'}% durch aktuelle Phase`}</div></div></div>
-              {idx<PRIMARY_CHAIN.length-1&&<div className="flex items-center gap-2 pl-6 py-1"><span style={{color:COLORS.fadedBlue,fontSize:'14px'}}>↓</span><span className="text-caption font-mono" style={{color:COLORS.mutedBlue,fontSize:'10px'}}>historisch ~{chainMedian(PRIMARY_CHAIN[idx],PRIMARY_CHAIN[idx+1])} Monate Vorwarnzeit</span></div>}
-            </div>);})}
-        </div>
-      </div>
-      <div><div className="text-caption text-muted-blue mb-2" style={{fontSize:'10px',fontWeight:600}}>Alle Kausalketten</div>
-        <div className="space-y-1">{CASCADE_CHAINS.map(({from,to,label})=>{const key=`${from}_warns_${to}`;const d=condDurations[key]?.remaining_months_stats||{};const isActive=!!tippedMap[from];
-          return(<div key={key} className="flex items-center justify-between px-3 py-1.5 rounded" style={{backgroundColor:isActive?`${COLORS.signalRed}08`:'#0d1f38'}}><div className="flex-1 min-w-0"><span className="text-caption" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{label}</span></div><div className="flex items-center gap-2 shrink-0"><span className="text-caption font-mono" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{d.median!=null?`~${d.median} Mo`:'—'}</span>{isActive&&<span className="px-1.5 py-0.5 rounded" style={{backgroundColor:`${COLORS.signalRed}20`,color:COLORS.signalRed,fontSize:'9px'}}>AKTIV</span>}</div></div>);
-        })}</div>
-      </div>
+    <GlassCard><Section title="Kausalkette — Kipp-Sequenz" defaultOpen={true}>
+      <InfoToggle>Zeigt wie Zyklen einander beeinflussen. Von oben nach unten: Liquidität kippt zuerst, dann Credit, dann Realwirtschaft. "Noch ~X Mo" = historischer Median zwischen dem Kippen des einen und des anderen.</InfoToggle>
+      <div className="space-y-0">{PRIMARY_CHAIN.map((cid,i)=>{const pp=positions[cid]||{};const tipped=!!tippedMap[cid];
+        return(<div key={cid}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded" style={{backgroundColor:tipped?`${COLORS.signalRed}10`:'transparent',borderLeft:`3px solid ${statusCol(cid)}`}}>
+            <span style={{fontSize:'16px'}}>{CYCLE_META[cid]?.icon}</span>
+            <div className="flex-1"><div className="text-sm font-mono" style={{color:COLORS.iceWhite}}>{cycleName(cid)}</div><div className="text-caption" style={{color:statusCol(cid)}}>{phaseLabel(pp.current_phase)} · {statusLabel(pp.status)} {pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200)+'%':''}{pp.remaining_median!=null?` · ~${pp.remaining_median}Mo`:''}</div></div>
+            {tipped&&<span style={{color:COLORS.signalRed,fontSize:'12px'}}>⚠ gekippt {tippedMap[cid]}</span>}
+          </div>
+          {i<PRIMARY_CHAIN.length-1&&<div className="flex items-center gap-2 pl-6 py-1"><span style={{color:COLORS.fadedBlue,fontSize:'14px'}}>↓</span><span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>Noch ~{chainMedian(PRIMARY_CHAIN[i],PRIMARY_CHAIN[i+1])} Mo</span></div>}
+        </div>);
+      })}</div>
+      <div className="mt-3 border-t border-white/10 pt-3"><div className="text-caption text-muted-blue mb-2" style={{fontSize:'9px'}}>Weitere Kausalketten:</div><div className="flex flex-wrap gap-1">{CASCADE_CHAINS.filter(c=>!PRIMARY_CHAIN.includes(c.from)||!PRIMARY_CHAIN.includes(c.to)).map((c,i)=><span key={i} className="text-caption px-2 py-0.5 rounded" style={{backgroundColor:'#0d1f38',color:COLORS.fadedBlue,fontSize:'9px'}}>{CYCLE_META[c.from]?.icon}→{CYCLE_META[c.to]?.icon} ~{chainMedian(c.from,c.to)}Mo</span>)}</div></div>
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// THREAT LEVEL
-// ═══════════════════════════════════════════════════════════════
-
-function ThreatLevelBlock({transData,regimeData}){
-  const cascade=transData?.cascade_speed?.current||{};const confirmation=transData?.confirmation_counter||{};const assessment=transData?.overall_assessment||{};
-  const severity=cascade.severity||'CALM';const severityColor=SEVERITY_COLORS[severity]||COLORS.fadedBlue;
-  let v16Growth=null,v16Stress=null;const v16Dual=regimeData?.v16_transition_probability?.by_dual_cluster||{};
-  for(const[,val]of Object.entries(v16Dual)){if(val&&typeof val==='object'&&val.n_months>0){const g=val.v16_stays_growth_6m;if(typeof g==='number'){v16Growth=g;v16Stress=val.v16_to_stress_6m;break;}}}
-  const extended=assessment.extended_cycles||[];
-
-  return(
-    <GlassCard>
-      <div className="flex items-center justify-between mb-3"><span className="text-label uppercase tracking-wider text-muted-blue">Bedrohungslevel</span><span className="px-2 py-1 rounded text-sm font-bold font-mono" style={{backgroundColor:`${severityColor}20`,color:severityColor}}>{severity}</span></div>
-      <InfoToggle>Kombiniert drei Signale: Kipp-Tempo (wie schnell kippen Zyklen?), Stimmung (wie viele positiv vs negativ?) und V16 Stabilität (bleibt das Handelssystem im Normalmodus?). Wenn alle drei warnen → maximale Vorsicht.</InfoToggle>
-      <div className="px-3 py-3 rounded mb-3" style={{backgroundColor:`${severityColor}10`,borderLeft:`3px solid ${severityColor}`}}>
-        <div className="text-sm text-ice-white mb-2" style={{lineHeight:'1.5'}}>{assessment.verdict||'Keine Einschätzung verfügbar'}</div>
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          <div><div className="text-caption text-muted-blue">Kipp-Tempo</div><div className="text-lg font-mono font-bold" style={{color:severityColor}}>{cascade.cascade_speed??'—'}</div><div className="text-caption text-muted-blue">{cascade.n_transitions||0} / 6 Mo</div></div>
-          <div><div className="text-caption text-muted-blue">Stimmung</div><div className="text-lg font-mono font-bold" style={{color:(confirmation.confirmation_score||0)>0?COLORS.signalGreen:(confirmation.confirmation_score||0)<0?COLORS.signalRed:COLORS.mutedBlue}}>{confirmation.confirmation_score>0?'+':''}{confirmation.confirmation_score??'—'}</div><div className="text-caption text-muted-blue">{confirmation.bullish_count||0}↑ {confirmation.bearish_count||0}↓ {confirmation.neutral_count||0}→</div></div>
-          <div><div className="text-caption text-muted-blue">V16 stabil</div><div className="text-lg font-mono font-bold" style={{color:v16Growth!=null&&v16Growth>0.7?COLORS.signalGreen:v16Growth!=null&&v16Growth<0.5?COLORS.signalRed:COLORS.signalYellow}}>{v16Growth!=null?`${(v16Growth*100).toFixed(0)}%`:'—'}</div><div className="text-caption text-muted-blue">{v16Stress!=null?`Stress ${(v16Stress*100).toFixed(0)}%`:''}</div></div>
-        </div>
-      </div>
-      {extended.length>0&&<div className="text-caption px-2 py-1 rounded" style={{backgroundColor:`${COLORS.signalOrange}10`,color:COLORS.signalOrange}}>⚠ Überfällig: {extended.map(id=>cycleName(id)).join(', ')}</div>}
-    </GlassCard>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// PHASE POSITION BARS (V5.2 — Mobile fix, 533%+ capped)
+// PHASE POSITION BARS (V5.2 — visuell, mit Remaining)
 // ═══════════════════════════════════════════════════════════════
 
 function PhasePositionBars({transData}){
   const positions=transData?.phase_positions||{};
   return(
-    <GlassCard><Section title="Phase-Fortschritt" defaultOpen={true}>
-      <InfoToggle>Jeder Zyklus durchläuft Phasen. Der Balken zeigt den Fortschritt: 100% (Mitte) = historische Median-Dauer erreicht. Rechts davon = Phase dauert länger als üblich. &quot;Überfällig&quot; = Phasenwechsel einplanen.</InfoToggle>
-      <div className="space-y-2">{CYCLE_ORDER.filter(id=>id!=='POLITICAL').map(cid=>{
-        const pp=positions[cid]||{};const meta=CYCLE_META[cid]||{};const rawPct=pp.phase_position_pct;const displayPct=rawPct!=null?Math.min(rawPct,200):0;
-        const barWidth=Math.min(displayPct/2,100);const status=pp.status||'NO_HISTORY';const sc=STATUS_COLORS[status]||COLORS.fadedBlue;const isExtreme=rawPct!=null&&rawPct>200;
-        return(<div key={cid}>
-          <div className="flex items-center justify-between mb-0.5"><span className="text-caption font-mono" style={{color:COLORS.iceWhite,fontSize:'11px'}}>{meta.icon} {cycleName(cid).split(' ')[0]}</span><span className="text-caption font-mono" style={{color:sc,fontSize:'10px'}}>{statusLabel(status)} {rawPct!=null?(isExtreme?'(>200%)':`${rawPct}%`):''} · ~{pp.remaining_median??'?'} Mo</span></div>
-          <div className="relative h-3 rounded-full overflow-hidden" style={{backgroundColor:'#1a2a44'}}><div className="h-full rounded-full transition-all" style={{width:`${barWidth}%`,backgroundColor:sc,opacity:0.7}}/><div className="absolute top-0 h-full w-px" style={{left:'50%',backgroundColor:COLORS.iceWhite,opacity:0.4}}/></div>
-        </div>);
+    <GlassCard><Section title="Phase-Fortschritt — Wie weit ist jeder Zyklus?" defaultOpen={true}>
+      <InfoToggle>0% = Phase hat gerade begonnen. 100% = Median-Dauer erreicht. Über 100% = statistisch überfällig. Je weiter rechts, desto wahrscheinlicher der Phasenwechsel.</InfoToggle>
+      <div className="space-y-2">{CYCLE_ORDER.filter(id=>id!=='POLITICAL').map(id=>{const pp=positions[id]||{};const pct=pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200):0;const displayPct=pp.phase_position_pct!=null&&pp.phase_position_pct>200?'(>200%)':pct+'%';const col=STATUS_COLORS[pp.status]||COLORS.fadedBlue;const barW=Math.min(pct/2,100);
+        return(<div key={id} className="flex items-center gap-2"><span className="text-caption font-mono w-8 text-right" style={{color:COLORS.mutedBlue,fontSize:'9px'}}>{CYCLE_META[id]?.icon}</span><div className="flex-1 h-3 rounded-full overflow-hidden" style={{backgroundColor:'#0d1f38'}}><div style={{width:`${barW}%`,height:'100%',backgroundColor:col,borderRadius:'9999px',transition:'width 0.3s ease'}}/></div><span className="text-caption font-mono w-20 text-right" style={{color:col,fontSize:'9px'}}>{statusLabel(pp.status)} {displayPct}</span><span className="text-caption font-mono w-12 text-right" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>{pp.remaining_median!=null?`~${pp.remaining_median}Mo`:''}</span></div>);
       })}</div>
-      <div className="text-caption mt-2" style={{fontSize:'9px',color:COLORS.fadedBlue}}>Balkenmitte = 100% (Median-Dauer). Rechts = länger als üblich.</div>
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CASCADE SPEED TIMELINE (V5.2 — Werte erklärt)
+// CASCADE TIMELINE (V5.2 — wann kippte was)
 // ═══════════════════════════════════════════════════════════════
 
 function CascadeTimeline({transData}){
-  const historical=transData?.cascade_speed?.historical_cascade_speeds||[];const current=transData?.cascade_speed?.current||{};
-  const chartData=useMemo(()=>historical.length?historical.map(h=>({date:h.month,speed:h.speed})):[], [historical]);
-  if(!chartData.length)return null;
+  const cascade=transData?.cascade_speed?.current||{};const calibration=transData?.cascade_speed?.calibration||{};
+  const transitioned=cascade.transitioned_cycles||[];const notYet=cascade.not_yet_transitioned||[];
+  if(!transitioned.length)return null;
   return(
-    <GlassCard><Section title="Kipp-Tempo — Historisch" defaultOpen={true}>
-      <InfoToggle>Unter 0.2 (grün) = ruhig. 0.2–0.5 (gelb) = mehrere Zyklen drehen — Vorsicht. Über 0.5 (orange) = schnelle Kaskade, Crashs gingen historisch voraus. Je höher, desto schneller kippen die Zyklen.</InfoToggle>
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={chartData} margin={{top:10,right:10,left:0,bottom:5}}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1a2a44"/>
-          <ReferenceArea y1={0} y2={0.2} fill={COLORS.signalGreen} fillOpacity={0.04}/>
-          <ReferenceArea y1={0.2} y2={0.5} fill={COLORS.signalYellow} fillOpacity={0.04}/>
-          <ReferenceArea y1={0.5} y2={1} fill={COLORS.signalOrange} fillOpacity={0.06}/>
-          <ReferenceLine y={0.2} stroke={COLORS.signalYellow} strokeDasharray="4 4" strokeWidth={1} label={{value:'Vorsicht',fill:COLORS.signalYellow,fontSize:9,position:'right'}}/>
-          <ReferenceLine y={0.5} stroke={COLORS.signalOrange} strokeDasharray="4 4" strokeWidth={1} label={{value:'Alarm',fill:COLORS.signalOrange,fontSize:9,position:'right'}}/>
-          <XAxis dataKey="date" tick={{fill:COLORS.mutedBlue,fontSize:9}} interval={Math.max(1,Math.floor(chartData.length/12))} tickFormatter={d=>d?.slice(0,4)}/>
-          <YAxis tick={{fill:COLORS.mutedBlue,fontSize:9}} domain={[0,1]} width={35} tickFormatter={v=>v.toFixed(1)}/>
-          <Tooltip content={<ChartTooltip/>}/>
-          <Line type="monotone" dataKey="speed" stroke={COLORS.signalOrange} strokeWidth={1.5} dot={false} name="Kipp-Tempo"/>
-        </LineChart>
-      </ResponsiveContainer>
-      <div className="flex justify-between text-caption mt-1" style={{fontSize:'10px'}}><span style={{color:COLORS.fadedBlue}}>{chartData.length} Monate</span><span style={{color:SEVERITY_COLORS[current.severity]||COLORS.fadedBlue}}>Aktuell: {current.cascade_speed??'—'} — {SEVERITY_LABELS[current.severity]?.split('—')[0]?.trim()||current.severity}</span></div>
+    <GlassCard><Section title="Kipp-Tempo — Historisch" defaultOpen={false}>
+      <InfoToggle>Zeigt wann welcher Zyklus zuletzt von bullish/neutral nach bearish gewechselt hat. "Kipp-Tempo" misst wie schnell die Zyklen nacheinander kippen. Höheres Tempo = höheres Risiko.</InfoToggle>
+      <div className="space-y-1">{transitioned.map((t,i)=><div key={i} className="flex items-center justify-between px-3 py-1.5 rounded" style={{backgroundColor:`${COLORS.signalRed}08`,borderLeft:`2px solid ${COLORS.signalRed}`}}><span className="text-caption text-ice-white font-mono">{CYCLE_META[t.cycle]?.icon} {cycleName(t.cycle)}</span><span className="text-caption font-mono" style={{color:COLORS.signalRed}}>{t.month||'?'}</span></div>)}</div>
+      {notYet.length>0&&<div className="mt-2 text-caption text-muted-blue" style={{fontSize:'9px'}}>Noch nicht gekippt: {notYet.map(c=>CYCLE_META[c]?.icon||c).join(' ')}</div>}
+      <div className="mt-3 flex items-center gap-2"><span className="text-caption text-muted-blue" style={{fontSize:'9px'}}>Tempo:</span><span className="px-2 py-0.5 rounded text-caption font-mono" style={{backgroundColor:`${SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue}20`,color:SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue,fontSize:'10px'}}>{cascade.cascade_speed?.toFixed(2)||'?'} — {cascade.severity||'?'}</span></div>
+      {Object.keys(calibration).length>0&&<div className="mt-2 space-y-1">{Object.entries(calibration).map(([k,v])=>v&&typeof v==='object'?<div key={k} className="flex items-center justify-between text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}><span>{v.label||k}</span><span>V16 Growth: {v.v16_stays_growth_pct??'?'}% · SPY 6M: {v.avg_spy_6m!=null?fmtPct(v.avg_spy_6m):'?'}</span></div>:null)}</div>}
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// REGIME HEATMAP
+// REGIME HEATMAP (V5.2 — Cluster × Buckets, nur Cluster-Level)
 // ═══════════════════════════════════════════════════════════════
 
 function RegimeHeatmap({regimeData,condReturnsData}){
-  const[sc,setSc]=useState('CREDIT_CLUSTER');const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
-  const cm=marginals[sc]||{};const buckets=Object.keys(cm).filter(b=>cm[b]?.n_months>0);const opts=CLUSTER_ORDER.map(c=>({value:c,label:CLUSTER_LABELS[c]}));
-  const hd=useMemo(()=>{const rows=[];for(const b of buckets){const assets=cm[b]?.assets||{};for(const t of ALL_ASSETS_ORDERED){const d=assets[t]?.['6m'];if(!d)continue;const bl=baselines[t]?.baseline_6m;const ex=d.avg_excess;rows.push({ticker:t,bucket:b,excess:ex,totalReturn:(bl!=null&&ex!=null)?bl+ex:d.avg,significant:d.significant});}}return rows;},[cm,buckets,baselines]);
-
+  const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
+  const hasData=Object.keys(marginals).length>0;if(!hasData)return null;
   return(
-    <GlassCard><Section title="Regime Heatmap — Welche Assets profitieren?" defaultOpen={true}>
-      <InfoToggle>Historische 6-Monats-Returns bei aktuellem Cluster-Zustand. Grün = besser als üblich. Rot = schlechter. Nur farbige Zellen sind statistisch belastbar.</InfoToggle>
-      <div className="flex items-center gap-2 mb-3"><span className="text-caption text-muted-blue">Cluster:</span><select value={sc} onChange={e=>setSc(e.target.value)} style={{backgroundColor:'#0d1f38',color:COLORS.iceWhite,border:'1px solid #4A5A7A',borderRadius:'4px',padding:'3px 8px',fontSize:'11px',outline:'none'}}>{opts.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select><ClusterInfo clusterId={sc}/></div>
-      {buckets.length===0?<div className="text-caption text-muted-blue py-4 text-center">Keine Daten</div>:
-      <div className="space-y-1"><div className="flex items-center gap-1 pb-1 border-b border-white/10"><span className="text-caption font-mono w-14 shrink-0" style={{color:COLORS.mutedBlue,fontSize:'9px'}}>Asset</span>{buckets.map(b=><span key={b} className="text-caption font-mono flex-1 text-center" style={{color:COLORS.mutedBlue,fontSize:'9px'}}>{b}</span>)}</div>
-        {ASSET_CATEGORIES.map(cat=>{const cr=hd.filter(r=>cat.tickers.includes(r.ticker));if(!cr.length)return null;const tm={};cr.forEach(r=>{tm[r.ticker]=tm[r.ticker]||{};tm[r.ticker][r.bucket]=r;});
-          return(<div key={cat.label}><div className="text-caption mt-2 mb-1" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>{cat.label}</div>{cat.tickers.map(t=>{const d=tm[t];if(!d)return null;return(<div key={t} className="flex items-center gap-1 py-0.5"><span className="text-caption font-mono w-14 shrink-0" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{t}</span>{buckets.map(b=>{const c=d[b];if(!c)return<span key={b} className="flex-1 text-center text-caption" style={{color:COLORS.fadedBlue}}>—</span>;const op=c.significant?0.15:0.03;const col=c.significant?excessColor(c.excess):COLORS.fadedBlue;return<span key={b} className="flex-1 text-center text-caption font-mono rounded px-1 py-0.5" style={{backgroundColor:`${col}${Math.round(op*255).toString(16).padStart(2,'0')}`,color:c.significant?col:COLORS.fadedBlue,fontSize:'10px'}}>{c.totalReturn!=null?fmtPct(c.totalReturn):'—'}</span>;})}</div>);})}</div>);
-        })}
-      </div>}
+    <GlassCard><Section title="Regime Heatmap — Was bedeuten die Cluster-Signale?" defaultOpen={true}>
+      <InfoToggle>Zeigt die historische 6M-Rendite für jedes Asset wenn ein Cluster in einem bestimmten Zustand war (Bullish/Neutral/Bearish). Grün = überdurchschnittlich, Rot = unterdurchschnittlich. Nur signifikante Signale farbig.</InfoToggle>
+      {CLUSTER_ORDER.map(clusterId=>{const cm=marginals[clusterId];if(!cm)return null;const bucketOrder=['BULLISH','NEUTRAL_MIXED','BEARISH'];
+        return(<div key={clusterId} className="mb-4"><div className="flex items-center mb-2"><span className="text-sm font-mono text-ice-white">{CLUSTER_LABELS[clusterId]}</span><ClusterInfo clusterId={clusterId}/></div><div className="overflow-x-auto"><table className="w-full text-caption font-mono" style={{fontSize:'9px'}}><thead><tr><th className="text-left py-1 px-1 text-muted-blue">Asset</th>{bucketOrder.map(b=><th key={b} className="text-center py-1 px-1 text-muted-blue">{b==='BULLISH'?'Bull':b==='BEARISH'?'Bear':'Neutral'}</th>)}</tr></thead><tbody>{ALL_ASSETS_ORDERED.map(ticker=>{const bl6=baselines[ticker]?.baseline_6m;let anySignificant=false;const cells=bucketOrder.map(b=>{const d=cm[b]?.assets?.[ticker]?.['6m'];if(!d)return{val:null,sig:false};if(d.significant)anySignificant=true;return{val:d.avg_excess,sig:d.significant};});if(!anySignificant)return null;const isCrypto=CRYPTO_TICKERS.has(ticker);
+          return(<tr key={ticker} className="border-t border-white/5"><td className="py-1 px-1 text-ice-white">{isCrypto?`${ticker} ⚠`:ticker}</td>{cells.map((c,i)=><td key={i} className="text-center py-1 px-1" style={{color:c.sig?excessColor(c.val):COLORS.fadedBlue,opacity:c.sig?1:0.4}}>{c.val!=null?fmtPct(c.val):'—'}</td>)}</tr>);
+        })}</tbody></table></div></div>);
+      })}
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONDITIONAL RETURNS
+// CONDITIONAL RETURNS — Stärkste Signale (V5.2 — Top Assets)
 // ═══════════════════════════════════════════════════════════════
 
 function ConditionalReturnsChart({regimeData,condReturnsData}){
-  const[sc,setSc]=useState('CREDIT_CLUSTER');const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
-  const opts=CLUSTER_ORDER.map(c=>({value:c,label:CLUSTER_LABELS[c]}));
-  const cd=useMemo(()=>{const cm=marginals[sc]||{};const rows=[];for(const[,bData]of Object.entries(cm)){if(!bData?.assets)continue;for(const t of ALL_ASSETS_ORDERED){const d=bData.assets[t]?.['6m'];if(!d||!d.significant)continue;const bl=baselines[t]?.baseline_6m;rows.push({ticker:t,excess:d.avg_excess||0,totalReturn:(bl!=null&&d.avg_excess!=null)?bl+d.avg_excess:d.avg,isCrypto:CRYPTO_TICKERS.has(t)});}}rows.sort((a,b)=>(b.excess||0)-(a.excess||0));return rows.slice(0,15);},[marginals,sc,baselines]);
-
+  const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
+  const signals=[];
+  for(const ck of CLUSTER_ORDER){const cm=marginals[ck]||{};for(const[bucket,bData]of Object.entries(cm)){if(!bData?.assets)continue;for(const[ticker,horizons]of Object.entries(bData.assets)){if(CRYPTO_TICKERS.has(ticker))continue;const d=horizons?.['6m'];if(!d||!d.significant)continue;const bl=baselines[ticker]?.baseline_6m;signals.push({ticker,cluster:CLUSTER_LABELS[ck],bucket,excess:d.avg_excess,total:bl!=null&&d.avg_excess!=null?bl+d.avg_excess:d.avg,baseline:bl,strength:d.signal_strength||0,n:d.n_independent||d.n||0,hitRate:d.hit_rate});}}}
+  signals.sort((a,b)=>b.strength-a.strength);const top=signals.slice(0,10);
+  if(top.length===0)return null;
   return(
     <GlassCard><Section title="Stärkste Signale — Top Assets" defaultOpen={true}>
-      <InfoToggle>Assets mit den stärksten Signalen (6M). Balken = Abweichung vom Durchschnitt. Zahl = erwarteter Gesamt-Return. ⚠ bei Crypto = kurze Historie, weniger verlässlich.</InfoToggle>
-      <div className="flex items-center gap-2 mb-3"><span className="text-caption text-muted-blue">Cluster:</span><select value={sc} onChange={e=>setSc(e.target.value)} style={{backgroundColor:'#0d1f38',color:COLORS.iceWhite,border:'1px solid #4A5A7A',borderRadius:'4px',padding:'3px 8px',fontSize:'11px',outline:'none'}}>{opts.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select><ClusterInfo clusterId={sc}/></div>
-      {cd.length===0?<div className="text-caption text-muted-blue py-4 text-center">Keine signifikanten Signale</div>:
-      <div className="space-y-1">{cd.map((r,i)=>{const mx=Math.max(...cd.map(x=>Math.abs(x.excess||0)),0.01);const bp=Math.abs(r.excess)/mx*45;const pos=r.excess>=0;
-        return(<div key={`${r.ticker}-${i}`} className="flex items-center gap-2 py-0.5"><span className="text-caption font-mono w-14 shrink-0" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{r.ticker}{r.isCrypto?' ⚠':''}</span><div className="flex-1 flex items-center" style={{height:'18px'}}><div className="relative w-full h-full flex items-center"><div className="absolute h-full w-px" style={{left:'50%',backgroundColor:COLORS.fadedBlue,opacity:0.5}}/><div className="absolute h-3 rounded-sm" style={{left:pos?'50%':`${50-bp}%`,width:`${bp}%`,backgroundColor:pos?COLORS.signalGreen:COLORS.signalRed,opacity:0.6}}/></div></div><span className="text-caption font-mono w-16 text-right shrink-0" style={{color:pos?COLORS.signalGreen:COLORS.signalRed,fontSize:'10px'}}>{fmtPct(r.totalReturn)}</span></div>);
-      })}</div>}
+      <InfoToggle>Die 10 stärksten signifikanten Cluster-Signale für den 6M-Horizont. "Excess" = Rendite über dem historischen Durchschnitt. "Baseline" = was das Asset normalerweise bringt. Signal = |Excess|/SE — je höher, desto belastbarer.</InfoToggle>
+      <div className="space-y-1.5">{top.map((s,i)=><div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${excessColor(s.excess)}`}}><span className="text-sm font-mono font-bold" style={{color:COLORS.iceWhite,width:'40px'}}>{s.ticker}</span><div className="flex-1"><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.mutedBlue}}>{s.cluster} · {s.bucket}</div></div><div className="text-right"><div className="font-mono text-sm" style={{color:excessColor(s.excess)}}>{fmtPct(s.excess)} <span style={{color:COLORS.fadedBlue,fontSize:'9px'}}>({fmtPct(s.baseline)} Baseline)</span></div><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}>Signal: {s.strength?.toFixed(1)} · HR: {(s.hitRate*100)?.toFixed(0)}% · n={s.n}</div></div></div>)}</div>
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// V16 TRANSITION (V5.2 — verständlich)
+// V16 TRANSITION BAR (V5.2 — Regime-Stabilität)
 // ═══════════════════════════════════════════════════════════════
 
 function V16TransitionBar({regimeData}){
-  const byDual=regimeData?.v16_transition_probability?.by_dual_cluster||{};
-  const DL={'BULLISH__BULLISH':'Credit positiv + Wirtschaft positiv','BULLISH__BEARISH':'Credit positiv + Wirtschaft negativ','BULLISH__NEUTRAL_MIXED':'Credit positiv + Wirtschaft neutral','BEARISH__BULLISH':'Credit negativ + Wirtschaft positiv','BEARISH__BEARISH':'Credit negativ + Wirtschaft negativ','BEARISH__NEUTRAL_MIXED':'Credit negativ + Wirtschaft neutral','NEUTRAL_MIXED__BULLISH':'Credit neutral + Wirtschaft positiv','NEUTRAL_MIXED__BEARISH':'Credit neutral + Wirtschaft negativ','NEUTRAL_MIXED__NEUTRAL_MIXED':'Beide neutral'};
-  function fl(k){const c=k.replace(/CREDIT_/g,'').replace(/REAL_ECONOMY_/g,'').replace(/REAL_/g,'');return DL[c]||k.replace(/__/g,' + ').replace(/_/g,' ');}
-  const bars=useMemo(()=>{const r=[];for(const[k,v]of Object.entries(byDual)){if(!v||typeof v!=='object'||!v.n_months)continue;const g=v.v16_stays_growth_6m;if(typeof g!=='number')continue;r.push({label:fl(k),growth:Math.round(g*100),stress:Math.round((v.v16_to_stress_6m||0)*100),crisis:Math.round((v.v16_to_crisis_6m||0)*100),n:v.n_months});}return r;},[byDual]);
-
+  const dual=regimeData?.v16_transition_probability?.by_dual_cluster||{};const credit=regimeData?.v16_transition_probability?.by_credit_cluster||{};
+  const entries=[...Object.entries(dual),...Object.entries(credit)].filter(([,v])=>v&&typeof v==='object'&&v.n_months>0);
+  if(entries.length===0)return null;
   return(
-    <GlassCard><Section title="Regime-Stabilität" defaultOpen={true}>
-      <InfoToggle>Unser Handelssystem wechselt zwischen Normal (grün), Stress (gelb) und Krise (rot). Die Balken zeigen: Bei welcher Kombination aus Credit und Wirtschaft blieb es im Normalmodus? Erste Zeile = aktuelle Lage.</InfoToggle>
-      {bars.length===0?<div className="text-caption text-muted-blue py-4 text-center">Keine Daten</div>:
-      <div className="space-y-2">{bars.map((b,i)=><div key={i}><div className="flex items-center justify-between mb-1"><span className="text-caption" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{i===0?'→ ':''}{b.label}</span><span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>n={b.n}</span></div><div className="flex h-5 rounded-full overflow-hidden">{b.growth>0&&<div style={{flex:b.growth,backgroundColor:COLORS.signalGreen,opacity:0.7}} className="flex items-center justify-center"><span style={{fontSize:'9px',color:'#fff',fontWeight:600}}>{b.growth}%</span></div>}{b.stress>0&&<div style={{flex:b.stress,backgroundColor:COLORS.signalYellow,opacity:0.7}} className="flex items-center justify-center"><span style={{fontSize:'9px',color:'#000',fontWeight:600}}>{b.stress}%</span></div>}{b.crisis>0&&<div style={{flex:b.crisis,backgroundColor:COLORS.signalRed,opacity:0.7}} className="flex items-center justify-center"><span style={{fontSize:'9px',color:'#fff',fontWeight:600}}>{b.crisis}%</span></div>}</div></div>)}
-        <div className="flex gap-4 text-caption mt-1" style={{fontSize:'9px'}}><span style={{color:COLORS.signalGreen}}>● Normal</span><span style={{color:COLORS.signalYellow}}>● Stress</span><span style={{color:COLORS.signalRed}}>● Krise</span></div>
-      </div>}
+    <GlassCard><Section title="Regime-Stabilität — Wie lange bleibt V16 im Normalmodus?" defaultOpen={false}>
+      <InfoToggle>Misst die historische Wahrscheinlichkeit dass das Handelssystem (V16) im aktuellen Modus (GROWTH) bleibt, basierend auf den Cluster-Zuständen. Höher = stabiler.</InfoToggle>
+      <div className="space-y-2">{entries.map(([k,v],i)=>{const g3=v.v16_stays_growth_3m;const g6=v.v16_stays_growth_6m;const col=g6!=null?g6>0.7?COLORS.signalGreen:g6>0.4?COLORS.signalYellow:COLORS.signalRed:COLORS.fadedBlue;
+        return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${col}`}}><div className="text-caption font-mono text-ice-white" style={{fontSize:'10px'}}>{k.replace(/_/g,' ')}</div><div className="flex gap-4 mt-1">{g3!=null&&<span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>3M: {(g3*100).toFixed(0)}%</span>}{g6!=null&&<span className="text-caption font-mono" style={{color:col,fontSize:'10px',fontWeight:600}}>6M: {(g6*100).toFixed(0)}%</span>}<span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>n={v.n_months}</span></div></div>);
+      })}</div>
     </Section></GlassCard>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ANALOGUES + CRASH VS CORRECTION
+// HISTORICAL ANALOGUES TIMELINE (V5.2 — horizontale Zeitachse)
 // ═══════════════════════════════════════════════════════════════
 
 function AnaloguesTimeline({regimeData}){
-  const analogues=regimeData?.historical_analogues?.analogues||[];if(!analogues.length)return null;
+  const analogues=regimeData?.historical_analogues?.analogues||[];if(analogues.length===0)return null;
   return(
-    <GlassCard><Section title="Historische Vergleiche" defaultOpen={true}>
-      <InfoToggle>Perioden mit ähnlicher Zyklen-Konstellation in 20 Jahren Geschichte. Zeigt was danach passierte (6M). Kontext, keine Prognose.</InfoToggle>
-      <div className="space-y-2">{analogues.slice(0,5).map((a,i)=>{const w=a.what_happened_next||{};return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38'}}><div className="flex items-center justify-between mb-1"><span className="text-caption font-mono font-semibold" style={{color:COLORS.iceWhite}}>{a.period_start}</span><span className="text-caption font-mono" style={{color:COLORS.mutedBlue}}>Ähnlichkeit: {a.similarity_score}</span></div><div className="flex gap-4">{['spy','gld','tlt'].map(t=>{const v=w[`${t}_6m_return`];return<span key={t} className="text-caption font-mono" style={{color:v!=null&&v>0?COLORS.signalGreen:COLORS.signalRed}}>{t.toUpperCase()} {v!=null?`${(v*100).toFixed(1)}%`:'—'}</span>;})}</div></div>);})}</div>
+    <GlassCard><Section title="Historische Vergleiche — Wann sah es zuletzt so aus?" defaultOpen={false}>
+      <InfoToggle>Findet historische Perioden die dem aktuellen Cluster-Zustand am ähnlichsten sind. "Was danach passierte" zeigt die 6M-Rendite von SPY, GLD und TLT.</InfoToggle>
+      <div className="space-y-2">{analogues.map((a,i)=>{const sim=(a.similarity_score*100).toFixed(0);const whn=a.what_happened_next||{};
+        return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${COLORS.baldurBlue||'#4A90D9'}`}}><div className="flex items-center justify-between"><span className="text-sm font-mono text-ice-white">{a.period_start}{a.episode_label?` — ${a.episode_label}`:''}</span><span className="text-caption font-mono px-1.5 py-0.5 rounded" style={{backgroundColor:'#1a3050',color:COLORS.baldurBlue||'#4A90D9',fontSize:'9px'}}>{sim}% ähnlich</span></div><div className="flex gap-3 mt-1 text-caption font-mono" style={{fontSize:'9px'}}>{whn.spy_6m_return!=null&&<span style={{color:whn.spy_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>SPY: {fmtPct(whn.spy_6m_return)}</span>}{whn.gld_6m_return!=null&&<span style={{color:whn.gld_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>GLD: {fmtPct(whn.gld_6m_return)}</span>}{whn.tlt_6m_return!=null&&<span style={{color:whn.tlt_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>TLT: {fmtPct(whn.tlt_6m_return)}</span>}</div></div>);
+      })}</div>
     </Section></GlassCard>
   );
 }
+
+// ═══════════════════════════════════════════════════════════════
+// CRASH VS CORRECTION (V5.2 — Dual-State Analyse)
+// ═══════════════════════════════════════════════════════════════
 
 function CrashVsCorrection({regimeData}){
   const cd=regimeData?.crash_vs_correction||{};const dualDD=cd.dual_state_drawdowns||{};const entryRules=cd.entry_rules||{};const cs=cd.current_state||{};
@@ -353,7 +301,7 @@ function CrashVsCorrection({regimeData}){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CYCLE CARDS (V5.2 — klickbar, Fließtext, keine CondReturns)
+// CYCLE CARDS (V5.4 — Crossover-Filter + neutrale Legende)
 // ═══════════════════════════════════════════════════════════════
 
 function PhaseLifecycleChart({chartData}){
@@ -372,15 +320,20 @@ function PhaseLifecycleChart({chartData}){
   // NOW-Marker: last data point date
   const nowDate=merged[merged.length-1]?.date;
 
-  // Crossover points: where smoothed crosses MA (sign change)
+  // V5.4: Crossover points with minimum threshold filter
+  // Only show crossovers where |smoothed - ma| exceeds 1% of |ma| after crossing
   const crossovers=[];
   for(let i=1;i<merged.length;i++){
     const prev=merged[i-1];const cur=merged[i];
     if(prev.smoothed!=null&&prev.ma!=null&&cur.smoothed!=null&&cur.ma!=null){
       const prevDiff=prev.smoothed-prev.ma;const curDiff=cur.smoothed-cur.ma;
       if(prevDiff*curDiff<0){
-        // Sign changed — crossover at current point
-        crossovers.push({date:cur.date,value:cur.smoothed,bullish:curDiff>0});
+        // Sign changed — check minimum distance threshold
+        const maAbs=Math.abs(cur.ma);
+        const threshold=maAbs>0?maAbs*0.01:0.001; // 1% of MA value, fallback 0.001
+        if(Math.abs(curDiff)>=threshold){
+          crossovers.push({date:cur.date,value:cur.smoothed,goingUp:curDiff>0});
+        }
       }
     }
   }
@@ -409,8 +362,8 @@ function PhaseLifecycleChart({chartData}){
         <Tooltip content={<ChartTooltip/>}/>
         {/* NOW marker */}
         {nowDate&&<ReferenceLine x={nowDate} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{value:'JETZT',fill:COLORS.iceWhite,fontSize:9,position:'top'}}/>}
-        {/* Crossover dots */}
-        {crossovers.map((c,i)=><ReferenceDot key={`cx${i}`} x={c.date} y={c.value} r={3} fill={c.bullish?COLORS.signalGreen:COLORS.signalRed} stroke={c.bullish?COLORS.signalGreen:COLORS.signalRed} strokeWidth={1} ifOverflow="extendDomain"/>)}
+        {/* V5.4: Crossover dots — green=up, red=down (direction-matched) */}
+        {crossovers.map((c,i)=><ReferenceDot key={`cx${i}`} x={c.date} y={c.value} r={3} fill={c.goingUp?COLORS.signalGreen:COLORS.signalRed} stroke={c.goingUp?COLORS.signalGreen:COLORS.signalRed} strokeWidth={1} ifOverflow="extendDomain"/>)}
         <Line type="monotone" dataKey="indicator" stroke={COLORS.iceWhite} strokeWidth={1} dot={false} name="Indikator" connectNulls strokeOpacity={0.5}/>
         <Line type="monotone" dataKey="smoothed" stroke={COLORS.baldurBlue||'#4A90D9'} strokeWidth={2} dot={false} name="Geglättet" connectNulls/>
         <Line type="monotone" dataKey="ma" stroke={COLORS.signalYellow} strokeWidth={1} dot={false} name="12M Ø" connectNulls strokeOpacity={0.6} strokeDasharray="4 4"/>
@@ -431,10 +384,10 @@ function PhaseLifecycleChart({chartData}){
         <span style={{color:dirColor,fontSize:'9px',fontFamily:'monospace'}}>Trend</span>
       </div>
     </div>
-    {/* Crossover legend */}
+    {/* V5.4: Neutral crossover legend — "aufwärts/abwärts" statt "Bullish/Bearish" */}
     {crossovers.length>0&&<div className="flex gap-3 mt-1" style={{fontSize:'9px'}}>
-      <span style={{color:COLORS.signalGreen}}>● Bullish Kreuzung</span>
-      <span style={{color:COLORS.signalRed}}>● Bearish Kreuzung</span>
+      <span style={{color:COLORS.signalGreen}}>● Kreuzung aufwärts</span>
+      <span style={{color:COLORS.signalRed}}>● Kreuzung abwärts</span>
     </div>}
   </div>);
 }
@@ -448,19 +401,20 @@ function CycleExplanation({cycleId,phaseData,transData}){
 }
 
 function CycleCard({cycleId,phaseData,chartData,transData}){
-  const[expanded,setExpanded]=useState(false);const meta=CYCLE_META[cycleId]||{};const phase=phaseData?.phase||'UNKNOWN';const confidence=phaseData?.confidence;
-  const alignment=phaseData?.v16_alignment||'NEUTRAL';const inDanger=phaseData?.in_danger_zone;const phaseColor=CYCLE_PHASE_COLORS[phase]||COLORS.fadedBlue;
-  const tierColor=CYCLE_TIER_COLORS[meta.tier]||COLORS.mutedBlue;const pp=transData?.phase_positions?.[cycleId]||{};const pct=pp.phase_position_pct;
-  const status=pp.status;const remaining=pp.remaining_median;const sc=STATUS_COLORS[status]||COLORS.fadedBlue;
+  const[open,setOpen]=useState(false);const meta=CYCLE_META[cycleId]||{};const pp=transData?.phase_positions?.[cycleId]||{};
+  const phase=phaseData?.phase||'UNKNOWN';const phaseCol=CYCLE_PHASE_COLORS[phase]||COLORS.fadedBlue;const tierCol=CYCLE_TIER_COLORS[`tier${meta.tier}`]||COLORS.fadedBlue;
+  const conf=phaseData?.confidence;const indVal=phaseData?.indicator_value;const vel=phaseData?.velocity;
+  const position=pp.phase_position_pct;const displayPos=position!=null?position>200?'(>200%)':Math.min(position,200)+'%':null;
+  const inDanger=phaseData?.danger_zone?.currently_in_zone;const alCol=phaseData?.v16_alignment==='ALIGNED'?COLORS.signalGreen:phaseData?.v16_alignment==='DIVERGED'?COLORS.signalRed:COLORS.fadedBlue;
 
   return(
-    <div className="rounded-lg mb-3 overflow-hidden" style={{backgroundColor:`${phaseColor}10`,borderLeft:`3px solid ${phaseColor}`}}>
-      <button onClick={()=>setExpanded(!expanded)} className="w-full text-left p-3">
-        <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><span style={{fontSize:'16px'}}>{meta.icon}</span><span className="text-sm font-semibold text-ice-white">{meta.name}</span><span className="text-caption px-1.5 py-0.5 rounded font-mono" style={{backgroundColor:`${tierColor}20`,color:tierColor,fontSize:'10px'}}>T{meta.tier}</span></div><div className="flex items-center gap-2"><span className="text-caption" style={{color:alignment==='ALIGNED'?COLORS.signalGreen:alignment==='DIVERGED'?COLORS.signalRed:COLORS.mutedBlue}}>{alignment==='ALIGNED'?'✅':alignment==='DIVERGED'?'❌':'➖'}</span>{inDanger&&<span className="text-caption">⚠️</span>}<span className="text-caption text-muted-blue">{expanded?'▾':'▸'}</span></div></div>
-        <div className="flex items-center justify-between text-caption"><span style={{color:phaseColor,fontWeight:600}}>{phaseLabel(phase)}</span><span className="font-mono" style={{fontSize:'10px',color:sc}}>{statusLabel(status)} {pct!=null?(pct>200?'(>200%)':`${pct}%`):''} · ~{remaining??'?'}Mo</span></div>
+    <div className="mb-3 rounded-lg overflow-hidden" style={{backgroundColor:'#0d1f38',border:`1px solid ${tierCol}30`}}>
+      <button onClick={()=>setOpen(!open)} className="w-full px-3 py-2 flex items-center justify-between" style={{borderLeft:`4px solid ${phaseCol}`}}>
+        <div className="flex items-center gap-2"><span style={{fontSize:'18px'}}>{meta.icon}</span><div className="text-left"><div className="text-sm font-mono text-ice-white">{meta.name} <span className="text-caption px-1.5 py-0.5 rounded ml-1" style={{backgroundColor:`${tierCol}20`,color:tierCol,fontSize:'9px'}}>T{meta.tier}</span></div><div className="text-caption font-mono" style={{color:phaseCol}}>{phaseLabel(phase)}</div></div></div>
+        <div className="flex items-center gap-2"><span className="text-caption font-mono" style={{color:alCol}}>{phaseData?.v16_alignment==='ALIGNED'?'✓':phaseData?.v16_alignment==='DIVERGED'?'✗':'·'}</span>{pp.status&&<span className="text-caption font-mono" style={{color:STATUS_COLORS[pp.status]||COLORS.fadedBlue,fontSize:'9px'}}>{statusLabel(pp.status)} {displayPos}{pp.remaining_median!=null?` · ~${pp.remaining_median}Mo`:''}</span>}<span className="text-caption text-muted-blue">{open?'▾':'▸'}</span></div>
       </button>
-      {expanded&&<div className="px-3 pb-3">
-        <div className="flex items-center justify-between mb-1"><div className="text-caption text-muted-blue">{meta.indicator}: {fmtVal(phaseData?.indicator_value,meta.unit)}{phaseData?.velocity!=null&&phaseData?.velocity!==''&&<span style={{color:velColor(phaseData.velocity)}}>{velArrow(phaseData.velocity)}</span>}</div>{confidence!=null&&<span className="text-caption text-muted-blue font-mono">{confidence}%</span>}</div>
+      {open&&<div className="px-3 pb-3">
+        {indVal!=null&&<div className="flex items-center justify-between text-caption font-mono mt-2" style={{fontSize:'10px'}}><span style={{color:COLORS.mutedBlue}}>{meta.indicator}: {fmtVal(indVal,meta.unit)}<span style={{color:velColor(vel)}}>{velArrow(vel)}</span></span><span style={{color:COLORS.fadedBlue}}>{conf!=null?`${conf}%`:''}</span></div>}
         {phaseData?.danger_zone?.zone_name&&<div className="text-caption mt-1 px-2 py-1 rounded" style={{backgroundColor:inDanger?`${COLORS.signalRed}15`:`${COLORS.signalOrange}10`,color:inDanger?COLORS.signalRed:COLORS.signalOrange}}>{inDanger?'⚠ IN ZONE: ':'→ '}{phaseData.danger_zone.zone_name}</div>}
         {cycleId!=='POLITICAL'&&<PhaseLifecycleChart chartData={chartData}/>}
         {cycleId==='POLITICAL'&&<PoliticalChart/>}
