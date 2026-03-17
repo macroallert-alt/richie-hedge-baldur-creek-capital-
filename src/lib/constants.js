@@ -294,6 +294,7 @@ export const CIRCLES = [
   { id: 'g7', name: 'G7', icon: 'Globe', route: '/g7' },
   { id: 'disruptions', name: 'Disruptions', icon: 'Zap', route: '/disruptions' },
   { id: 'cycles', name: 'Cycles', icon: 'TrendingUp', route: '/cycles' },
+  { id: 'secular', name: 'Säkulare', icon: 'Activity', route: '/secular' },
 ];
 
 // ===== DISRUPTION PHASE → COLOR =====
