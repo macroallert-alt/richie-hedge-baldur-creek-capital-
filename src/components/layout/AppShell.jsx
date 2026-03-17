@@ -20,6 +20,7 @@ import RotationDetail from '@/components/detail/RotationDetail';
 import DisruptionsDetail from '@/components/detail/DisruptionsDetail';
 import BriefingDetail from '@/components/detail/BriefingDetail';
 import CyclesDetail from '@/components/detail/CyclesDetail';
+import SecularTrendsDetail from '@/components/detail/SecularTrendsDetail';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -42,6 +43,7 @@ const PAGE_COMPONENTS = {
   g7: G7Detail,
   disruptions: DisruptionsDetail,
   cycles: CyclesDetail,
+  secular: SecularTrendsDetail,
   settings: SettingsPage,
 };
 
