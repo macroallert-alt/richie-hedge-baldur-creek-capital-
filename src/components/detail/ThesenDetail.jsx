@@ -48,7 +48,7 @@ const EPISTEMIC_COLORS = {
 
 const STATUS_ICONS = {
   BESTÄTIGT: '✅',
-  OFFEN: '⬜',
+  OFFEN: '○',
   WIDERLEGT: '❌',
 };
 
@@ -168,6 +168,120 @@ function ConvictionChanges({ changes }) {
   );
 }
 
+// ── Relative Value Chain (pro These, kompakt) ──
+function RelativeValueChain({ rv }) {
+  if (!rv || !rv.chain || rv.chain.length === 0) return null;
+
+  return (
+    <div className="mt-2 p-2 rounded" style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderLeft: '2px solid #3B82F6' }}>
+      <p className="text-xs font-bold font-mono" style={{ color: '#3B82F6' }}>💰 Relative Value</p>
+      <div className="flex flex-wrap items-center gap-0.5 mt-1">
+        {rv.chain.map((link, i) => (
+          <span key={i} className="inline-flex items-center">
+            {i === 0 && (
+              <span className="text-xs font-mono" style={{ color: COLORS.fadedBlue, fontSize: '10px' }}>
+                {link.asset}
+              </span>
+            )}
+            <span className="text-xs font-mono mx-0.5" style={{ color: '#3B82F6', fontSize: '9px' }}>→</span>
+            <span className="text-xs font-mono" style={{
+              color: i === rv.chain.length - 1 ? '#22C55E' : COLORS.fadedBlue,
+              fontWeight: i === rv.chain.length - 1 ? 'bold' : 'normal',
+              fontSize: '10px',
+            }}>
+              {link.next}
+            </span>
+          </span>
+        ))}
+      </div>
+      {rv.cheapest_asset && (
+        <p className="text-xs font-mono mt-1" style={{ color: '#22C55E', fontSize: '9px' }}>
+          Billigster Hebel: {rv.cheapest_asset_display || rv.cheapest_asset}
+        </p>
+      )}
+      {rv.conviction_note && (
+        <p className="text-xs font-mono mt-0.5" style={{ color: '#6B7280', fontSize: '8px' }}>
+          {rv.conviction_note.substring(0, 200)}{rv.conviction_note.length > 200 ? '…' : ''}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Relative Value Chain Detail (expandiert, mit Ratios) ──
+function RelativeValueChainDetail({ rv }) {
+  if (!rv || !rv.chain || rv.chain.length === 0) return null;
+
+  return (
+    <div className="mt-2 p-2 rounded" style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderLeft: '2px solid #3B82F6' }}>
+      <p className="text-xs font-bold font-mono mb-1" style={{ color: '#3B82F6' }}>💰 Relative Value Kette (Detail)</p>
+      {rv.chain.map((link, i) => (
+        <div key={i} className="flex items-start py-0.5">
+          <span className="text-xs font-mono shrink-0 mr-1" style={{ color: '#3B82F6', fontSize: '10px' }}>
+            {i + 1}.
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-mono" style={{ color: COLORS.fadedBlue, fontSize: '10px' }}>
+              <span style={{ fontWeight: 'bold' }}>{link.asset}</span>
+              {' → '}
+              <span style={{ color: i === rv.chain.length - 1 ? '#22C55E' : COLORS.fadedBlue, fontWeight: i === rv.chain.length - 1 ? 'bold' : 'normal' }}>
+                {link.next}
+              </span>
+            </p>
+            {link.ratio_name && (
+              <p className="text-xs font-mono" style={{ color: '#6B7280', fontSize: '8px' }}>
+                {link.ratio_name}: {link.ratio_value}
+                {link.ratio_context ? ` (${link.ratio_context})` : ''}
+                {link.source ? ` [${link.source}]` : ''}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+      {rv.cheapest_asset && (
+        <p className="text-xs font-mono font-bold mt-1.5" style={{ color: '#22C55E', fontSize: '10px' }}>
+          → Billigster Hebel: {rv.cheapest_asset_display || rv.cheapest_asset}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Relative Value Convergence (eigene Sektion) ──
+function RelativeValueConvergence({ convergence }) {
+  if (!convergence || convergence.length === 0) return null;
+
+  // Nur Assets die in ≥2 Thesen auftauchen
+  const meaningful = convergence.filter(c => c.count >= 2);
+  if (meaningful.length === 0) return null;
+
+  return (
+    <ToggleSection title="Relative Value Convergence" icon="🔗" count={meaningful.length}>
+      <div className="space-y-2">
+        {meaningful.map((c, i) => (
+          <div key={i} className="p-2 rounded" style={{ backgroundColor: 'rgba(34,197,94,0.08)', borderLeft: i === 0 ? '2px solid #22C55E' : '2px solid rgba(34,197,94,0.3)' }}>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold font-mono" style={{ color: i === 0 ? '#22C55E' : COLORS.fadedBlue }}>
+                {c.display_name || c.asset}
+              </p>
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded"
+                style={{ color: '#22C55E', backgroundColor: 'rgba(34,197,94,0.15)', fontSize: '9px' }}>
+                {c.count}× billigster Hebel
+              </span>
+            </div>
+            <p className="text-xs font-mono mt-0.5" style={{ color: '#6B7280', fontSize: '9px' }}>
+              In: {c.thesis_titles ? c.thesis_titles.join(' · ') : c.thesis_ids?.join(' · ') || '—'}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs font-mono mt-2" style={{ color: '#6B7280', fontSize: '8px' }}>
+        Assets die in mehreren Thesen als billigster Hebel auftauchen — stärkstes Convergence-Signal.
+      </p>
+    </ToggleSection>
+  );
+}
+
 // ── Causal Chain Preview (linearisiert, max 5 Glieder) ──
 function CausalChainPreview({ chain, progressMarker }) {
   if (!chain || !chain.root) return null;
@@ -192,7 +306,7 @@ function CausalChainPreview({ chain, progressMarker }) {
               fontSize: '10px',
             }}>
               {(n.claim || '').substring(0, 30)}{(n.claim || '').length > 30 ? '…' : ''}
-              {' '}{STATUS_ICONS[n.status] || '⬜'}
+              {' '}{STATUS_ICONS[n.status] || '○'}
             </span>
           </span>
         ))}
@@ -228,7 +342,7 @@ function FullCausalChain({ chain }) {
               fontSize: '10px',
             }}>
               {node.claim}
-              {' '}<span style={{ fontSize: '9px' }}>[{node.epistemic_type} {STATUS_ICONS[node.status] || '⬜'}]</span>
+              {' '}<span style={{ fontSize: '9px' }}>[{node.epistemic_type} {STATUS_ICONS[node.status] || '○'}]</span>
               {isFeedback && <span className="ml-1">🔄 Loop → {node.feedback_target_id}</span>}
             </span>
             {node.implicit_assumption && (
@@ -265,7 +379,7 @@ function CatalystTracker({ catalysts }) {
       <p className="text-xs font-bold font-mono text-ice-white mb-1">Katalysatoren</p>
       {catalysts.map((c, i) => (
         <p key={i} className="text-xs font-mono" style={{ color: COLORS.fadedBlue, fontSize: '10px' }}>
-          {c.status === 'TRIGGERED' ? '✅' : '⬜'} {c.event}
+          {c.status === 'TRIGGERED' ? '✅' : '○'} {c.event}
           <span style={{ color: '#6B7280' }}> ({c.type})</span>
         </p>
       ))}
@@ -391,7 +505,6 @@ function V16CompatBadge({ compat, currentState }) {
   // Finde aktuellen State Match
   let currentCompat = null;
   if (currentState) {
-    // currentState könnte Freitext sein, versuche State zu extrahieren
     for (const state of Object.keys(compat)) {
       if (currentState.toUpperCase().includes(state)) {
         currentCompat = { state, value: compat[state] };
@@ -519,6 +632,9 @@ function ThesisCard({ thesis, tier, defaultExpanded }) {
       {/* Causal Chain Preview */}
       <CausalChainPreview chain={thesis.causal_chain} progressMarker={thesis.progress_marker} />
 
+      {/* Relative Value Chain (kompakt) */}
+      <RelativeValueChain rv={thesis.relative_value_chain} />
+
       {/* Quick Stats */}
       <div className="flex flex-wrap items-center gap-2 mt-1 mb-1">
         <CrossSystemBadge cs={thesis.cross_system_confirmation} />
@@ -561,6 +677,9 @@ function ThesisCard({ thesis, tier, defaultExpanded }) {
 
           {/* Full Causal Chain */}
           <FullCausalChain chain={thesis.causal_chain} />
+
+          {/* Relative Value Chain Detail (mit Ratios) */}
+          <RelativeValueChainDetail rv={thesis.relative_value_chain} />
 
           {/* Counterintuitive Path */}
           <CounterIntuitivePath ci={thesis.counterintuitive_path} />
@@ -658,6 +777,9 @@ export default function ThesenDetail() {
 
       {/* ── Conviction Changes ── */}
       <ConvictionChanges changes={data.conviction_changes} />
+
+      {/* ── Relative Value Convergence ── */}
+      <RelativeValueConvergence convergence={data.relative_value_convergence} />
 
       {/* ── Tier 1: Immer offen ── */}
       {tier1.length > 0 && (
