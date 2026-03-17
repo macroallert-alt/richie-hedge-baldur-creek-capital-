@@ -1,5 +1,5 @@
 'use client';
-import { LayoutDashboard, FileText, Shield, Radio, BarChart3, Target, Search, Globe, PieChart, Briefcase, RefreshCw, Zap, Newspaper, TrendingUp, Activity } from 'lucide-react';
+import { LayoutDashboard, FileText, Shield, Radio, BarChart3, Target, Search, Globe, PieChart, Briefcase, RefreshCw, Zap, Newspaper, TrendingUp, Activity, Lightbulb } from 'lucide-react';
 import { CIRCLES } from '@/lib/constants';
 import { useCircleNotifications } from '@/hooks/useCircleNotifications';
 const ICON_MAP = {
@@ -18,6 +18,7 @@ const ICON_MAP = {
   Newspaper,
   TrendingUp,
   Activity,
+  Lightbulb,
 };
 export default function CircleNav({ currentPage, onNavigate, dashboard }) {
   const notifications = useCircleNotifications(dashboard);

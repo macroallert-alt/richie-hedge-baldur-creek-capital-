@@ -13,6 +13,7 @@ import G7Card from '@/components/dashboard/G7Card';
 import DisruptionsCard from '@/components/dashboard/DisruptionsCard';
 import CyclesCard from '@/components/dashboard/CyclesCard';
 import SecularTrendsCard from '@/components/dashboard/SecularTrendsCard';
+import ThesenCard from '@/components/dashboard/ThesenCard';
 
 export default function DashboardHub({ dashboard, onNavigate }) {
   if (!dashboard) return null;
@@ -39,6 +40,9 @@ export default function DashboardHub({ dashboard, onNavigate }) {
       </div>
       <div className="lg:col-span-2">
         <SecularTrendsCard dashboard={dashboard} onNavigate={onNavigate} />
+      </div>
+      <div className="lg:col-span-2">
+        <ThesenCard dashboard={dashboard} onNavigate={onNavigate} />
       </div>
     </div>
   );
