@@ -57,9 +57,32 @@ const FRAGILITY_COLORS = {
 const CHART_COLORS = ['#4A90D9', '#E74C3C', '#F5A623', '#2ECC71', '#9B59B6', '#1ABC9C'];
 
 // ═══════════════════════════════════════════════════════════════
-// CHART INSIGHT — Regime & Investment implications per chart
+// CHART INSIGHT — Chart-specific investment implications
 // ═══════════════════════════════════════════════════════════════
 
+// V1.2: Chart-spezifische Implikationen statt Regime-Pauschale
+const CHART_IMPLICATIONS = {
+  // Block 1 — Demographic Cliff
+  civpart: 'Fallende Partizipation bedeutet strukturell engerer Arbeitsmarkt. Löhne steigen, Inflation wird hartnäckiger. Gut für Gold und Rohstoffe, schlecht für Anleihen.',
+  working_age_pop: 'Wenn alle drei Kurven gleichzeitig fallen, schrumpft das globale Arbeitskräfteangebot. Kein Land kann den Mangel des anderen kompensieren. Strukturell inflationär.',
+  // Block 2 — Deglobalisierung
+  imports_gdp: 'Fallender Import-Anteil heißt: die billige Globalisierungs-Disinflation ist vorbei. Inländische Produktion ist teurer. Gut für Rohstoffe und Industriemetalle.',
+  mfg_employment: 'Wenn der jahrzehntelange Abwärtstrend dreht, beginnt Reshoring. Gut für Kupfer, Stahl, Energie — schlecht für margenabhängige Tech-Aktien.',
+  trade_balance_gdp: 'Ein tiefes Handelsdefizit muss korrigiert werden — entweder durch Dollar-Schwäche oder Reshoring. Beides gut für Rohstoffe und Gold.',
+  // Block 3 — Fiscal Dominance
+  interest_vs_defense: 'Wenn Zinslast die Verteidigung überholt, verliert der Staat jeden Spielraum. Fiskalische Repression wird wahrscheinlicher. Gut für Gold, schlecht für Staatsanleihen.',
+  debt_gdp: 'Schuldenstand auf WW2-Niveau ohne WW2-Wachstum. Historisch wurde das immer durch Inflation entwertet. Gut für Sachwerte, schlecht für Geldwerte.',
+  spy_m2: 'SPY geteilt durch Geldmenge zeigt ob Aktiengewinne real oder nur nominell sind. Extremes Perzentil heißt: Aktien sind kaufkraftbereinigt so teuer wie fast nie. Schlecht für künftige reale SPY-Renditen.',
+  // Block 4 — Financial Repression
+  real_rate: 'Negative Realzinsen sind eine stille Enteignung der Sparer. Historisch der stärkste Treiber für Gold. Solange Realzinsen negativ bleiben, ist Gold im Vorteil.',
+  gold_vs_real_rates: 'Wenn Gold steigt während Realzinsen fallen, bestätigt sich das Financial-Repression-Regime. Die Korrelation ist einer der robustesten Zusammenhänge in der Makroökonomie.',
+  // Block 5 — Great Divergence
+  gold_spy_ratio: 'Das Pendel zwischen Real und Financial Assets schwingt in Dekaden. Ein steigendes Gold/SPY-Ratio signalisiert: der neue Superzyklus für Sachwerte hat begonnen.',
+  oil_m2: 'Öl kaufkraftbereinigt auf historischen Tiefs ist die Basis für den nächsten Rohstoff-Superzyklus. Billige Energie relativ zur Geldmenge hält nie ewig.',
+  corp_profits_gdp: 'Rekord-Gewinnmargen sind ein Mean-Reversion-Kandidat. Wenn Gewinne zum Mittelwert zurückkehren, verlieren Aktien ihren wichtigsten Stützpfeiler.',
+};
+
+// Fallback: Regime-level implications for charts not in CHART_IMPLICATIONS
 const REGIME_IMPLICATIONS = {
   demographic_cliff: 'Weniger Arbeitskräfte bedeuten strukturell höhere Löhne und Inflation. Schlecht für Anleihen und nominale Aktienrenditen, gut für reale Sachwerte wie Gold und Rohstoffe.',
   deglobalization: 'Reshoring und Handelsfragmentierung erhöhen Produktionskosten und erzeugen strukturelle Inflation. Gut für inländische Produzenten und Rohstoffe, schlecht für margenabhängige Technologieaktien.',
@@ -135,8 +158,8 @@ function generateChartInsight(chart, regimeKey, statusData) {
   }
   if (layer2) parts.push(layer2);
 
-  // 3. Was impliziert das?
-  const impl = REGIME_IMPLICATIONS[regimeKey];
+  // 3. Was impliziert das? — V1.2: chart-spezifisch mit Regime-Fallback
+  const impl = CHART_IMPLICATIONS[chart.id] || REGIME_IMPLICATIONS[regimeKey];
   if (impl) parts.push(impl);
 
   // 4. Mean Reversion
@@ -400,7 +423,7 @@ function SecularChart({ chart }) {
     return data.filter((_, i) => i % tickFilter === 0).map(d => d.date);
   }, [data, tickFilter]);
 
-  // Single line or computed real rate
+  // Single line or computed real rate — V1.2: Mean-ReferenceLine added
   if (chartType === 'single_line' || chartType === 'computed_real_rate') {
     return (
       <div className="mb-1">
@@ -419,6 +442,11 @@ function SecularChart({ chart }) {
               <ReferenceLine y={chart.reference_line.value} stroke={COLORS.fadedBlue}
                 strokeDasharray="4 4" label={{ value: chart.reference_line.label,
                   fill: COLORS.fadedBlue, fontSize: 9, position: 'right' }} />
+            )}
+            {chart.alltime_mean != null && (
+              <ReferenceLine y={chart.alltime_mean} stroke={COLORS.signalYellow}
+                strokeDasharray="6 3" label={{ value: 'Mean', fill: COLORS.signalYellow,
+                  fontSize: 9, position: 'right' }} />
             )}
             {chart.color_zones && (
               <>
