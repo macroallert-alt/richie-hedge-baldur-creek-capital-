@@ -57,6 +57,115 @@ const FRAGILITY_COLORS = {
 const CHART_COLORS = ['#4A90D9', '#E74C3C', '#F5A623', '#2ECC71', '#9B59B6', '#1ABC9C'];
 
 // ═══════════════════════════════════════════════════════════════
+// CHART INSIGHT — Regime & Investment implications per chart
+// ═══════════════════════════════════════════════════════════════
+
+const REGIME_IMPLICATIONS = {
+  demographic_cliff: 'Weniger Arbeitskräfte bedeuten strukturell höhere Löhne und Inflation. Schlecht für Anleihen und nominale Aktienrenditen, gut für reale Sachwerte wie Gold und Rohstoffe.',
+  deglobalization: 'Reshoring und Handelsfragmentierung erhöhen Produktionskosten und erzeugen strukturelle Inflation. Gut für inländische Produzenten und Rohstoffe, schlecht für margenabhängige Technologieaktien.',
+  fiscal_dominance: 'Wenn Zinszahlungen Verteidigung oder Investitionen verdrängen, verliert der Staat fiskalischen Spielraum. Gold und Sachwerte profitieren, Staatsanleihen leiden unter Vertrauensverlust.',
+  financial_repression: 'Negative Realzinsen bedeuten: Sparer verlieren Kaufkraft. Gold ist historisch der stärkste Profiteur. Anleihen verlieren real an Wert, auch wenn sie nominal stabil erscheinen.',
+  great_divergence: 'Das Pendel zwischen Financial und Real Assets schwingt in Dekaden. Wenn Real Assets relativ billig sind und die anderen 4 Regime aktiv, beginnt ein neuer Superzyklus für Rohstoffe und Edelmetalle.',
+};
+
+const CHART_CONTEXT = {
+  civpart: { what_measures: 'Anteil der US-Bevölkerung die arbeitet oder Arbeit sucht', direction_meaning: 'Fallend = weniger Arbeitskräfte verfügbar = engerer Arbeitsmarkt = Lohndruck', dashed_line: 'historischer Durchschnitt' },
+  working_age_pop: { what_measures: 'Jährliches Wachstum der Bevölkerung im erwerbsfähigen Alter (15-64) in USA, China, Deutschland', direction_meaning: 'Unter Null = die arbeitsfähige Bevölkerung schrumpft absolut', dashed_line: 'Nulllinie — darunter bedeutet Schrumpfung' },
+  imports_gdp: { what_measures: 'US-Importe als Anteil am BIP — Maß für Globalisierungsgrad', direction_meaning: 'Fallend = Deglobalisierung, weniger Importabhängigkeit', dashed_line: 'historischer Durchschnitt' },
+  mfg_employment: { what_measures: 'Anteil der Industriearbeitsplätze an allen Arbeitsplätzen', direction_meaning: 'Steigend nach jahrzehntelangem Fall = Reshoring beginnt', dashed_line: 'historischer Durchschnitt' },
+  trade_balance_gdp: { what_measures: 'US-Handelsbilanzsaldo als Anteil am BIP', direction_meaning: 'Tiefer Negativwert = massives Defizit, das durch Dollar-Schwäche oder Reshoring korrigiert werden muss', dashed_line: 'Nulllinie — ausgeglichener Handel' },
+  interest_vs_defense: { what_measures: 'Jährliche Zinslast des US-Staats vs. Verteidigungsausgaben', direction_meaning: 'Wenn die rote Linie (Zinsen) die dunkle (Verteidigung) überholt, verdrängen Schuldzinsen alle anderen Ausgaben', dashed_line: null },
+  debt_gdp: { what_measures: 'Gesamte US-Staatsverschuldung als Anteil am BIP', direction_meaning: 'Über 100% = Schulden übersteigen die jährliche Wirtschaftsleistung', dashed_line: '100%-Marke — Schulden = eine volle Jahreswirtschaftsleistung' },
+  spy_m2: { what_measures: 'S&P 500 geteilt durch Geldmenge M2 — Aktien inflationsbereinigt', direction_meaning: 'Hoch = Aktien kaufkraftbereinigt teuer, Gewinne sind nominal aufgebläht, nicht real', dashed_line: 'historischer Durchschnitt' },
+  real_rate: { what_measures: '10-Jahres-Zins minus CPI-Inflation = was Sparer real verdienen', direction_meaning: 'Negativ (unter gestrichelter Linie) = Sparer verlieren Kaufkraft, positiv = Sparer gewinnen', dashed_line: 'Nulllinie — darüber gewinnen Sparer, darunter verlieren sie' },
+  gold_vs_real_rates: { what_measures: 'Goldpreis (linke Achse) vs. Realzins invertiert (rechte Achse)', direction_meaning: 'Wenn beide Linien steigen, bestätigt sich: fallende Realzinsen treiben Gold', dashed_line: null },
+  gold_spy_ratio: { what_measures: 'Goldpreis geteilt durch S&P 500 — Real vs. Financial Assets Pendel', direction_meaning: 'Steigend = Gold gewinnt gegen Aktien, das Pendel schwingt zu Real Assets', dashed_line: 'historischer Durchschnitt' },
+  oil_m2: { what_measures: 'Ölpreis geteilt durch Geldmenge M2 — Öl kaufkraftbereinigt', direction_meaning: 'Tief = Öl real so billig wie seit Jahrzehnten nicht — Basis für nächsten Superzyklus', dashed_line: 'historischer Durchschnitt' },
+  corp_profits_gdp: { what_measures: 'Unternehmensgewinne als Anteil am BIP — Maß für Financialization', direction_meaning: 'Hoch = Rekord-Gewinnmargen die historisch nicht haltbar sind (Mean Reversion Kandidat)', dashed_line: 'historischer Durchschnitt' },
+};
+
+const REGIME_BREAKERS = {
+  demographic_cliff: 'Durchbruch bei Arbeitsproduktivität durch Technologie/Automatisierung (>2.5% p.a. nachhaltig) würde den Arbeitskräftemangel kompensieren.',
+  deglobalization: 'Geopolitische Entspannung (z.B. US-China Deal) und Normalisierung der Handelsströme würden den Deglobalisierungs-Trend pausieren.',
+  fiscal_dominance: 'Ein Produktivitätsboom der das BIP-Wachstum dauerhaft über die Zinskosten hebt, würde die Schulden tragbar machen.',
+  financial_repression: 'Ein "Volcker 2.0" — bewusste Rezession mit Realzinsen dauerhaft über 2% — würde die Repression beenden, aber eine schwere Rezession auslösen.',
+  great_divergence: 'Eine Technologie-Disruption die physische Rohstoffe obsolet macht (z.B. Fusion, vollständige Elektrifizierung), oder eine Rückkehr negativer Gold/SPY Momentum über 12+ Monate.',
+};
+
+function generateChartInsight(chart, regimeKey, statusData) {
+  const ctx = CHART_CONTEXT[chart.id] || {};
+  const cur = chart.current;
+  const mean = chart.alltime_mean;
+  const pctl = chart.percentile;
+  const pctl20 = chart.percentile_20y;
+  const unit = chart.unit || '';
+  const hasRef = !!chart.reference_line;
+  const refVal = chart.reference_line?.value;
+  const refLabel = chart.reference_line?.label;
+
+  const parts = [];
+
+  // 1. Was sehe ich?
+  let layer1 = '';
+  if (cur != null) {
+    layer1 = `Der aktuelle Wert liegt bei ${fmtVal(cur)}${unit ? ' ' + unit : ''}.`;
+    if (mean != null && chart.type !== 'multi_line' && chart.type !== 'dual_line' && chart.type !== 'dual_axis_gold_realrate') {
+      const dashedExplain = ctx.dashed_line || 'historischer Durchschnitt';
+      layer1 += ` Die gestrichelte Linie zeigt den ${dashedExplain} (${fmtVal(mean)}${unit ? ' ' + unit : ''}).`;
+    } else if (hasRef && refLabel) {
+      layer1 += ` Die gestrichelte Linie markiert: ${refLabel}.`;
+    }
+  } else if (chart.type === 'multi_line') {
+    layer1 = ctx.what_measures || 'Dieser Chart zeigt mehrere Zeitreihen im Vergleich.';
+    if (hasRef && refLabel) layer1 += ` Die gestrichelte Linie markiert: ${refLabel}.`;
+  } else if (chart.type === 'dual_line') {
+    layer1 = ctx.what_measures || 'Dieser Chart vergleicht zwei Zeitreihen.';
+  }
+  if (layer1) parts.push(layer1);
+
+  // 2. Was bedeutet das?
+  let layer2 = '';
+  if (pctl != null && mean != null && cur != null) {
+    const above = cur > mean;
+    const distance = mean !== 0 ? Math.abs((cur - mean) / mean * 100).toFixed(0) : '—';
+    const extreme = pctl > 90 ? 'extrem hoch' : pctl > 75 ? 'deutlich erhöht' : pctl < 10 ? 'extrem niedrig' : pctl < 25 ? 'deutlich gedrückt' : 'im mittleren Bereich';
+    layer2 = `Das ist das ${pctl}. Perzentil (${extreme}) — ${above ? 'über' : 'unter'} dem historischen Durchschnitt um ~${distance}%. Höher als in ${pctl}% aller Monate seit Beginn der Aufzeichnung.`;
+  } else if (chart.type === 'multi_line' || chart.type === 'dual_line') {
+    layer2 = ctx.direction_meaning || '';
+  }
+  if (layer2) parts.push(layer2);
+
+  // 3. Was impliziert das?
+  const impl = REGIME_IMPLICATIONS[regimeKey];
+  if (impl) parts.push(impl);
+
+  // 4. Mean Reversion
+  let layer4 = '';
+  if (cur != null && mean != null && chart.type !== 'multi_line' && chart.type !== 'dual_line' && chart.type !== 'dual_axis_gold_realrate') {
+    const above = cur > mean;
+    if (above) {
+      layer4 = `Der Wert liegt über der gestrichelten Linie (Durchschnitt). Mean Reversion würde nach unten laufen, Richtung ${fmtVal(mean)}${unit ? ' ' + unit : ''}.`;
+      if (pctl != null && pctl > 75) layer4 += ' Bei diesem Perzentil ist die historische Wahrscheinlichkeit einer Normalisierung erhöht.';
+    } else {
+      layer4 = `Der Wert liegt unter der gestrichelten Linie. Mean Reversion würde nach oben laufen, Richtung ${fmtVal(mean)}${unit ? ' ' + unit : ''}.`;
+      if (pctl != null && pctl < 25) layer4 += ' Bei diesem Perzentil ist die historische Wahrscheinlichkeit einer Erholung erhöht.';
+    }
+  } else if (hasRef && refVal != null && cur != null) {
+    const above = cur > refVal;
+    layer4 = above
+      ? `Der Wert liegt über der Referenzlinie (${refLabel || refVal}). Eine Rückkehr darunter würde das Signal abschwächen.`
+      : `Der Wert liegt unter der Referenzlinie (${refLabel || refVal}). Eine Rückkehr darüber würde das Signal abschwächen.`;
+  }
+  if (layer4) parts.push(layer4);
+
+  // 5. Katalysatoren dagegen
+  const breaker = REGIME_BREAKERS[regimeKey];
+  if (breaker) parts.push(`Was dagegen spricht: ${breaker}`);
+
+  return parts;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
@@ -95,6 +204,38 @@ function InfoToggle({ children }) {
         <div className="text-caption px-3 py-2 rounded mt-2"
           style={{ backgroundColor: '#0d1f38', color: COLORS.mutedBlue, fontSize: '11px', lineHeight: '1.5' }}>
           {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChartInsightToggle({ chart, regimeKey, statusData }) {
+  const [open, setOpen] = useState(false);
+  const parts = useMemo(() => generateChartInsight(chart, regimeKey, statusData), [chart, regimeKey, statusData]);
+  if (parts.length === 0) return null;
+
+  return (
+    <div className="mb-2 -mt-1">
+      <button onClick={() => setOpen(!open)}
+        style={{ backgroundColor: open ? '#1a3050' : 'transparent', border: '1px solid #4A5A7A',
+          borderRadius: '12px', padding: '2px 8px', color: COLORS.mutedBlue,
+          fontSize: '10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+        📊 {open ? 'Ausblenden' : 'Chart erklärt'}
+      </button>
+      {open && (
+        <div className="px-3 py-2 rounded mt-2"
+          style={{ backgroundColor: '#0d1f38', fontSize: '11px', lineHeight: '1.6' }}>
+          {parts.map((p, i) => (
+            <div key={i} className="mb-2" style={{ color: i === 4 ? COLORS.signalYellow : COLORS.mutedBlue }}>
+              {i === 0 && <span style={{ color: COLORS.iceWhite, fontWeight: 600 }}>📍 </span>}
+              {i === 1 && <span style={{ color: COLORS.iceWhite, fontWeight: 600 }}>📊 </span>}
+              {i === 2 && <span style={{ color: COLORS.iceWhite, fontWeight: 600 }}>💡 </span>}
+              {i === 3 && <span style={{ color: COLORS.iceWhite, fontWeight: 600 }}>↩️ </span>}
+              {i === 4 && <span style={{ fontWeight: 600 }}>⚠️ </span>}
+              {p}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -250,9 +391,9 @@ function SecularChart({ chart }) {
 
   // Tick interval for decades
   const tickFilter = useMemo(() => {
-    if (data.length > 400) return 120; // every 10 years
-    if (data.length > 200) return 60;  // every 5 years
-    return 24; // every 2 years
+    if (data.length > 400) return 120;
+    if (data.length > 200) return 60;
+    return 24;
   }, [data.length]);
 
   const filteredTicks = useMemo(() => {
@@ -262,7 +403,7 @@ function SecularChart({ chart }) {
   // Single line or computed real rate
   if (chartType === 'single_line' || chartType === 'computed_real_rate') {
     return (
-      <div className="mb-3">
+      <div className="mb-1">
         <div className="text-caption font-mono mb-1" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
           {chart.name} {chart.current != null && <span style={{ color: COLORS.signalGreen }}>({fmtVal(chart.current)})</span>}
         </div>
@@ -301,9 +442,8 @@ function SecularChart({ chart }) {
 
   // Multi-line (Working Age Pop)
   if (chartType === 'multi_line') {
-    const lineKeys = (chart.lines || []).map(l => l.key);
     return (
-      <div className="mb-3">
+      <div className="mb-1">
         <div className="text-caption font-mono mb-1" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
           {chart.name}
         </div>
@@ -333,7 +473,7 @@ function SecularChart({ chart }) {
   // Ratio chart
   if (chartType === 'ratio') {
     return (
-      <div className="mb-3">
+      <div className="mb-1">
         <div className="text-caption font-mono mb-1" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
           {chart.name} {chart.current != null && <span style={{ color: COLORS.signalGreen }}>({fmtVal(chart.current, 4)})</span>}
         </div>
@@ -370,9 +510,8 @@ function SecularChart({ chart }) {
 
   // Dual line (Interest vs Defense)
   if (chartType === 'dual_line') {
-    const keys = (chart.lines || []).map(l => l.key);
     return (
-      <div className="mb-3">
+      <div className="mb-1">
         <div className="text-caption font-mono mb-1" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
           {chart.name}
         </div>
@@ -398,7 +537,7 @@ function SecularChart({ chart }) {
   // Dual-axis Gold vs Real Rates
   if (chartType === 'dual_axis_gold_realrate') {
     return (
-      <div className="mb-3">
+      <div className="mb-1">
         <div className="text-caption font-mono mb-1" style={{ color: COLORS.iceWhite, fontSize: '11px' }}>
           {chart.name}
         </div>
@@ -420,12 +559,9 @@ function SecularChart({ chart }) {
             <Line yAxisId="right" type="monotone" dataKey="real_rate" name="Real Rate (inv.)"
               stroke={COLORS.fadedBlue} dot={false} strokeWidth={1} strokeDasharray="4 2"
               isAnimationActive={false} />
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
+            <Legend wrapperStyle={{ fontSize: '10px', color: COLORS.mutedBlue }} />
           </LineChart>
         </ResponsiveContainer>
-        <div className="text-caption font-mono mt-1" style={{ color: COLORS.fadedBlue, fontSize: '9px' }}>
-          Rechte Achse invertiert — beide Linien laufen parallel wenn Gold auf negative Realzinsen reagiert.
-        </div>
       </div>
     );
   }
@@ -463,8 +599,13 @@ function RegimeBlock({ regimeKey, regimeData, statusData }) {
           </span>
         </div>
 
-        {/* Charts */}
-        {charts.map(chart => <SecularChart key={chart.id} chart={chart} />)}
+        {/* Charts + Insight per chart */}
+        {charts.map(chart => (
+          <div key={chart.id}>
+            <SecularChart chart={chart} />
+            <ChartInsightToggle chart={chart} regimeKey={regimeKey} statusData={statusData} />
+          </div>
+        ))}
 
         {/* Fragility */}
         {statusData.fragility_status && statusData.fragility_status !== 'INACTIVE' && (
