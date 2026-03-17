@@ -13,9 +13,9 @@ import {
   CYCLE_TIER_COLORS,
 } from '@/lib/constants';
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // CONSTANTS
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const CHART_URL = process.env.NEXT_PUBLIC_CYCLES_CHART_URL;
 const COND_RETURNS_URL = process.env.NEXT_PUBLIC_CYCLES_COND_RETURNS_URL;
@@ -23,26 +23,26 @@ const REGIME_URL = process.env.NEXT_PUBLIC_CYCLES_REGIME_URL;
 const TRANSITION_URL = process.env.NEXT_PUBLIC_CYCLES_TRANSITION_URL;
 
 const CYCLE_META = {
-  LIQUIDITY:    { name: 'Global Liquidity',     icon: '💧', tier: 1, unit: '$T',  indicator: 'Fed Net Liq',
-    desc: 'Misst die globale Liquidität — wie viel Geld die Fed ins System pumpt. Wenn Liquidität kippt, folgen Credit und Business.' },
-  CREDIT:       { name: 'Credit Cycle',         icon: '💳', tier: 1, unit: 'bps', indicator: 'HY OAS',
-    desc: 'Misst wie leicht Unternehmen an Geld kommen (High-Yield Spreads). Der härteste Einzelindikator — wenn Credit kippt, folgt der Rest.' },
-  COMMODITY:    { name: 'Commodity Supercycle',  icon: '🛢️', tier: 1, unit: '',    indicator: 'CRB Real',
-    desc: 'Misst den Rohstoff-Superzyklus (inflationsbereinigter CRB Index). Getrieben von China-Nachfrage und globaler Industrieaktivität.' },
-  CHINA_CREDIT: { name: 'China Credit Impulse',  icon: '🇨🇳', tier: 1, unit: '',   indicator: 'Cu/Au Ratio',
-    desc: 'Misst Chinas Kreditimpuls über das Kupfer/Gold-Verhältnis. Kupfer steigt wenn China investiert, Gold steigt bei Unsicherheit.' },
-  DOLLAR:       { name: 'US Dollar Cycle',      icon: '💵', tier: 2, unit: '',    indicator: 'DXY (Trade-Weighted)',
-    desc: 'Misst die Stärke des US-Dollars. Starker Dollar = schlecht für Commodities, Schwellenländer, Gold. Schwacher Dollar = Risk-On.' },
-  BUSINESS:     { name: 'Business Cycle',       icon: '🏭', tier: 2, unit: '%',   indicator: 'INDPRO YoY',
-    desc: 'Misst die Industrieproduktion (YoY). Entscheidet zusammen mit Credit ob ein Rücksetzer eine Korrektur oder ein Crash wird.' },
-  FED_RATES:    { name: 'Fed / Interest Rate',  icon: '🏦', tier: 2, unit: '%',   indicator: 'Real FFR',
-    desc: 'Misst wie restriktiv die Fed ist (Leitzins minus Inflation). Ein Fed-Pivot ist das stärkste Einzelsignal im Markt.' },
-  EARNINGS:     { name: 'Earnings / Profit',    icon: '📊', tier: 2, unit: '%',   indicator: 'Corp Profits YoY',
-    desc: 'Misst Unternehmensgewinne (YoY). Nachlaufender Indikator — bestätigt was Credit und Business bereits anzeigen.' },
-  TRADE:        { name: 'Global Trade',         icon: '🚢', tier: 3, unit: '%',   indicator: 'CASS YoY',
-    desc: 'Misst das nordamerikanische Frachtvolumen (CASS Freight Index). Vorlaufindikator für die Realwirtschaft — weniger Fracht = weniger Wirtschaftsaktivität.' },
-  POLITICAL:    { name: 'Political Cycle',      icon: '🗳️', tier: 3, unit: '',    indicator: 'Calendar',
-    desc: 'Der 4-Jahres-Wahlzyklus. Jahr 3 (Vorwahljahr) hat historisch die stärksten Aktienrenditen. Deterministisch, nicht stochastisch.' },
+  LIQUIDITY:    { name: 'Global Liquidity',     icon: 'ðŸ’§', tier: 1, unit: '$T',  indicator: 'Fed Net Liq',
+    desc: 'Misst die globale LiquiditÃ¤t â€” wie viel Geld die Fed ins System pumpt. Wenn LiquiditÃ¤t kippt, folgen Credit und Business.' },
+  CREDIT:       { name: 'Credit Cycle',         icon: 'ðŸ’³', tier: 1, unit: 'bps', indicator: 'HY OAS',
+    desc: 'Misst wie leicht Unternehmen an Geld kommen (High-Yield Spreads). Der hÃ¤rteste Einzelindikator â€” wenn Credit kippt, folgt der Rest.' },
+  COMMODITY:    { name: 'Commodity Supercycle',  icon: 'ðŸ›¢ï¸', tier: 1, unit: '',    indicator: 'CRB Real',
+    desc: 'Misst den Rohstoff-Superzyklus (inflationsbereinigter CRB Index). Getrieben von China-Nachfrage und globaler IndustrieaktivitÃ¤t.' },
+  CHINA_CREDIT: { name: 'China Credit Impulse',  icon: 'ðŸ‡¨ðŸ‡³', tier: 1, unit: '',   indicator: 'Cu/Au Ratio',
+    desc: 'Misst Chinas Kreditimpuls Ã¼ber das Kupfer/Gold-VerhÃ¤ltnis. Kupfer steigt wenn China investiert, Gold steigt bei Unsicherheit.' },
+  DOLLAR:       { name: 'US Dollar Cycle',      icon: 'ðŸ’µ', tier: 2, unit: '',    indicator: 'DXY (Trade-Weighted)',
+    desc: 'Misst die StÃ¤rke des US-Dollars. Starker Dollar = schlecht fÃ¼r Commodities, SchwellenlÃ¤nder, Gold. Schwacher Dollar = Risk-On.' },
+  BUSINESS:     { name: 'Business Cycle',       icon: 'ðŸ­', tier: 2, unit: '%',   indicator: 'INDPRO YoY',
+    desc: 'Misst die Industrieproduktion (YoY). Entscheidet zusammen mit Credit ob ein RÃ¼cksetzer eine Korrektur oder ein Crash wird.' },
+  FED_RATES:    { name: 'Fed / Interest Rate',  icon: 'ðŸ¦', tier: 2, unit: '%',   indicator: 'Real FFR',
+    desc: 'Misst wie restriktiv die Fed ist (Leitzins minus Inflation). Ein Fed-Pivot ist das stÃ¤rkste Einzelsignal im Markt.' },
+  EARNINGS:     { name: 'Earnings / Profit',    icon: 'ðŸ“Š', tier: 2, unit: '%',   indicator: 'Corp Profits YoY',
+    desc: 'Misst Unternehmensgewinne (YoY). Nachlaufender Indikator â€” bestÃ¤tigt was Credit und Business bereits anzeigen.' },
+  TRADE:        { name: 'Global Trade',         icon: 'ðŸš¢', tier: 3, unit: '%',   indicator: 'CASS YoY',
+    desc: 'Misst das nordamerikanische Frachtvolumen (CASS Freight Index). Vorlaufindikator fÃ¼r die Realwirtschaft â€” weniger Fracht = weniger WirtschaftsaktivitÃ¤t.' },
+  POLITICAL:    { name: 'Political Cycle',      icon: 'ðŸ—³ï¸', tier: 3, unit: '',    indicator: 'Calendar',
+    desc: 'Der 4-Jahres-Wahlzyklus. Jahr 3 (Vorwahljahr) hat historisch die stÃ¤rksten Aktienrenditen. Deterministisch, nicht stochastisch.' },
 };
 
 const CYCLE_ORDER = ['LIQUIDITY','CREDIT','COMMODITY','CHINA_CREDIT','DOLLAR','BUSINESS','FED_RATES','EARNINGS','TRADE','POLITICAL'];
@@ -50,15 +50,15 @@ const CLUSTER_LABELS = { CREDIT_CLUSTER:'Credit', REAL_ECONOMY_CLUSTER:'Real Eco
 const CLUSTER_ORDER = ['CREDIT_CLUSTER','REAL_ECONOMY_CLUSTER','MONETARY_POLICY_CLUSTER','CURRENCY_CLUSTER'];
 
 const CLUSTER_EXPLANATIONS = {
-  CREDIT_CLUSTER: { short:'Kreditbedingungen', what:'Misst wie leicht Unternehmen an Geld kommen — HY Spreads, Liquidität, Unternehmensgewinne.', why:'Credit ist der härteste Frühindikator. Wenn Credit kippt, folgt historisch der Rest.' },
-  REAL_ECONOMY_CLUSTER: { short:'Realwirtschaft', what:'Misst ob Fabriken produzieren, Güter verschifft werden, China investiert.', why:'Entscheidet ob ein Rücksetzer eine Korrektur (-10%) oder ein Crash (-30%) wird.' },
-  MONETARY_POLICY_CLUSTER: { short:'Geldpolitik', what:'Misst wie restriktiv die Fed ist — Real Fed Funds Rate.', why:'Ein Fed-Pivot (restriktiv → locker) ist das stärkste Einzelsignal. Wenn die Fed dreht, dreht alles.' },
-  CURRENCY_CLUSTER: { short:'US-Dollar', what:'Misst die Stärke des US-Dollars (DXY Trade-Weighted Index).', why:'Starker Dollar = schlecht für Commodities, Schwellenländer, Gold. Schwacher Dollar = Risk-On.' },
+  CREDIT_CLUSTER: { short:'Kreditbedingungen', what:'Misst wie leicht Unternehmen an Geld kommen â€” HY Spreads, LiquiditÃ¤t, Unternehmensgewinne.', why:'Credit ist der hÃ¤rteste FrÃ¼hindikator. Wenn Credit kippt, folgt historisch der Rest.' },
+  REAL_ECONOMY_CLUSTER: { short:'Realwirtschaft', what:'Misst ob Fabriken produzieren, GÃ¼ter verschifft werden, China investiert.', why:'Entscheidet ob ein RÃ¼cksetzer eine Korrektur (-10%) oder ein Crash (-30%) wird.' },
+  MONETARY_POLICY_CLUSTER: { short:'Geldpolitik', what:'Misst wie restriktiv die Fed ist â€” Real Fed Funds Rate.', why:'Ein Fed-Pivot (restriktiv â†’ locker) ist das stÃ¤rkste Einzelsignal. Wenn die Fed dreht, dreht alles.' },
+  CURRENCY_CLUSTER: { short:'US-Dollar', what:'Misst die StÃ¤rke des US-Dollars (DXY Trade-Weighted Index).', why:'Starker Dollar = schlecht fÃ¼r Commodities, SchwellenlÃ¤nder, Gold. Schwacher Dollar = Risk-On.' },
 };
 
 const PRIMARY_CHAIN = ['LIQUIDITY','CREDIT','BUSINESS'];
 const CASCADE_CHAINS = [
-  {from:'LIQUIDITY',to:'CREDIT',label:'Liquidität warnt Credit'},{from:'LIQUIDITY',to:'BUSINESS',label:'Liquidität warnt Realwirtschaft'},
+  {from:'LIQUIDITY',to:'CREDIT',label:'LiquiditÃ¤t warnt Credit'},{from:'LIQUIDITY',to:'BUSINESS',label:'LiquiditÃ¤t warnt Realwirtschaft'},
   {from:'CREDIT',to:'BUSINESS',label:'Credit warnt Realwirtschaft'},{from:'CHINA_CREDIT',to:'COMMODITY',label:'China warnt Rohstoffe'},
   {from:'CHINA_CREDIT',to:'BUSINESS',label:'China warnt Realwirtschaft'},{from:'FED_RATES',to:'DOLLAR',label:'Fed-Politik bewegt Dollar'},
   {from:'DOLLAR',to:'COMMODITY',label:'Dollar bewegt Rohstoffe'},{from:'BUSINESS',to:'EARNINGS',label:'Wirtschaft treibt Gewinne'},
@@ -75,33 +75,33 @@ const CRYPTO_TICKERS = new Set(['BTC','ETH']);
 
 const SEVERITY_COLORS = { CALM:COLORS.signalGreen, MODERATE:COLORS.signalYellow, CASCADE:COLORS.signalOrange, CRISIS:COLORS.signalRed };
 const STATUS_COLORS = { EARLY_PHASE:COLORS.signalGreen, MID_PHASE:COLORS.baldurBlue||'#4A90D9', LATE_PHASE:COLORS.signalYellow, EXTENDED:COLORS.signalRed, NO_HISTORY:COLORS.fadedBlue };
-const SEVERITY_LABELS = { CALM:'Ruhig — kein Handlungsbedarf', MODERATE:'Erhöhte Wachsamkeit — einzelne Zyklen drehen', CASCADE:'Defensiv positionieren — schnelle Kaskade', CRISIS:'Krisenmodus — maximale Vorsicht' };
+const SEVERITY_LABELS = { CALM:'Ruhig â€” kein Handlungsbedarf', MODERATE:'ErhÃ¶hte Wachsamkeit â€” einzelne Zyklen drehen', CASCADE:'Defensiv positionieren â€” schnelle Kaskade', CRISIS:'Krisenmodus â€” maximale Vorsicht' };
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // HELPERS
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-function phaseLabel(p){if(!p||p==='UNKNOWN')return '—';return p.replace(/_/g,' ');}
-function fmtPct(v,d=1){if(v==null)return '—';return `${(Number(v)*100).toFixed(d)}%`;}
-function fmtVal(v,u){if(v==null||v==='')return '—';if(u==='$T')return `$${(Number(v)/1e6).toFixed(2)}T`;if(u==='bps')return `${Number(v).toFixed(0)} bps`;if(u==='%')return `${Number(v).toFixed(2)}%`;return String(Number(v).toFixed(4));}
-function velArrow(v){if(v==null||v==='')return '';return Number(v)>0?' ▲':Number(v)<0?' ▼':' →';}
+function phaseLabel(p){if(!p||p==='UNKNOWN')return 'â€”';return p.replace(/_/g,' ');}
+function fmtPct(v,d=1){if(v==null)return 'â€”';return `${(Number(v)*100).toFixed(d)}%`;}
+function fmtVal(v,u){if(v==null||v==='')return 'â€”';if(u==='$T')return `$${(Number(v)/1e6).toFixed(2)}T`;if(u==='bps')return `${Number(v).toFixed(0)} bps`;if(u==='%')return `${Number(v).toFixed(2)}%`;return String(Number(v).toFixed(4));}
+function velArrow(v){if(v==null||v==='')return '';return Number(v)>0?' â–²':Number(v)<0?' â–¼':' â†’';}
 function velColor(v){if(v==null||v==='')return COLORS.mutedBlue;return Number(v)>0?COLORS.signalGreen:Number(v)<0?COLORS.signalRed:COLORS.mutedBlue;}
 function excessColor(v){if(v==null)return COLORS.fadedBlue;return v>0.001?COLORS.signalGreen:v<-0.001?COLORS.signalRed:COLORS.fadedBlue;}
 function cycleName(id){return CYCLE_META[id]?.name||id;}
-function statusLabel(s){return {EARLY_PHASE:'Früh',MID_PHASE:'Mitte',LATE_PHASE:'Spät',EXTENDED:'Überfällig',NO_HISTORY:'—'}[s]||s||'—';}
+function statusLabel(s){return {EARLY_PHASE:'FrÃ¼h',MID_PHASE:'Mitte',LATE_PHASE:'SpÃ¤t',EXTENDED:'ÃœberfÃ¤llig',NO_HISTORY:'â€”'}[s]||s||'â€”';}
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // SHARED UI
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function Section({title,children,defaultOpen=true}){
   const[open,setOpen]=useState(defaultOpen);
-  return(<div className="mb-4"><button onClick={()=>setOpen(!open)} className="w-full flex items-center justify-between py-2 border-b border-white/10"><span className="text-label uppercase tracking-wider text-muted-blue">{title}</span><span className="text-caption text-muted-blue">{open?'▾':'▸'}</span></button>{open&&<div className="pt-3">{children}</div>}</div>);
+  return(<div className="mb-4"><button onClick={()=>setOpen(!open)} className="w-full flex items-center justify-between py-2 border-b border-white/10"><span className="text-label uppercase tracking-wider text-muted-blue">{title}</span><span className="text-caption text-muted-blue">{open?'â–¾':'â–¸'}</span></button>{open&&<div className="pt-3">{children}</div>}</div>);
 }
 
 function InfoToggle({children}){
   const[open,setOpen]=useState(false);
-  return(<div className="mb-3"><button onClick={()=>setOpen(!open)} style={{backgroundColor:open?'#1a3050':'transparent',border:'1px solid #4A5A7A',borderRadius:'12px',padding:'2px 8px',color:COLORS.mutedBlue,fontSize:'10px',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'4px'}}>ⓘ {open?'Ausblenden':'Was bedeutet das?'}</button>{open&&<div className="text-caption px-3 py-2 rounded mt-2" style={{backgroundColor:'#0d1f38',color:COLORS.mutedBlue,fontSize:'11px',lineHeight:'1.5'}}>{children}</div>}</div>);
+  return(<div className="mb-3"><button onClick={()=>setOpen(!open)} style={{backgroundColor:open?'#1a3050':'transparent',border:'1px solid #4A5A7A',borderRadius:'12px',padding:'2px 8px',color:COLORS.mutedBlue,fontSize:'10px',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:'4px'}}>â“˜ {open?'Ausblenden':'Was bedeutet das?'}</button>{open&&<div className="text-caption px-3 py-2 rounded mt-2" style={{backgroundColor:'#0d1f38',color:COLORS.mutedBlue,fontSize:'11px',lineHeight:'1.5'}}>{children}</div>}</div>);
 }
 
 function ChartTooltip({active,payload,label}){
@@ -111,12 +111,12 @@ function ChartTooltip({active,payload,label}){
 
 function ClusterInfo({clusterId}){
   const[open,setOpen]=useState(false);const info=CLUSTER_EXPLANATIONS[clusterId];if(!info)return null;
-  return(<><button onClick={()=>setOpen(!open)} style={{backgroundColor:open?'#1a3050':'transparent',border:'1px solid #4A5A7A',borderRadius:'50%',width:'20px',height:'20px',display:'inline-flex',alignItems:'center',justifyContent:'center',color:COLORS.mutedBlue,fontSize:'11px',cursor:'pointer',marginLeft:'6px',flexShrink:0}}>ⓘ</button>{open&&<div className="rounded px-3 py-2 mb-2 mt-1" style={{backgroundColor:'#0d1f38',border:'1px solid #1a3050',fontSize:'11px',lineHeight:'1.5'}}><div style={{color:COLORS.iceWhite,fontWeight:600,marginBottom:'4px'}}>{CLUSTER_LABELS[clusterId]} — {info.short}</div><div style={{color:COLORS.mutedBlue,marginBottom:'3px'}}><strong style={{color:COLORS.fadedBlue}}>Was:</strong> {info.what}</div><div style={{color:COLORS.mutedBlue}}><strong style={{color:COLORS.fadedBlue}}>Warum:</strong> {info.why}</div></div>}</>);
+  return(<><button onClick={()=>setOpen(!open)} style={{backgroundColor:open?'#1a3050':'transparent',border:'1px solid #4A5A7A',borderRadius:'50%',width:'20px',height:'20px',display:'inline-flex',alignItems:'center',justifyContent:'center',color:COLORS.mutedBlue,fontSize:'11px',cursor:'pointer',marginLeft:'6px',flexShrink:0}}>â“˜</button>{open&&<div className="rounded px-3 py-2 mb-2 mt-1" style={{backgroundColor:'#0d1f38',border:'1px solid #1a3050',fontSize:'11px',lineHeight:'1.5'}}><div style={{color:COLORS.iceWhite,fontWeight:600,marginBottom:'4px'}}>{CLUSTER_LABELS[clusterId]} â€” {info.short}</div><div style={{color:COLORS.mutedBlue,marginBottom:'3px'}}><strong style={{color:COLORS.fadedBlue}}>Was:</strong> {info.what}</div><div style={{color:COLORS.mutedBlue}}><strong style={{color:COLORS.fadedBlue}}>Warum:</strong> {info.why}</div></div>}</>);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXECUTIVE SUMMARY (V5.2 — Klartext)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// EXECUTIVE SUMMARY (V5.2 â€” Klartext)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function ExecutiveSummary({transData,regimeData,condReturnsData}){
   const cascade=transData?.cascade_speed?.current||{};const assessment=transData?.overall_assessment||{};const positions=transData?.phase_positions||{};
@@ -137,19 +137,19 @@ function ExecutiveSummary({transData,regimeData,condReturnsData}){
       <div className="px-3 py-3 rounded" style={{backgroundColor:`${severityColor}08`,borderLeft:`3px solid ${severityColor}`}}>
         <div className="text-sm text-ice-white" style={{lineHeight:'1.8'}}>
           <div className="mb-2"><strong style={{color:severityColor}}>Gesamtlage: {SEVERITY_LABELS[severity]}.</strong>{tippedNames.length>0?<> {tippedNames.length} von 9 Zyklen {tippedNames.length===1?'hat':'haben'} sich verschlechtert ({tippedNames.join(', ')}).</>:<> Alle Zyklen stabil.</>}</div>
-          {v16Growth!=null&&<div className="mb-2">{v16Growth>0.7?<>Handelssystem bleibt mit <strong style={{color:COLORS.signalGreen}}>{(v16Growth*100).toFixed(0)}%</strong> Wahrscheinlichkeit im Normalmodus.</>:v16Growth>0.4?<>Handelssystem bleibt mit <strong style={{color:COLORS.signalYellow}}>{(v16Growth*100).toFixed(0)}%</strong> im Normalmodus — erhöhte Wachsamkeit.</>:<>Handelssystem wechselt mit <strong style={{color:COLORS.signalRed}}>{((1-v16Growth)*100).toFixed(0)}%</strong> Wahrscheinlichkeit in den defensiven Modus.</>}</div>}
-          {extendedIds.length>0&&<div className="mb-2"><strong style={{color:COLORS.signalOrange}}>{extendedIds.length} Zykl{extendedIds.length===1?'us':'en'} überfällig:</strong> {extendedIds.map(id=>cycleName(id)).join(', ')} — Phasenwechsel wird wahrscheinlicher.</div>}
-          {criticalCycle&&<div className="mb-2">Am nächsten am Kipppunkt: <strong style={{color:COLORS.signalRed}}>{cycleName(criticalCycle)}</strong> — noch ~{criticalRemaining} Monate.</div>}
-          {topAssets.length>0&&<div>Stärkste historische Signale (6M): {topAssets.map((a,i)=><span key={i}>{i>0?', ':''}<strong style={{color:(a.totalReturn||0)>=0?COLORS.signalGreen:COLORS.signalRed}}>{a.ticker} {fmtPct(a.totalReturn)}</strong></span>)}.</div>}
+          {v16Growth!=null&&<div className="mb-2">{v16Growth>0.7?<>Handelssystem bleibt mit <strong style={{color:COLORS.signalGreen}}>{(v16Growth*100).toFixed(0)}%</strong> Wahrscheinlichkeit im Normalmodus.</>:v16Growth>0.4?<>Handelssystem bleibt mit <strong style={{color:COLORS.signalYellow}}>{(v16Growth*100).toFixed(0)}%</strong> im Normalmodus â€” erhÃ¶hte Wachsamkeit.</>:<>Handelssystem wechselt mit <strong style={{color:COLORS.signalRed}}>{((1-v16Growth)*100).toFixed(0)}%</strong> Wahrscheinlichkeit in den defensiven Modus.</>}</div>}
+          {extendedIds.length>0&&<div className="mb-2"><strong style={{color:COLORS.signalOrange}}>{extendedIds.length} Zykl{extendedIds.length===1?'us':'en'} Ã¼berfÃ¤llig:</strong> {extendedIds.map(id=>cycleName(id)).join(', ')} â€” Phasenwechsel wird wahrscheinlicher.</div>}
+          {criticalCycle&&<div className="mb-2">Am nÃ¤chsten am Kipppunkt: <strong style={{color:COLORS.signalRed}}>{cycleName(criticalCycle)}</strong> â€” noch ~{criticalRemaining} Monate.</div>}
+          {topAssets.length>0&&<div>StÃ¤rkste historische Signale (6M): {topAssets.map((a,i)=><span key={i}>{i>0?', ':''}<strong style={{color:(a.totalReturn||0)>=0?COLORS.signalGreen:COLORS.signalRed}}>{a.ticker} {fmtPct(a.totalReturn)}</strong></span>)}.</div>}
         </div>
       </div>
     </GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CASCADE CHAIN (V5.2 — überarbeitet, vertikal, Mobile-freundlich)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CASCADE CHAIN (V5.2 â€” Ã¼berarbeitet, vertikal, Mobile-freundlich)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function CascadeChain({transData}){
   const cascade=transData?.cascade_speed?.current||{};const positions=transData?.phase_positions||{};const condDurations=transData?.conditional_remaining_durations||{};
@@ -158,32 +158,32 @@ function CascadeChain({transData}){
   const statusCol=cid=>tippedMap[cid]?COLORS.signalRed:STATUS_COLORS[positions[cid]?.status]||COLORS.fadedBlue;
 
   return(
-    <GlassCard><Section title="Kausalkette — Kipp-Sequenz" defaultOpen={true}>
-      <InfoToggle>Zeigt wie Zyklen einander beeinflussen. Von oben nach unten: Liquidität kippt zuerst, dann Credit, dann Realwirtschaft. "Noch ~X Mo" = historischer Median zwischen dem Kippen des einen und des anderen.</InfoToggle>
+    <GlassCard><Section title="Kausalkette â€” Kipp-Sequenz" defaultOpen={true}>
+      <InfoToggle>Zeigt wie Zyklen einander beeinflussen. Von oben nach unten: LiquiditÃ¤t kippt zuerst, dann Credit, dann Realwirtschaft. "Noch ~X Mo" = historischer Median zwischen dem Kippen des einen und des anderen.</InfoToggle>
       <div className="space-y-0">{PRIMARY_CHAIN.map((cid,i)=>{const pp=positions[cid]||{};const tipped=!!tippedMap[cid];
         return(<div key={cid}>
           <div className="flex items-center gap-2 px-3 py-2 rounded" style={{backgroundColor:tipped?`${COLORS.signalRed}10`:'transparent',borderLeft:`3px solid ${statusCol(cid)}`}}>
             <span style={{fontSize:'16px'}}>{CYCLE_META[cid]?.icon}</span>
-            <div className="flex-1"><div className="text-sm font-mono" style={{color:COLORS.iceWhite}}>{cycleName(cid)}</div><div className="text-caption" style={{color:statusCol(cid)}}>{phaseLabel(pp.current_phase)} · {statusLabel(pp.status)} {pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200)+'%':''}{pp.remaining_median!=null?` · ~${pp.remaining_median}Mo`:''}</div></div>
-            {tipped&&<span style={{color:COLORS.signalRed,fontSize:'12px'}}>⚠ gekippt {tippedMap[cid]}</span>}
+            <div className="flex-1"><div className="text-sm font-mono" style={{color:COLORS.iceWhite}}>{cycleName(cid)}</div><div className="text-caption" style={{color:statusCol(cid)}}>{phaseLabel(pp.current_phase)} Â· {statusLabel(pp.status)} {pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200)+'%':''}{pp.remaining_median!=null?` Â· ~${pp.remaining_median}Mo`:''}</div></div>
+            {tipped&&<span style={{color:COLORS.signalRed,fontSize:'12px'}}>âš  gekippt {tippedMap[cid]}</span>}
           </div>
-          {i<PRIMARY_CHAIN.length-1&&<div className="flex items-center gap-2 pl-6 py-1"><span style={{color:COLORS.fadedBlue,fontSize:'14px'}}>↓</span><span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>Noch ~{chainMedian(PRIMARY_CHAIN[i],PRIMARY_CHAIN[i+1])} Mo</span></div>}
+          {i<PRIMARY_CHAIN.length-1&&<div className="flex items-center gap-2 pl-6 py-1"><span style={{color:COLORS.fadedBlue,fontSize:'14px'}}>â†“</span><span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>Noch ~{chainMedian(PRIMARY_CHAIN[i],PRIMARY_CHAIN[i+1])} Mo</span></div>}
         </div>);
       })}</div>
-      <div className="mt-3 border-t border-white/10 pt-3"><div className="text-caption text-muted-blue mb-2" style={{fontSize:'9px'}}>Weitere Kausalketten:</div><div className="flex flex-wrap gap-1">{CASCADE_CHAINS.filter(c=>!PRIMARY_CHAIN.includes(c.from)||!PRIMARY_CHAIN.includes(c.to)).map((c,i)=><span key={i} className="text-caption px-2 py-0.5 rounded" style={{backgroundColor:'#0d1f38',color:COLORS.fadedBlue,fontSize:'9px'}}>{CYCLE_META[c.from]?.icon}→{CYCLE_META[c.to]?.icon} ~{chainMedian(c.from,c.to)}Mo</span>)}</div></div>
+      <div className="mt-3 border-t border-white/10 pt-3"><div className="text-caption text-muted-blue mb-2" style={{fontSize:'9px'}}>Weitere Kausalketten:</div><div className="flex flex-wrap gap-1">{CASCADE_CHAINS.filter(c=>!PRIMARY_CHAIN.includes(c.from)||!PRIMARY_CHAIN.includes(c.to)).map((c,i)=><span key={i} className="text-caption px-2 py-0.5 rounded" style={{backgroundColor:'#0d1f38',color:COLORS.fadedBlue,fontSize:'9px'}}>{CYCLE_META[c.from]?.icon}â†’{CYCLE_META[c.to]?.icon} ~{chainMedian(c.from,c.to)}Mo</span>)}</div></div>
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PHASE POSITION BARS (V5.2 — visuell, mit Remaining)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// PHASE POSITION BARS (V5.2 â€” visuell, mit Remaining)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function PhasePositionBars({transData}){
   const positions=transData?.phase_positions||{};
   return(
-    <GlassCard><Section title="Phase-Fortschritt — Wie weit ist jeder Zyklus?" defaultOpen={true}>
-      <InfoToggle>0% = Phase hat gerade begonnen. 100% = Median-Dauer erreicht. Über 100% = statistisch überfällig. Je weiter rechts, desto wahrscheinlicher der Phasenwechsel.</InfoToggle>
+    <GlassCard><Section title="Phase-Fortschritt â€” Wie weit ist jeder Zyklus?" defaultOpen={true}>
+      <InfoToggle>0% = Phase hat gerade begonnen. 100% = Median-Dauer erreicht. Ãœber 100% = statistisch Ã¼berfÃ¤llig. Je weiter rechts, desto wahrscheinlicher der Phasenwechsel.</InfoToggle>
       <div className="space-y-2">{CYCLE_ORDER.filter(id=>id!=='POLITICAL').map(id=>{const pp=positions[id]||{};const pct=pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200):0;const displayPct=pp.phase_position_pct!=null&&pp.phase_position_pct>200?'(>200%)':pct+'%';const col=STATUS_COLORS[pp.status]||COLORS.fadedBlue;const barW=Math.min(pct/2,100);
         return(<div key={id} className="flex items-center gap-2"><span className="text-caption font-mono w-8 text-right" style={{color:COLORS.mutedBlue,fontSize:'9px'}}>{CYCLE_META[id]?.icon}</span><div className="flex-1 h-3 rounded-full overflow-hidden" style={{backgroundColor:'#0d1f38'}}><div style={{width:`${barW}%`,height:'100%',backgroundColor:col,borderRadius:'9999px',transition:'width 0.3s ease'}}/></div><span className="text-caption font-mono w-20 text-right" style={{color:col,fontSize:'9px'}}>{statusLabel(pp.status)} {displayPct}</span><span className="text-caption font-mono w-12 text-right" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>{pp.remaining_median!=null?`~${pp.remaining_median}Mo`:''}</span></div>);
       })}</div>
@@ -191,47 +191,47 @@ function PhasePositionBars({transData}){
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CASCADE TIMELINE (V5.2 — wann kippte was)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CASCADE TIMELINE (V5.2 â€” wann kippte was)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function CascadeTimeline({transData}){
   const cascade=transData?.cascade_speed?.current||{};const calibration=transData?.cascade_speed?.calibration||{};
   const transitioned=cascade.transitioned_cycles||[];const notYet=cascade.not_yet_transitioned||[];
   if(!transitioned.length)return null;
   return(
-    <GlassCard><Section title="Kipp-Tempo — Historisch" defaultOpen={false}>
-      <InfoToggle>Zeigt wann welcher Zyklus zuletzt von bullish/neutral nach bearish gewechselt hat. "Kipp-Tempo" misst wie schnell die Zyklen nacheinander kippen. Höheres Tempo = höheres Risiko.</InfoToggle>
+    <GlassCard><Section title="Kipp-Tempo â€” Historisch" defaultOpen={false}>
+      <InfoToggle>Zeigt wann welcher Zyklus zuletzt von bullish/neutral nach bearish gewechselt hat. "Kipp-Tempo" misst wie schnell die Zyklen nacheinander kippen. HÃ¶heres Tempo = hÃ¶heres Risiko.</InfoToggle>
       <div className="space-y-1">{transitioned.map((t,i)=><div key={i} className="flex items-center justify-between px-3 py-1.5 rounded" style={{backgroundColor:`${COLORS.signalRed}08`,borderLeft:`2px solid ${COLORS.signalRed}`}}><span className="text-caption text-ice-white font-mono">{CYCLE_META[t.cycle]?.icon} {cycleName(t.cycle)}</span><span className="text-caption font-mono" style={{color:COLORS.signalRed}}>{t.month||'?'}</span></div>)}</div>
       {notYet.length>0&&<div className="mt-2 text-caption text-muted-blue" style={{fontSize:'9px'}}>Noch nicht gekippt: {notYet.map(c=>CYCLE_META[c]?.icon||c).join(' ')}</div>}
-      <div className="mt-3 flex items-center gap-2"><span className="text-caption text-muted-blue" style={{fontSize:'9px'}}>Tempo:</span><span className="px-2 py-0.5 rounded text-caption font-mono" style={{backgroundColor:`${SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue}20`,color:SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue,fontSize:'10px'}}>{cascade.cascade_speed?.toFixed(2)||'?'} — {cascade.severity||'?'}</span></div>
-      {Object.keys(calibration).length>0&&<div className="mt-2 space-y-1">{Object.entries(calibration).map(([k,v])=>v&&typeof v==='object'?<div key={k} className="flex items-center justify-between text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}><span>{v.label||k}</span><span>V16 Growth: {v.v16_stays_growth_pct??'?'}% · SPY 6M: {v.avg_spy_6m!=null?fmtPct(v.avg_spy_6m):'?'}</span></div>:null)}</div>}
+      <div className="mt-3 flex items-center gap-2"><span className="text-caption text-muted-blue" style={{fontSize:'9px'}}>Tempo:</span><span className="px-2 py-0.5 rounded text-caption font-mono" style={{backgroundColor:`${SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue}20`,color:SEVERITY_COLORS[cascade.severity]||COLORS.fadedBlue,fontSize:'10px'}}>{cascade.cascade_speed?.toFixed(2)||'?'} â€” {cascade.severity||'?'}</span></div>
+      {Object.keys(calibration).length>0&&<div className="mt-2 space-y-1">{Object.entries(calibration).map(([k,v])=>v&&typeof v==='object'?<div key={k} className="flex items-center justify-between text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}><span>{v.label||k}</span><span>V16 Growth: {v.v16_stays_growth_pct??'?'}% Â· SPY 6M: {v.avg_spy_6m!=null?fmtPct(v.avg_spy_6m):'?'}</span></div>:null)}</div>}
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// REGIME HEATMAP (V5.2 — Cluster × Buckets, nur Cluster-Level)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// REGIME HEATMAP (V5.2 â€” Cluster Ã— Buckets, nur Cluster-Level)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function RegimeHeatmap({regimeData,condReturnsData}){
   const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
   const hasData=Object.keys(marginals).length>0;if(!hasData)return null;
   return(
-    <GlassCard><Section title="Regime Heatmap — Was bedeuten die Cluster-Signale?" defaultOpen={true}>
-      <InfoToggle>Zeigt die historische 6M-Rendite für jedes Asset wenn ein Cluster in einem bestimmten Zustand war (Bullish/Neutral/Bearish). Grün = überdurchschnittlich, Rot = unterdurchschnittlich. Nur signifikante Signale farbig.</InfoToggle>
+    <GlassCard><Section title="Regime Heatmap â€” Was bedeuten die Cluster-Signale?" defaultOpen={true}>
+      <InfoToggle>Zeigt die historische 6M-Rendite fÃ¼r jedes Asset wenn ein Cluster in einem bestimmten Zustand war (Bullish/Neutral/Bearish). GrÃ¼n = Ã¼berdurchschnittlich, Rot = unterdurchschnittlich. Nur signifikante Signale farbig.</InfoToggle>
       {CLUSTER_ORDER.map(clusterId=>{const cm=marginals[clusterId];if(!cm)return null;const bucketOrder=['BULLISH','NEUTRAL_MIXED','BEARISH'];
         return(<div key={clusterId} className="mb-4"><div className="flex items-center mb-2"><span className="text-sm font-mono text-ice-white">{CLUSTER_LABELS[clusterId]}</span><ClusterInfo clusterId={clusterId}/></div><div className="overflow-x-auto"><table className="w-full text-caption font-mono" style={{fontSize:'9px'}}><thead><tr><th className="text-left py-1 px-1 text-muted-blue">Asset</th>{bucketOrder.map(b=><th key={b} className="text-center py-1 px-1 text-muted-blue">{b==='BULLISH'?'Bull':b==='BEARISH'?'Bear':'Neutral'}</th>)}</tr></thead><tbody>{ALL_ASSETS_ORDERED.map(ticker=>{const bl6=baselines[ticker]?.baseline_6m;let anySignificant=false;const cells=bucketOrder.map(b=>{const d=cm[b]?.assets?.[ticker]?.['6m'];if(!d)return{val:null,sig:false};if(d.significant)anySignificant=true;return{val:d.avg_excess,sig:d.significant};});if(!anySignificant)return null;const isCrypto=CRYPTO_TICKERS.has(ticker);
-          return(<tr key={ticker} className="border-t border-white/5"><td className="py-1 px-1 text-ice-white">{isCrypto?`${ticker} ⚠`:ticker}</td>{cells.map((c,i)=><td key={i} className="text-center py-1 px-1" style={{color:c.sig?excessColor(c.val):COLORS.fadedBlue,opacity:c.sig?1:0.4}}>{c.val!=null?fmtPct(c.val):'—'}</td>)}</tr>);
+          return(<tr key={ticker} className="border-t border-white/5"><td className="py-1 px-1 text-ice-white">{isCrypto?`${ticker} âš `:ticker}</td>{cells.map((c,i)=><td key={i} className="text-center py-1 px-1" style={{color:c.sig?excessColor(c.val):COLORS.fadedBlue,opacity:c.sig?1:0.4}}>{c.val!=null?fmtPct(c.val):'â€”'}</td>)}</tr>);
         })}</tbody></table></div></div>);
       })}
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONDITIONAL RETURNS — Stärkste Signale (V5.2 — Top Assets)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CONDITIONAL RETURNS â€” StÃ¤rkste Signale (V5.2 â€” Top Assets)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function ConditionalReturnsChart({regimeData,condReturnsData}){
   const marginals=regimeData?.cluster_conditional_returns?.cluster_marginals||{};const baselines=condReturnsData?.baselines||{};
@@ -240,24 +240,24 @@ function ConditionalReturnsChart({regimeData,condReturnsData}){
   signals.sort((a,b)=>b.strength-a.strength);const top=signals.slice(0,10);
   if(top.length===0)return null;
   return(
-    <GlassCard><Section title="Stärkste Signale — Top Assets" defaultOpen={true}>
-      <InfoToggle>Die 10 stärksten signifikanten Cluster-Signale für den 6M-Horizont. "Excess" = Rendite über dem historischen Durchschnitt. "Baseline" = was das Asset normalerweise bringt. Signal = |Excess|/SE — je höher, desto belastbarer.</InfoToggle>
-      <div className="space-y-1.5">{top.map((s,i)=><div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${excessColor(s.excess)}`}}><span className="text-sm font-mono font-bold" style={{color:COLORS.iceWhite,width:'40px'}}>{s.ticker}</span><div className="flex-1"><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.mutedBlue}}>{s.cluster} · {s.bucket}</div></div><div className="text-right"><div className="font-mono text-sm" style={{color:excessColor(s.excess)}}>{fmtPct(s.excess)} <span style={{color:COLORS.fadedBlue,fontSize:'9px'}}>({fmtPct(s.baseline)} Baseline)</span></div><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}>Signal: {s.strength?.toFixed(1)} · HR: {(s.hitRate*100)?.toFixed(0)}% · n={s.n}</div></div></div>)}</div>
+    <GlassCard><Section title="StÃ¤rkste Signale â€” Top Assets" defaultOpen={true}>
+      <InfoToggle>Die 10 stÃ¤rksten signifikanten Cluster-Signale fÃ¼r den 6M-Horizont. "Excess" = Rendite Ã¼ber dem historischen Durchschnitt. "Baseline" = was das Asset normalerweise bringt. Signal = |Excess|/SE â€” je hÃ¶her, desto belastbarer.</InfoToggle>
+      <div className="space-y-1.5">{top.map((s,i)=><div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${excessColor(s.excess)}`}}><span className="text-sm font-mono font-bold" style={{color:COLORS.iceWhite,width:'40px'}}>{s.ticker}</span><div className="flex-1"><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.mutedBlue}}>{s.cluster} Â· {s.bucket}</div></div><div className="text-right"><div className="font-mono text-sm" style={{color:excessColor(s.excess)}}>{fmtPct(s.excess)} <span style={{color:COLORS.fadedBlue,fontSize:'9px'}}>({fmtPct(s.baseline)} Baseline)</span></div><div className="text-caption font-mono" style={{fontSize:'9px',color:COLORS.fadedBlue}}>Signal: {s.strength?.toFixed(1)} Â· HR: {(s.hitRate*100)?.toFixed(0)}% Â· n={s.n}</div></div></div>)}</div>
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// V16 TRANSITION BAR (V5.2 — Regime-Stabilität)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// V16 TRANSITION BAR (V5.2 â€” Regime-StabilitÃ¤t)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function V16TransitionBar({regimeData}){
   const dual=regimeData?.v16_transition_probability?.by_dual_cluster||{};const credit=regimeData?.v16_transition_probability?.by_credit_cluster||{};
   const entries=[...Object.entries(dual),...Object.entries(credit)].filter(([,v])=>v&&typeof v==='object'&&v.n_months>0);
   if(entries.length===0)return null;
   return(
-    <GlassCard><Section title="Regime-Stabilität — Wie lange bleibt V16 im Normalmodus?" defaultOpen={false}>
-      <InfoToggle>Misst die historische Wahrscheinlichkeit dass das Handelssystem (V16) im aktuellen Modus (GROWTH) bleibt, basierend auf den Cluster-Zuständen. Höher = stabiler.</InfoToggle>
+    <GlassCard><Section title="Regime-StabilitÃ¤t â€” Wie lange bleibt V16 im Normalmodus?" defaultOpen={false}>
+      <InfoToggle>Misst die historische Wahrscheinlichkeit dass das Handelssystem (V16) im aktuellen Modus (GROWTH) bleibt, basierend auf den Cluster-ZustÃ¤nden. HÃ¶her = stabiler.</InfoToggle>
       <div className="space-y-2">{entries.map(([k,v],i)=>{const g3=v.v16_stays_growth_3m;const g6=v.v16_stays_growth_6m;const col=g6!=null?g6>0.7?COLORS.signalGreen:g6>0.4?COLORS.signalYellow:COLORS.signalRed:COLORS.fadedBlue;
         return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${col}`}}><div className="text-caption font-mono text-ice-white" style={{fontSize:'10px'}}>{k.replace(/_/g,' ')}</div><div className="flex gap-4 mt-1">{g3!=null&&<span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>3M: {(g3*100).toFixed(0)}%</span>}{g6!=null&&<span className="text-caption font-mono" style={{color:col,fontSize:'10px',fontWeight:600}}>6M: {(g6*100).toFixed(0)}%</span>}<span className="text-caption font-mono" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>n={v.n_months}</span></div></div>);
       })}</div>
@@ -265,25 +265,25 @@ function V16TransitionBar({regimeData}){
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HISTORICAL ANALOGUES TIMELINE (V5.2 — horizontale Zeitachse)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// HISTORICAL ANALOGUES TIMELINE (V5.2 â€” horizontale Zeitachse)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function AnaloguesTimeline({regimeData}){
   const analogues=regimeData?.historical_analogues?.analogues||[];if(analogues.length===0)return null;
   return(
-    <GlassCard><Section title="Historische Vergleiche — Wann sah es zuletzt so aus?" defaultOpen={false}>
-      <InfoToggle>Findet historische Perioden die dem aktuellen Cluster-Zustand am ähnlichsten sind. "Was danach passierte" zeigt die 6M-Rendite von SPY, GLD und TLT.</InfoToggle>
+    <GlassCard><Section title="Historische Vergleiche â€” Wann sah es zuletzt so aus?" defaultOpen={false}>
+      <InfoToggle>Findet historische Perioden die dem aktuellen Cluster-Zustand am Ã¤hnlichsten sind. "Was danach passierte" zeigt die 6M-Rendite von SPY, GLD und TLT.</InfoToggle>
       <div className="space-y-2">{analogues.map((a,i)=>{const sim=(a.similarity_score*100).toFixed(0);const whn=a.what_happened_next||{};
-        return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${COLORS.baldurBlue||'#4A90D9'}`}}><div className="flex items-center justify-between"><span className="text-sm font-mono text-ice-white">{a.period_start}{a.episode_label?` — ${a.episode_label}`:''}</span><span className="text-caption font-mono px-1.5 py-0.5 rounded" style={{backgroundColor:'#1a3050',color:COLORS.baldurBlue||'#4A90D9',fontSize:'9px'}}>{sim}% ähnlich</span></div><div className="flex gap-3 mt-1 text-caption font-mono" style={{fontSize:'9px'}}>{whn.spy_6m_return!=null&&<span style={{color:whn.spy_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>SPY: {fmtPct(whn.spy_6m_return)}</span>}{whn.gld_6m_return!=null&&<span style={{color:whn.gld_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>GLD: {fmtPct(whn.gld_6m_return)}</span>}{whn.tlt_6m_return!=null&&<span style={{color:whn.tlt_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>TLT: {fmtPct(whn.tlt_6m_return)}</span>}</div></div>);
+        return(<div key={i} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${COLORS.baldurBlue||'#4A90D9'}`}}><div className="flex items-center justify-between"><span className="text-sm font-mono text-ice-white">{a.period_start}{a.episode_label?` â€” ${a.episode_label}`:''}</span><span className="text-caption font-mono px-1.5 py-0.5 rounded" style={{backgroundColor:'#1a3050',color:COLORS.baldurBlue||'#4A90D9',fontSize:'9px'}}>{sim}% Ã¤hnlich</span></div><div className="flex gap-3 mt-1 text-caption font-mono" style={{fontSize:'9px'}}>{whn.spy_6m_return!=null&&<span style={{color:whn.spy_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>SPY: {fmtPct(whn.spy_6m_return)}</span>}{whn.gld_6m_return!=null&&<span style={{color:whn.gld_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>GLD: {fmtPct(whn.gld_6m_return)}</span>}{whn.tlt_6m_return!=null&&<span style={{color:whn.tlt_6m_return>=0?COLORS.signalGreen:COLORS.signalRed}}>TLT: {fmtPct(whn.tlt_6m_return)}</span>}</div></div>);
       })}</div>
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CRASH VS CORRECTION (V5.2 — Dual-State Analyse)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CRASH VS CORRECTION (V5.2 â€” Dual-State Analyse)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function CrashVsCorrection({regimeData}){
   const cd=regimeData?.crash_vs_correction||{};const dualDD=cd.dual_state_drawdowns||{};const entryRules=cd.entry_rules||{};const cs=cd.current_state||{};
@@ -291,18 +291,18 @@ function CrashVsCorrection({regimeData}){
   if(entries.length===0)return null;
   return(
     <GlassCard><Section title="Crash oder Korrektur?" defaultOpen={true}>
-      <InfoToggle>Credit UND Business negativ → Crash (-25% bis -35%). Nur Credit negativ → Korrektur (-8% bis -15%). Entry Zone = historisch gute Einstiegspunkte.</InfoToggle>
+      <InfoToggle>Credit UND Business negativ â†’ Crash (-25% bis -35%). Nur Credit negativ â†’ Korrektur (-8% bis -15%). Entry Zone = historisch gute Einstiegspunkte.</InfoToggle>
       {cs.dual_key&&<div className="text-caption px-3 py-2 rounded mb-3" style={{backgroundColor:'#0d1f38',border:'1px solid #1a3050',fontSize:'11px'}}><strong style={{color:COLORS.iceWhite}}>Aktuell:</strong> <span style={{color:COLORS.mutedBlue}}>{cs.implication||cs.dual_key}</span></div>}
       <div className="space-y-2">{entries.map(([k,v])=>{const r=entryRules[k]||{};const tc=r.type==='CRASH'?COLORS.signalRed:r.type==='CORRECTION'?COLORS.signalYellow:COLORS.signalOrange;const tl=r.type==='CRASH'?'Crash-Risiko':r.type==='CORRECTION'?'Korrektur':r.type==='CRASH_WITH_RECOVERY'?'Crash mit Recovery':r.type||'';
-        return(<div key={k} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${tc}`}}><div className="flex items-center justify-between mb-1"><span className="text-caption" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{k.replace(/CREDIT_/g,'Credit ').replace(/BUSINESS_/g,'Business ').replace(/__/g,' + ')}</span>{r.type&&<span className="text-caption font-mono px-1.5 py-0.5 rounded" style={{backgroundColor:`${tc}20`,color:tc,fontSize:'9px'}}>{tl}</span>}</div><div className="text-caption font-mono" style={{fontSize:'10px',color:COLORS.mutedBlue}}>{v.spy_6m?.avg!=null&&<span>Ø SPY 6M: {fmtPct(v.spy_6m.avg)} </span>}{v.spy_6m?.worst!=null&&<span style={{color:COLORS.signalRed}}>Worst: {fmtPct(v.spy_6m.worst)} </span>}<span style={{color:COLORS.fadedBlue}}>n={v.n_months||v.spy_6m?.n||'?'}</span></div>{r.entry_zone&&<div className="text-caption mt-1" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>Einstieg ab: {r.entry_zone}</div>}</div>);
+        return(<div key={k} className="px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${tc}`}}><div className="flex items-center justify-between mb-1"><span className="text-caption" style={{color:COLORS.iceWhite,fontSize:'10px'}}>{k.replace(/CREDIT_/g,'Credit ').replace(/BUSINESS_/g,'Business ').replace(/__/g,' + ')}</span>{r.type&&<span className="text-caption font-mono px-1.5 py-0.5 rounded" style={{backgroundColor:`${tc}20`,color:tc,fontSize:'9px'}}>{tl}</span>}</div><div className="text-caption font-mono" style={{fontSize:'10px',color:COLORS.mutedBlue}}>{v.spy_6m?.avg!=null&&<span>Ã˜ SPY 6M: {fmtPct(v.spy_6m.avg)} </span>}{v.spy_6m?.worst!=null&&<span style={{color:COLORS.signalRed}}>Worst: {fmtPct(v.spy_6m.worst)} </span>}<span style={{color:COLORS.fadedBlue}}>n={v.n_months||v.spy_6m?.n||'?'}</span></div>{r.entry_zone&&<div className="text-caption mt-1" style={{color:COLORS.fadedBlue,fontSize:'9px'}}>Einstieg ab: {r.entry_zone}</div>}</div>);
       })}</div>
     </Section></GlassCard>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CYCLE CARDS (V5.4 — Crossover-Filter + neutrale Legende)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// CYCLE CARDS (V5.4 â€” Crossover-Filter + neutrale Legende)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function PhaseLifecycleChart({chartData}){
   if(!chartData)return null;
@@ -328,7 +328,7 @@ function PhaseLifecycleChart({chartData}){
     if(prev.smoothed!=null&&prev.ma!=null&&cur.smoothed!=null&&cur.ma!=null){
       const prevDiff=prev.smoothed-prev.ma;const curDiff=cur.smoothed-cur.ma;
       if(prevDiff*curDiff<0){
-        // Sign changed — check minimum distance threshold
+        // Sign changed â€” check minimum distance threshold
         const maAbs=Math.abs(cur.ma);
         const threshold=maAbs>0?maAbs*0.01:0.001; // 1% of MA value, fallback 0.001
         if(Math.abs(curDiff)>=threshold){
@@ -340,15 +340,15 @@ function PhaseLifecycleChart({chartData}){
 
   // Direction arrow: smoothed velocity over last 3 months
   const smVals=merged.filter(d=>d.smoothed!=null);
-  let dirLabel='→';let dirColor=COLORS.mutedBlue;
+  let dirLabel='â†’';let dirColor=COLORS.mutedBlue;
   if(smVals.length>=4){
     const last=smVals[smVals.length-1].smoothed;
     const prev3=smVals[smVals.length-4].smoothed;
     if(prev3&&prev3!==0){
       const vel=(last-prev3)/Math.abs(prev3);
-      if(vel>0.005){dirLabel='↗';dirColor=COLORS.signalGreen;}
-      else if(vel<-0.005){dirLabel='↘';dirColor=COLORS.signalRed;}
-      else{dirLabel='→';dirColor=COLORS.signalYellow;}
+      if(vel>0.005){dirLabel='â†—';dirColor=COLORS.signalGreen;}
+      else if(vel<-0.005){dirLabel='â†˜';dirColor=COLORS.signalRed;}
+      else{dirLabel='â†’';dirColor=COLORS.signalYellow;}
     }
   }
 
@@ -362,32 +362,32 @@ function PhaseLifecycleChart({chartData}){
         <Tooltip content={<ChartTooltip/>}/>
         {/* NOW marker */}
         {nowDate&&<ReferenceLine x={nowDate} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{value:'JETZT',fill:COLORS.iceWhite,fontSize:9,position:'top'}}/>}
-        {/* V5.4: Crossover dots — green=up, red=down (direction-matched) */}
+        {/* V5.4: Crossover dots â€” green=up, red=down (direction-matched) */}
         {crossovers.map((c,i)=><ReferenceDot key={`cx${i}`} x={c.date} y={c.value} r={3} fill={c.goingUp?COLORS.signalGreen:COLORS.signalRed} stroke={c.goingUp?COLORS.signalGreen:COLORS.signalRed} strokeWidth={1} ifOverflow="extendDomain"/>)}
         <Line type="monotone" dataKey="indicator" stroke={COLORS.iceWhite} strokeWidth={1} dot={false} name="Indikator" connectNulls strokeOpacity={0.5}/>
-        <Line type="monotone" dataKey="smoothed" stroke={COLORS.baldurBlue||'#4A90D9'} strokeWidth={2} dot={false} name="Geglättet" connectNulls/>
-        <Line type="monotone" dataKey="ma" stroke={COLORS.signalYellow} strokeWidth={1} dot={false} name="12M Ø" connectNulls strokeOpacity={0.6} strokeDasharray="4 4"/>
+        <Line type="monotone" dataKey="smoothed" stroke={COLORS.baldurBlue||'#4A90D9'} strokeWidth={2} dot={false} name="GeglÃ¤ttet" connectNulls/>
+        <Line type="monotone" dataKey="ma" stroke={COLORS.signalYellow} strokeWidth={1} dot={false} name="12M Ã˜" connectNulls strokeOpacity={0.6} strokeDasharray="4 4"/>
       </LineChart>
     </ResponsiveContainer>
     {/* Direction arrow badge */}
     <div className="flex items-center justify-between mt-1">
       <div className="flex gap-3 flex-wrap" style={{fontSize:'9px'}}>
-        <span style={{color:COLORS.signalGreen}}>■ Expansion</span>
-        <span style={{color:COLORS.signalYellow}}>■ Übergang</span>
-        <span style={{color:COLORS.signalRed}}>■ Kontraktion</span>
-        <span style={{color:COLORS.iceWhite,opacity:0.5}}>— Indikator</span>
-        <span style={{color:COLORS.baldurBlue||'#4A90D9'}}>— Geglättet</span>
-        <span style={{color:COLORS.signalYellow}}>-- 12M Ø</span>
+        <span style={{color:COLORS.signalGreen}}>â–  Expansion</span>
+        <span style={{color:COLORS.signalYellow}}>â–  Ãœbergang</span>
+        <span style={{color:COLORS.signalRed}}>â–  Kontraktion</span>
+        <span style={{color:COLORS.iceWhite,opacity:0.5}}>â€” Indikator</span>
+        <span style={{color:COLORS.baldurBlue||'#4A90D9'}}>â€” GeglÃ¤ttet</span>
+        <span style={{color:COLORS.signalYellow}}>-- 12M Ã˜</span>
       </div>
       <div className="flex items-center gap-1 px-2 py-0.5 rounded" style={{backgroundColor:`${dirColor}15`,border:`1px solid ${dirColor}30`}}>
         <span style={{color:dirColor,fontSize:'14px',lineHeight:1}}>{dirLabel}</span>
         <span style={{color:dirColor,fontSize:'9px',fontFamily:'monospace'}}>Trend</span>
       </div>
     </div>
-    {/* V5.4: Neutral crossover legend — "aufwärts/abwärts" statt "Bullish/Bearish" */}
+    {/* V5.4: Neutral crossover legend â€” "aufwÃ¤rts/abwÃ¤rts" statt "Bullish/Bearish" */}
     {crossovers.length>0&&<div className="flex gap-3 mt-1" style={{fontSize:'9px'}}>
-      <span style={{color:COLORS.signalGreen}}>● Kreuzung aufwärts</span>
-      <span style={{color:COLORS.signalRed}}>● Kreuzung abwärts</span>
+      <span style={{color:COLORS.signalGreen}}>â— Kreuzung aufwÃ¤rts</span>
+      <span style={{color:COLORS.signalRed}}>â— Kreuzung abwÃ¤rts</span>
     </div>}
   </div>);
 }
@@ -396,8 +396,8 @@ function CycleExplanation({cycleId,phaseData,transData}){
   const meta=CYCLE_META[cycleId]||{};const pp=transData?.phase_positions?.[cycleId]||{};const phase=phaseData?.phase||'UNKNOWN';
   const transitions=pp.transitions_ahead||{};let nextPhase=null,nextProb=0;
   for(const[ph,data]of Object.entries(transitions)){const prob=data?.probability||data||0;if(prob>nextProb){nextPhase=ph;nextProb=prob;}}
-  const st=pp.status==='EXTENDED'?'Die Phase dauert länger als üblich — ein Wechsel wird zunehmend wahrscheinlich.':pp.status==='LATE_PHASE'?'Die Phase nähert sich dem Ende. Nächste Phase vorbereiten.':pp.status==='MID_PHASE'?'Phase etwa zur Hälfte durch. Kein unmittelbarer Handlungsbedarf.':pp.status==='EARLY_PHASE'?'Phase hat erst kürzlich begonnen. Signal ist frisch.':'';
-  return(<div className="mt-3 px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',fontSize:'11px',lineHeight:'1.6',color:COLORS.mutedBlue}}><div className="mb-2">{meta.desc}</div><div className="mb-1"><strong style={{color:COLORS.iceWhite}}>Aktuell:</strong> {phaseLabel(phase)} bei {pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200):'?'}% Fortschritt{pp.remaining_median!=null&&<> — noch ~{pp.remaining_median} Monate bis zum Wechsel</>}.</div>{st&&<div className="mb-1">{st}</div>}{nextPhase&&nextProb>0&&<div><strong style={{color:COLORS.iceWhite}}>Nächste Phase:</strong> wahrscheinlich {phaseLabel(nextPhase)} ({typeof nextProb==='number'&&nextProb<=1?(nextProb*100).toFixed(0):nextProb}%).</div>}</div>);
+  const st=pp.status==='EXTENDED'?'Die Phase dauert lÃ¤nger als Ã¼blich â€” ein Wechsel wird zunehmend wahrscheinlich.':pp.status==='LATE_PHASE'?'Die Phase nÃ¤hert sich dem Ende. NÃ¤chste Phase vorbereiten.':pp.status==='MID_PHASE'?'Phase etwa zur HÃ¤lfte durch. Kein unmittelbarer Handlungsbedarf.':pp.status==='EARLY_PHASE'?'Phase hat erst kÃ¼rzlich begonnen. Signal ist frisch.':'';
+  return(<div className="mt-3 px-3 py-2 rounded" style={{backgroundColor:'#0d1f38',fontSize:'11px',lineHeight:'1.6',color:COLORS.mutedBlue}}><div className="mb-2">{meta.desc}</div><div className="mb-1"><strong style={{color:COLORS.iceWhite}}>Aktuell:</strong> {phaseLabel(phase)} bei {pp.phase_position_pct!=null?Math.min(pp.phase_position_pct,200):'?'}% Fortschritt{pp.remaining_median!=null&&<> â€” noch ~{pp.remaining_median} Monate bis zum Wechsel</>}.</div>{st&&<div className="mb-1">{st}</div>}{nextPhase&&nextProb>0&&<div><strong style={{color:COLORS.iceWhite}}>NÃ¤chste Phase:</strong> wahrscheinlich {phaseLabel(nextPhase)} ({typeof nextProb==='number'&&nextProb<=1?(nextProb*100).toFixed(0):nextProb}%).</div>}</div>);
 }
 
 function CycleCard({cycleId,phaseData,chartData,transData}){
@@ -411,11 +411,11 @@ function CycleCard({cycleId,phaseData,chartData,transData}){
     <div className="mb-3 rounded-lg overflow-hidden" style={{backgroundColor:'#0d1f38',border:`1px solid ${tierCol}30`}}>
       <button onClick={()=>setOpen(!open)} className="w-full px-3 py-2 flex items-center justify-between" style={{borderLeft:`4px solid ${phaseCol}`}}>
         <div className="flex items-center gap-2"><span style={{fontSize:'18px'}}>{meta.icon}</span><div className="text-left"><div className="text-sm font-mono text-ice-white">{meta.name} <span className="text-caption px-1.5 py-0.5 rounded ml-1" style={{backgroundColor:`${tierCol}20`,color:tierCol,fontSize:'9px'}}>T{meta.tier}</span></div><div className="text-caption font-mono" style={{color:phaseCol}}>{phaseLabel(phase)}</div></div></div>
-        <div className="flex items-center gap-2"><span className="text-caption font-mono" style={{color:alCol}}>{phaseData?.v16_alignment==='ALIGNED'?'✓':phaseData?.v16_alignment==='DIVERGED'?'✗':'·'}</span>{pp.status&&<span className="text-caption font-mono" style={{color:STATUS_COLORS[pp.status]||COLORS.fadedBlue,fontSize:'9px'}}>{statusLabel(pp.status)} {displayPos}{pp.remaining_median!=null?` · ~${pp.remaining_median}Mo`:''}</span>}<span className="text-caption text-muted-blue">{open?'▾':'▸'}</span></div>
+        <div className="flex items-center gap-2"><span className="text-caption font-mono" style={{color:alCol}}>{phaseData?.v16_alignment==='ALIGNED'?'âœ“':phaseData?.v16_alignment==='DIVERGED'?'âœ—':'Â·'}</span>{pp.status&&<span className="text-caption font-mono" style={{color:STATUS_COLORS[pp.status]||COLORS.fadedBlue,fontSize:'9px'}}>{statusLabel(pp.status)} {displayPos}{pp.remaining_median!=null?` Â· ~${pp.remaining_median}Mo`:''}</span>}<span className="text-caption text-muted-blue">{open?'â–¾':'â–¸'}</span></div>
       </button>
       {open&&<div className="px-3 pb-3">
         {indVal!=null&&<div className="flex items-center justify-between text-caption font-mono mt-2" style={{fontSize:'10px'}}><span style={{color:COLORS.mutedBlue}}>{meta.indicator}: {fmtVal(indVal,meta.unit)}<span style={{color:velColor(vel)}}>{velArrow(vel)}</span></span><span style={{color:COLORS.fadedBlue}}>{conf!=null?`${conf}%`:''}</span></div>}
-        {phaseData?.danger_zone?.zone_name&&<div className="text-caption mt-1 px-2 py-1 rounded" style={{backgroundColor:inDanger?`${COLORS.signalRed}15`:`${COLORS.signalOrange}10`,color:inDanger?COLORS.signalRed:COLORS.signalOrange}}>{inDanger?'⚠ IN ZONE: ':'→ '}{phaseData.danger_zone.zone_name}</div>}
+        {phaseData?.danger_zone?.zone_name&&<div className="text-caption mt-1 px-2 py-1 rounded" style={{backgroundColor:inDanger?`${COLORS.signalRed}15`:`${COLORS.signalOrange}10`,color:inDanger?COLORS.signalRed:COLORS.signalOrange}}>{inDanger?'âš  IN ZONE: ':'â†’ '}{phaseData.danger_zone.zone_name}</div>}
         {cycleId!=='POLITICAL'&&<PhaseLifecycleChart chartData={chartData}/>}
         {cycleId==='POLITICAL'&&<PoliticalChart/>}
         <CycleExplanation cycleId={cycleId} phaseData={phaseData} transData={transData}/>
@@ -426,21 +426,21 @@ function CycleCard({cycleId,phaseData,chartData,transData}){
 
 function PoliticalChart(){
   const yr=new Date().getFullYear();const data=[];for(let y=yr-12;y<=yr+4;y++){const cy=((y-2025)%4+4)%4+1;data.push({date:String(y),value:{1:6.5,2:4.2,3:16.3,4:7.5}[cy]});}
-  return(<div className="mt-3"><ResponsiveContainer width="100%" height={150}><LineChart data={data} margin={{top:5,right:10,left:0,bottom:5}}><CartesianGrid strokeDasharray="3 3" stroke="#1a2a44"/><XAxis dataKey="date" tick={{fill:COLORS.mutedBlue,fontSize:10}} interval={1}/><YAxis tick={{fill:COLORS.mutedBlue,fontSize:10}} tickFormatter={v=>`${v}%`}/><Tooltip content={<ChartTooltip/>}/><ReferenceLine x={String(yr)} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{value:'JETZT',fill:COLORS.iceWhite,fontSize:10,position:'top'}}/><Line type="monotone" dataKey="value" stroke={COLORS.signalYellow} strokeWidth={2} dot={{r:3,fill:COLORS.signalYellow}} name="Ø Return %"/></LineChart></ResponsiveContainer></div>);
+  return(<div className="mt-3"><ResponsiveContainer width="100%" height={150}><LineChart data={data} margin={{top:5,right:10,left:0,bottom:5}}><CartesianGrid strokeDasharray="3 3" stroke="#1a2a44"/><XAxis dataKey="date" tick={{fill:COLORS.mutedBlue,fontSize:10}} interval={1}/><YAxis tick={{fill:COLORS.mutedBlue,fontSize:10}} tickFormatter={v=>`${v}%`}/><Tooltip content={<ChartTooltip/>}/><ReferenceLine x={String(yr)} stroke={COLORS.iceWhite} strokeDasharray="4 4" strokeWidth={1.5} label={{value:'JETZT',fill:COLORS.iceWhite,fontSize:10,position:'top'}}/><Line type="monotone" dataKey="value" stroke={COLORS.signalYellow} strokeWidth={2} dot={{r:3,fill:COLORS.signalYellow}} name="Ã˜ Return %"/></LineChart></ResponsiveContainer></div>);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NARRATIVE (V5.2 — kein "KI")
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// NARRATIVE (V5.2 â€” kein "KI")
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function CycleNarrative({transData}){
   const n=transData?.cycle_narrative;if(!n?.text)return null;
-  return(<GlassCard><Section title="Zyklen-Analyse" defaultOpen={true}><InfoToggle>Wöchentliche Zusammenfassung aller Zyklen-Berechnungen. Destilliert Phase Positions, Cascade Speed, V16 Transition und historische Analogien in eine verständliche Einschätzung.</InfoToggle><div className="px-4 py-3 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${COLORS.baldurBlue||'#4A90D9'}`}}><div className="text-sm text-ice-white" style={{lineHeight:'1.7',whiteSpace:'pre-line'}}>{n.text}</div><div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10"><span className="text-caption text-muted-blue font-mono" style={{fontSize:'9px'}}>{n.word_count} Wörter</span><span className="text-caption text-muted-blue font-mono" style={{fontSize:'9px'}}>{n.generated_at?new Date(n.generated_at).toLocaleString('de-DE'):''}</span></div></div></Section></GlassCard>);
+  return(<GlassCard><Section title="Zyklen-Analyse" defaultOpen={true}><InfoToggle>WÃ¶chentliche Zusammenfassung aller Zyklen-Berechnungen. Destilliert Phase Positions, Cascade Speed, V16 Transition und historische Analogien in eine verstÃ¤ndliche EinschÃ¤tzung.</InfoToggle><div className="px-4 py-3 rounded" style={{backgroundColor:'#0d1f38',borderLeft:`3px solid ${COLORS.baldurBlue||'#4A90D9'}`}}><div className="text-sm text-ice-white" style={{lineHeight:'1.7',whiteSpace:'pre-line'}}>{n.text}</div><div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10"><span className="text-caption text-muted-blue font-mono" style={{fontSize:'9px'}}>{n.word_count} WÃ¶rter</span><span className="text-caption text-muted-blue font-mono" style={{fontSize:'9px'}}>{n.generated_at?new Date(n.generated_at).toLocaleString('de-DE'):''}</span></div></div></Section></GlassCard>);
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export default function CyclesDetail({dashboard}){
   const cy=dashboard?.cycles;const[chartDataAll,setChartDataAll]=useState(null);const[condReturnsData,setCondReturnsData]=useState(null);
@@ -460,19 +460,18 @@ export default function CyclesDetail({dashboard}){
   return(
     <div className="space-y-4">
       <GlassCard>
-        <div className="flex items-center justify-between mb-4"><span className="text-label uppercase tracking-wider text-muted-blue">🔄 Cycle Alignment Dashboard</span><span className="text-caption text-muted-blue">{cy.date}</span></div>
-        <div className="flex items-center justify-between mb-4"><div><span className="text-4xl font-mono font-bold" style={{color:labelColor}}>{score}</span><span className="text-xl text-muted-blue font-mono">/10</span><span className="ml-3 px-2 py-1 rounded text-sm font-semibold" style={{backgroundColor:`${labelColor}20`,color:labelColor}}>{label}</span></div><div className="text-right"><div className="text-caption text-muted-blue">V16 Regime</div><div className="text-sm font-mono text-ice-white">{cy.current_regime||'—'}</div></div></div>
+        <div className="flex items-center justify-between mb-4"><span className="text-label uppercase tracking-wider text-muted-blue">ðŸ”„ Cycle Alignment Dashboard</span><span className="text-caption text-muted-blue">{cy.date}</span></div>
+        <div className="flex items-center justify-between mb-4"><div><span className="text-4xl font-mono font-bold" style={{color:labelColor}}>{score}</span><span className="text-xl text-muted-blue font-mono">/10</span><span className="ml-3 px-2 py-1 rounded text-sm font-semibold" style={{backgroundColor:`${labelColor}20`,color:labelColor}}>{label}</span></div><div className="text-right"><div className="text-caption text-muted-blue">V16 Regime</div><div className="text-sm font-mono text-ice-white">{cy.current_regime||'â€”'}</div></div></div>
         <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-3">{cy.bullish>0&&<div style={{flex:cy.bullish,backgroundColor:COLORS.signalGreen}}/>}{cy.neutral>0&&<div style={{flex:cy.neutral,backgroundColor:COLORS.fadedBlue}}/>}{cy.bearish>0&&<div style={{flex:cy.bearish,backgroundColor:COLORS.signalRed}}/>}</div>
-        <div className="flex justify-between text-caption"><span style={{color:COLORS.signalGreen}}>● {cy.bullish||0} Bullish</span><span style={{color:COLORS.fadedBlue}}>● {cy.neutral||0} Neutral</span><span style={{color:COLORS.signalRed}}>● {cy.bearish||0} Bearish</span></div>
-        {dzCount>0&&<div className="mt-3 px-3 py-2 rounded text-sm" style={{backgroundColor:`${COLORS.signalOrange}15`,color:COLORS.signalOrange}}>⚠ {dzCount} Danger Zone{dzCount>1?'s':''} aktiv</div>}
+        <div className="flex justify-between text-caption"><span style={{color:COLORS.signalGreen}}>â— {cy.bullish||0} Bullish</span><span style={{color:COLORS.fadedBlue}}>â— {cy.neutral||0} Neutral</span><span style={{color:COLORS.signalRed}}>â— {cy.bearish||0} Bearish</span></div>
+        {dzCount>0&&<div className="mt-3 px-3 py-2 rounded text-sm" style={{backgroundColor:`${COLORS.signalOrange}15`,color:COLORS.signalOrange}}>âš  {dzCount} Danger Zone{dzCount>1?'s':''} aktiv</div>}
         {cy.one_liner&&<div className="mt-3 text-caption text-muted-blue font-mono">{cy.one_liner}</div>}
         {loading&&<div className="mt-2 text-caption text-muted-blue">Lade Daten...</div>}
         {error&&<div className="mt-2 text-caption" style={{color:COLORS.signalOrange}}>Fehler: {error}</div>}
       </GlassCard>
 
       {transData&&<ExecutiveSummary transData={transData} regimeData={regimeData} condReturnsData={condReturnsData}/>}
-      {transData&&<ThreatLevelBlock transData={transData} regimeData={regimeData}/>}
-      {transData&&<CascadeChain transData={transData}/>}
+            {transData&&<CascadeChain transData={transData}/>}
       {transData&&<PhasePositionBars transData={transData}/>}
       {transData&&<CascadeTimeline transData={transData}/>}
       {regimeData&&<RegimeHeatmap regimeData={regimeData} condReturnsData={condReturnsData}/>}
@@ -481,16 +480,16 @@ export default function CyclesDetail({dashboard}){
       {regimeData&&<AnaloguesTimeline regimeData={regimeData}/>}
       {regimeData&&<CrashVsCorrection regimeData={regimeData}/>}
 
-      <GlassCard><Section title="Tier 1 — Strukturelle Zyklen" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===1).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
-      <GlassCard><Section title="Tier 2 — Zyklische Indikatoren" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===2).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
-      <GlassCard><Section title="Tier 3 — Ergänzende Indikatoren" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===3).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
+      <GlassCard><Section title="Tier 1 â€” Strukturelle Zyklen" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===1).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
+      <GlassCard><Section title="Tier 2 â€” Zyklische Indikatoren" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===2).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
+      <GlassCard><Section title="Tier 3 â€” ErgÃ¤nzende Indikatoren" defaultOpen={true}>{CYCLE_ORDER.filter(id=>CYCLE_META[id]?.tier===3).map(id=><CycleCard key={id} cycleId={id} phaseData={phases[id]} chartData={chartCycles[id]} transData={transData}/>)}</Section></GlassCard>
 
       {transData&&<CycleNarrative transData={transData}/>}
 
-      <GlassCard><Section title="V16 Alignment — Stimmen die Zyklen mit dem Handelssystem überein?" defaultOpen={false}>
-        <InfoToggle>✅ = Zyklus bestätigt V16. ❌ = Zyklus widerspricht V16. Wenn viele divergieren, steigt das Risiko dass V16 den Modus wechselt.</InfoToggle>
+      <GlassCard><Section title="V16 Alignment â€” Stimmen die Zyklen mit dem Handelssystem Ã¼berein?" defaultOpen={false}>
+        <InfoToggle>âœ… = Zyklus bestÃ¤tigt V16. âŒ = Zyklus widerspricht V16. Wenn viele divergieren, steigt das Risiko dass V16 den Modus wechselt.</InfoToggle>
         <div className="space-y-1">{CYCLE_ORDER.map(id=>{const cp=phases[id]||{};const al=cp.v16_alignment||'NEUTRAL';const ph=cp.phase||'UNKNOWN';const pc=CYCLE_PHASE_COLORS[ph]||COLORS.fadedBlue;
-          return(<div key={id} className="flex items-center justify-between py-1 border-b border-white/5"><span className="text-caption text-ice-white font-mono">{CYCLE_META[id]?.icon} {cycleName(id).split(' ')[0]}</span><span className="text-caption font-mono" style={{color:pc}}>{phaseLabel(ph)}</span><span className="text-caption" style={{color:al==='ALIGNED'?COLORS.signalGreen:al==='DIVERGED'?COLORS.signalRed:COLORS.mutedBlue}}>{al==='ALIGNED'?'✅ Bestätigt':al==='DIVERGED'?'❌ Widerspricht':'➖ Neutral'}</span></div>);
+          return(<div key={id} className="flex items-center justify-between py-1 border-b border-white/5"><span className="text-caption text-ice-white font-mono">{CYCLE_META[id]?.icon} {cycleName(id).split(' ')[0]}</span><span className="text-caption font-mono" style={{color:pc}}>{phaseLabel(ph)}</span><span className="text-caption" style={{color:al==='ALIGNED'?COLORS.signalGreen:al==='DIVERGED'?COLORS.signalRed:COLORS.mutedBlue}}>{al==='ALIGNED'?'âœ… BestÃ¤tigt':al==='DIVERGED'?'âŒ Widerspricht':'âž– Neutral'}</span></div>);
         })}</div>
       </Section></GlassCard>
     </div>
