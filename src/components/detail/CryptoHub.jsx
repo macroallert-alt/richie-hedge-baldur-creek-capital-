@@ -233,14 +233,10 @@ function CIOTab({
   const phaseColor = CRYPTO_PHASE_COLORS[phase] || COLORS.mutedBlue;
   const actionColor = CRYPTO_ACTION_COLORS[action] || COLORS.mutedBlue;
 
-  // Build executive summary text
   const onCount = Object.values(mom).filter(Boolean).length;
   const momOnList = Object.entries(mom).filter(([, v]) => v).map(([k]) => k).join(', ');
-  const momOffList = Object.entries(mom).filter(([, v]) => !v).map(([k]) => k).join(', ');
   const wmaDistance = (btcPrice && wma200) ? ((btcPrice / wma200 - 1) * 100).toFixed(0) : null;
   const cashPct = alloc.cash != null ? (alloc.cash * 100).toFixed(0) : null;
-  const yieldEstLow = alloc.cash != null ? (alloc.cash * 3).toFixed(1) : null;
-  const yieldEstHigh = alloc.cash != null ? (alloc.cash * 8).toFixed(1) : null;
 
   return (
     <div className="space-y-4">
@@ -269,7 +265,6 @@ function CIOTab({
         </div>
         <div className="px-3 py-3 rounded" style={{ backgroundColor: `${ensColor}08`, borderLeft: `3px solid ${ensColor}` }}>
           <div className="text-sm text-ice-white" style={{ lineHeight: '1.9' }}>
-            {/* Satz 1: BTC + Ensemble */}
             <div className="mb-2">
               <strong style={{ color: CRYPTO_ASSET_COLORS.BTC }}>BTC bei {fmtUsd(btcPrice)}</strong> — Ensemble{' '}
               <strong style={{ color: ensColor }}>{ensemble != null ? ensemble.toFixed(2) : '—'}</strong>{' '}
@@ -278,7 +273,6 @@ function CIOTab({
               System hält <strong style={{ color: COLORS.iceWhite }}>{fmtPct(alloc.total)}</strong> investiert.
             </div>
 
-            {/* Satz 2: Allokation */}
             <div className="mb-2">
               Aufgeteilt in{' '}
               <strong style={{ color: CRYPTO_ASSET_COLORS.BTC }}>BTC {fmtPct(alloc.btc)}</strong>,{' '}
@@ -286,15 +280,12 @@ function CIOTab({
               <strong style={{ color: CRYPTO_ASSET_COLORS.SOL }}>SOL {fmtPct(alloc.sol)}</strong>.{' '}
               {cashPct && Number(cashPct) > 0 && (
                 <>
-                  Die verbleibenden <strong style={{ color: COLORS.signalYellow }}>{cashPct}% Cash</strong> werden in{' '}
-                  <strong style={{ color: COLORS.signalYellow }}>Stablecoin-Lending</strong> deployed (Aave, Morpho o.ä.){' '}
-                  — geschätzte Zusatzrendite{' '}
-                  <strong style={{ color: COLORS.signalGreen }}>{yieldEstLow}–{yieldEstHigh}% APY</strong> auf den Cash-Anteil.
+                  Verbleibende <strong>{cashPct}% Cash</strong> — sollten in Stablecoin-Yield
+                  deployed werden (Tokenized T-Bills + DeFi Lending).
                 </>
               )}
             </div>
 
-            {/* Satz 3: Phase */}
             <div className="mb-2">
               <strong style={{ color: phaseColor }}>{CRYPTO_PHASE_LABELS[phase]}</strong>.{' '}
               BTC Dominanz bei {btcD != null ? `${btcD.toFixed(1)}%` : '—'}
@@ -302,7 +293,6 @@ function CIOTab({
               {p4Warning && <span style={{ color: COLORS.signalRed }}>⚠ Altseason-Warnung aktiv — Allokation um 40% reduziert. </span>}
             </div>
 
-            {/* Satz 4: 200WMA */}
             <div className="mb-2">
               200-Wochen-MA bei {fmtUsd(wma200)} —{' '}
               {belowWma ? (
@@ -312,7 +302,6 @@ function CIOTab({
               )}.
             </div>
 
-            {/* Satz 5: Action */}
             <div>
               Nächstes Rebalancing:{' '}
               <strong style={{ color: actionColor }}>{action}</strong>
@@ -350,22 +339,42 @@ function CIOTab({
           </div>
         </div>
 
-        {/* Allokation Visual */}
+        {/* Allokation Balken — BTC/ETH/SOL/Cash (Cash bleibt Cash) */}
         <div className="mb-3">
           <div className="text-caption text-muted-blue mb-1">Gesamt-Allokation: {fmtPct(alloc.total)}</div>
           <div className="flex gap-0.5 h-6 rounded-full overflow-hidden">
             {alloc.btc > 0 && <div style={{ flex: alloc.btc, backgroundColor: CRYPTO_ASSET_COLORS.BTC }} title={`BTC ${fmtPct(alloc.btc)}`} />}
             {alloc.eth > 0 && <div style={{ flex: alloc.eth, backgroundColor: CRYPTO_ASSET_COLORS.ETH }} title={`ETH ${fmtPct(alloc.eth)}`} />}
             {alloc.sol > 0 && <div style={{ flex: alloc.sol, backgroundColor: CRYPTO_ASSET_COLORS.SOL }} title={`SOL ${fmtPct(alloc.sol)}`} />}
-            {alloc.cash > 0 && <div style={{ flex: alloc.cash, backgroundColor: COLORS.signalYellow + '80' }} title={`Yield ${fmtPct(alloc.cash)}`} />}
+            {alloc.cash > 0 && <div style={{ flex: alloc.cash, backgroundColor: CRYPTO_ASSET_COLORS.CASH }} title={`Cash ${fmtPct(alloc.cash)}`} />}
           </div>
           <div className="flex justify-between text-caption mt-1">
             <span style={{ color: CRYPTO_ASSET_COLORS.BTC }}>● BTC {fmtPct(alloc.btc)}</span>
             <span style={{ color: CRYPTO_ASSET_COLORS.ETH }}>● ETH {fmtPct(alloc.eth)}</span>
             <span style={{ color: CRYPTO_ASSET_COLORS.SOL }}>● SOL {fmtPct(alloc.sol)}</span>
-            <span style={{ color: COLORS.signalYellow }}>● Yield {fmtPct(alloc.cash)}</span>
+            <span style={{ color: CRYPTO_ASSET_COLORS.CASH }}>● Cash {fmtPct(alloc.cash)}</span>
           </div>
         </div>
+
+        {/* Cash Yield Deployment Hinweis */}
+        {alloc.cash > 0.01 && (
+          <div className="mb-3">
+            <div className="text-caption text-muted-blue mb-1">Cash Yield-Deployment:</div>
+            <div className="flex gap-0.5 h-4 rounded-full overflow-hidden">
+              <div style={{ flex: 0.30, backgroundColor: COLORS.fadedBlue }} title="T0: Halten (liquid)" />
+              <div style={{ flex: 0.50, backgroundColor: COLORS.signalYellow + '80' }} title="T1: Tokenized T-Bills" />
+              <div style={{ flex: 0.20, backgroundColor: COLORS.signalGreen + '60' }} title="T2: DeFi Lending" />
+            </div>
+            <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px' }}>
+              <span style={{ color: COLORS.fadedBlue }}>● T0 Liquid 30%</span>
+              <span style={{ color: COLORS.signalYellow }}>● T1 T-Bills 50%</span>
+              <span style={{ color: COLORS.signalGreen }}>● T2 Lending 20%</span>
+            </div>
+            <div className="text-caption text-muted-blue mt-1" style={{ fontSize: '9px' }}>
+              Yield Router in Vorbereitung — Regime-abhängige Verteilung (T0/T1/T2) wird automatisiert.
+            </div>
+          </div>
+        )}
 
         {/* Action Badge */}
         <div className="flex items-center justify-between">
@@ -382,18 +391,39 @@ function CIOTab({
         </div>
       </GlassCard>
 
-      {/* Stablecoin Yield Info */}
-      {alloc.cash > 0 && (
+      {/* Stablecoin Yield Info Card */}
+      {alloc.cash > 0.01 && (
         <GlassCard>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-label uppercase tracking-wider" style={{ color: COLORS.signalYellow }}>💰 Stablecoin Yield</span>
+            <span className="text-label uppercase tracking-wider" style={{ color: COLORS.signalYellow }}>💰 Cash Yield-Empfehlung</span>
           </div>
           <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalYellow}08`, borderLeft: `3px solid ${COLORS.signalYellow}` }}>
             <div className="text-sm text-ice-white" style={{ lineHeight: '1.7' }}>
-              <strong style={{ color: COLORS.signalYellow }}>{fmtPct(alloc.cash)}</strong> des Portfolios in Stablecoin-Lending deployen.{' '}
-              Protokolle: Aave, Morpho, Spark, oder vergleichbar.{' '}
-              Geschätzte Zusatzrendite: <strong style={{ color: COLORS.signalGreen }}>3–8% APY</strong> auf den Cash-Anteil{' '}
-              = <strong>{yieldEstLow}–{yieldEstHigh}pp</strong> zusätzliche Portfolio-Rendite.
+              <strong>{cashPct}% Cash</strong> sollten nicht idle bleiben. Empfohlene Strategie:
+            </div>
+            <div className="mt-2 space-y-1.5">
+              <div className="flex items-center gap-2 text-caption">
+                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+                  style={{ backgroundColor: `${COLORS.fadedBlue}30`, color: COLORS.fadedBlue }}>T0</span>
+                <span className="text-ice-white font-mono flex-1">~30% Liquid halten</span>
+                <span className="text-muted-blue">USDC + USDT im Wallet, sofort verfügbar</span>
+              </div>
+              <div className="flex items-center gap-2 text-caption">
+                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+                  style={{ backgroundColor: `${COLORS.signalYellow}30`, color: COLORS.signalYellow }}>T1</span>
+                <span className="text-ice-white font-mono flex-1">~50% Tokenized T-Bills</span>
+                <span className="text-muted-blue">USDY (Ondo), sDAI (Maker) — 3.5-4.5% APY</span>
+              </div>
+              <div className="flex items-center gap-2 text-caption">
+                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+                  style={{ backgroundColor: `${COLORS.signalGreen}30`, color: COLORS.signalGreen }}>T2</span>
+                <span className="text-ice-white font-mono flex-1">~20% DeFi Lending</span>
+                <span className="text-muted-blue">Aave, Compound, Spark — 2-4% APY</span>
+              </div>
+            </div>
+            <div className="mt-3 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
+              Verteilung ist Regime-abhängig (Ensemble bestimmt wie viel liquid bleibt).
+              Yield Router wird konkrete Pool-Empfehlungen liefern.
             </div>
           </div>
         </GlassCard>
