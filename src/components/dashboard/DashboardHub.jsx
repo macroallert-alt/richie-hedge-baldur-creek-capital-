@@ -14,6 +14,7 @@ import DisruptionsCard from '@/components/dashboard/DisruptionsCard';
 import CyclesCard from '@/components/dashboard/CyclesCard';
 import SecularTrendsCard from '@/components/dashboard/SecularTrendsCard';
 import ThesenCard from '@/components/dashboard/ThesenCard';
+import CryptoCard from '@/components/dashboard/CryptoCard';
 
 export default function DashboardHub({ dashboard, onNavigate }) {
   if (!dashboard) return null;
@@ -27,6 +28,7 @@ export default function DashboardHub({ dashboard, onNavigate }) {
       <PortfolioCard dashboard={dashboard} onNavigate={onNavigate} />
       <SignalsCard dashboard={dashboard} onNavigate={onNavigate} />
       <RotationCard dashboard={dashboard} onNavigate={onNavigate} />
+      <CryptoCard dashboard={dashboard} onNavigate={onNavigate} />
       <LayerScoresCard dashboard={dashboard} onNavigate={onNavigate} />
       <IntelCard dashboard={dashboard} onNavigate={onNavigate} />
       <div className="lg:col-span-2">

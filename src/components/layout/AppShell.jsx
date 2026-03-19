@@ -22,6 +22,7 @@ import BriefingDetail from '@/components/detail/BriefingDetail';
 import CyclesDetail from '@/components/detail/CyclesDetail';
 import SecularTrendsDetail from '@/components/detail/SecularTrendsDetail';
 import ThesenDetail from '@/components/detail/ThesenDetail';
+import CryptoHub from '@/components/detail/CryptoHub';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -46,6 +47,7 @@ const PAGE_COMPONENTS = {
   cycles: CyclesDetail,
   secular: SecularTrendsDetail,
   theses: ThesenDetail,
+  crypto: CryptoHub,
   settings: SettingsPage,
 };
 

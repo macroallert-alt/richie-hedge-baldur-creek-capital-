@@ -296,6 +296,7 @@ export const CIRCLES = [
   { id: 'cycles', name: 'Cycles', icon: 'TrendingUp', route: '/cycles' },
   { id: 'secular', name: 'Säkulare', icon: 'Activity', route: '/secular' },
   { id: 'theses', name: 'Thesen', icon: 'Lightbulb', route: '/theses' },
+  { id: 'crypto', name: 'Crypto', icon: 'Bitcoin', route: '/crypto' },
 ];
 
 // ===== DISRUPTION PHASE → COLOR =====
@@ -483,4 +484,68 @@ export const DANGER_ZONE_COLORS = {
   EUPHORIA:             COLORS.signalYellow,
   WEAK_PERIOD:          COLORS.signalYellow,
   EARNINGS_RECESSION:   COLORS.signalOrange,
+};
+
+// =====================================================================
+// CRYPTO CIRCLE (Circle 17 — V8+Warn System)
+// =====================================================================
+
+// ===== CRYPTO ENSEMBLE LEVEL → COLOR =====
+export function getCryptoEnsembleColor(ensemble) {
+  if (ensemble >= 1.00) return COLORS.signalGreen;
+  if (ensemble >= 0.75) return COLORS.signalGreen;
+  if (ensemble >= 0.50) return COLORS.signalYellow;
+  if (ensemble >= 0.25) return COLORS.signalOrange;
+  return COLORS.signalRed;
+}
+
+// ===== CRYPTO TRICKLE-DOWN PHASE → COLOR + LABEL =====
+export const CRYPTO_PHASE_COLORS = {
+  1: COLORS.signalGreen,    // BTC_FIRST
+  2: COLORS.baldurBlue,     // NEUTRAL_FLOW
+  3: COLORS.signalYellow,   // ALT_ROTATION
+  4: COLORS.signalRed,      // ALT_OVERHEATED
+};
+
+export const CRYPTO_PHASE_NAMES = {
+  1: 'BTC_FIRST',
+  2: 'NEUTRAL_FLOW',
+  3: 'ALT_ROTATION',
+  4: 'ALT_OVERHEATED',
+};
+
+export const CRYPTO_PHASE_LABELS = {
+  1: 'BTC First — Kapital fließt in BTC',
+  2: 'Neutral Flow — Kein klarer Fluss',
+  3: 'Alt Rotation — Kapital rotiert in Alts',
+  4: 'Alt Overheated — Altseason überhitzt',
+};
+
+// ===== CRYPTO TIER WEIGHTS PER PHASE =====
+export const CRYPTO_TIER_WEIGHTS = {
+  1: { BTC: 0.70, ETH: 0.25, SOL: 0.05 },
+  2: { BTC: 0.45, ETH: 0.35, SOL: 0.20 },
+  3: { BTC: 0.25, ETH: 0.35, SOL: 0.40 },
+  4: { BTC: 0.25, ETH: 0.35, SOL: 0.40 },
+};
+
+// ===== CRYPTO ASSET COLORS (for charts/bars) =====
+export const CRYPTO_ASSET_COLORS = {
+  BTC: '#F7931A',   // Bitcoin Orange
+  ETH: '#627EEA',   // Ethereum Blue
+  SOL: '#9945FF',   // Solana Purple
+  CASH: COLORS.fadedBlue,
+};
+
+// ===== CRYPTO ACTION → COLOR =====
+export const CRYPTO_ACTION_COLORS = {
+  REBALANCE: COLORS.signalYellow,
+  HOLD: COLORS.signalGreen,
+};
+
+// ===== CRYPTO ALERT SEVERITY → COLOR =====
+export const CRYPTO_ALERT_SEVERITY_COLORS = {
+  HIGH: COLORS.signalRed,
+  MEDIUM: COLORS.signalOrange,
+  LOW: COLORS.signalYellow,
 };
