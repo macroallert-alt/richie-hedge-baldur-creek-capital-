@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { FileText, Radio, TrendingUp, RefreshCw, PieChart } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import {
   COLORS,
@@ -26,11 +27,11 @@ const DAILY_URL = process.env.NEXT_PUBLIC_CRYPTO_DAILY_URL;
 // ═══════════════════════════════════════════════════════
 
 const TABS = [
-  { id: 'cio', label: 'CIO' },
-  { id: 'signals', label: 'Signals' },
-  { id: 'cycles', label: 'Cycles' },
-  { id: 'rotation', label: 'Rotation' },
-  { id: 'portfolio', label: 'Portfolio' },
+  { id: 'cio', label: 'CIO', icon: FileText },
+  { id: 'signals', label: 'Signals', icon: Radio },
+  { id: 'cycles', label: 'Cycles', icon: TrendingUp },
+  { id: 'rotation', label: 'Rotation', icon: RefreshCw },
+  { id: 'portfolio', label: 'Portfolio', icon: PieChart },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -153,22 +154,36 @@ export default function CryptoHub() {
       {/* Page Title */}
       <h1 className="text-page-title text-center text-ice-white">Crypto Circle</h1>
 
-      {/* Sub-Tab Navigation */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className="px-3 py-1.5 rounded-lg text-sm font-mono whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor: tab === t.id ? `${COLORS.baldurBlue}30` : 'transparent',
-              color: tab === t.id ? COLORS.iceWhite : COLORS.mutedBlue,
-              border: `1px solid ${tab === t.id ? COLORS.baldurBlue : COLORS.fadedBlue}40`,
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Sub-Tab Navigation — Circle Style */}
+      <div className="flex justify-center gap-4 overflow-x-auto pb-1">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          const isActive = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className="flex flex-col items-center gap-1 flex-shrink-0"
+            >
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+                style={{
+                  backgroundColor: isActive ? `${COLORS.baldurBlue}30` : `${COLORS.fadedBlue}15`,
+                  border: `2px solid ${isActive ? COLORS.baldurBlue : COLORS.fadedBlue}50`,
+                  boxShadow: isActive ? `0 0 12px ${COLORS.baldurBlue}25` : 'none',
+                }}
+              >
+                <Icon size={18} style={{ color: isActive ? COLORS.iceWhite : COLORS.mutedBlue }} />
+              </div>
+              <span className="text-caption leading-none" style={{
+                color: isActive ? COLORS.iceWhite : COLORS.mutedBlue,
+                fontSize: '10px',
+              }}>
+                {t.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {loading && <div className="text-caption text-muted-blue text-center">Lade Crypto-Daten...</div>}
