@@ -221,7 +221,7 @@ export default function CryptoHub() {
 }
 
 // ═══════════════════════════════════════════════════════
-// TAB 1: CIO — Zusammenfassung
+// TAB 1: CIO — Executive Summary + Allokation
 // ═══════════════════════════════════════════════════════
 
 function CIOTab({
@@ -232,6 +232,15 @@ function CIOTab({
   const ensColor = getCryptoEnsembleColor(ensemble);
   const phaseColor = CRYPTO_PHASE_COLORS[phase] || COLORS.mutedBlue;
   const actionColor = CRYPTO_ACTION_COLORS[action] || COLORS.mutedBlue;
+
+  // Build executive summary text
+  const onCount = Object.values(mom).filter(Boolean).length;
+  const momOnList = Object.entries(mom).filter(([, v]) => v).map(([k]) => k).join(', ');
+  const momOffList = Object.entries(mom).filter(([, v]) => !v).map(([k]) => k).join(', ');
+  const wmaDistance = (btcPrice && wma200) ? ((btcPrice / wma200 - 1) * 100).toFixed(0) : null;
+  const cashPct = alloc.cash != null ? (alloc.cash * 100).toFixed(0) : null;
+  const yieldEstLow = alloc.cash != null ? (alloc.cash * 3).toFixed(1) : null;
+  const yieldEstHigh = alloc.cash != null ? (alloc.cash * 8).toFixed(1) : null;
 
   return (
     <div className="space-y-4">
@@ -250,13 +259,74 @@ function CIOTab({
         </div>
       )}
 
+      {/* Executive Summary Briefing */}
+      <GlassCard>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-label uppercase tracking-wider text-muted-blue">Executive Summary</span>
+          <span className="text-caption text-muted-blue font-mono">
+            W: {fmtDate(stateDate)} · D: {fmtDate(dailyDate)}
+          </span>
+        </div>
+        <div className="px-3 py-3 rounded" style={{ backgroundColor: `${ensColor}08`, borderLeft: `3px solid ${ensColor}` }}>
+          <div className="text-sm text-ice-white" style={{ lineHeight: '1.9' }}>
+            {/* Satz 1: BTC + Ensemble */}
+            <div className="mb-2">
+              <strong style={{ color: CRYPTO_ASSET_COLORS.BTC }}>BTC bei {fmtUsd(btcPrice)}</strong> — Ensemble{' '}
+              <strong style={{ color: ensColor }}>{ensemble != null ? ensemble.toFixed(2) : '—'}</strong>{' '}
+              ({onCount}/4 Momentum-Signale positiv{momOnList ? `: ${momOnList}` : ''}).{' '}
+              {ensembleChanged && <span style={{ color: COLORS.signalOrange }}>⚡ Signal hat sich seit letzter Woche geändert. </span>}
+              System hält <strong style={{ color: COLORS.iceWhite }}>{fmtPct(alloc.total)}</strong> investiert.
+            </div>
+
+            {/* Satz 2: Allokation */}
+            <div className="mb-2">
+              Aufgeteilt in{' '}
+              <strong style={{ color: CRYPTO_ASSET_COLORS.BTC }}>BTC {fmtPct(alloc.btc)}</strong>,{' '}
+              <strong style={{ color: CRYPTO_ASSET_COLORS.ETH }}>ETH {fmtPct(alloc.eth)}</strong>,{' '}
+              <strong style={{ color: CRYPTO_ASSET_COLORS.SOL }}>SOL {fmtPct(alloc.sol)}</strong>.{' '}
+              {cashPct && Number(cashPct) > 0 && (
+                <>
+                  Die verbleibenden <strong style={{ color: COLORS.signalYellow }}>{cashPct}% Cash</strong> werden in{' '}
+                  <strong style={{ color: COLORS.signalYellow }}>Stablecoin-Lending</strong> deployed (Aave, Morpho o.ä.){' '}
+                  — geschätzte Zusatzrendite{' '}
+                  <strong style={{ color: COLORS.signalGreen }}>{yieldEstLow}–{yieldEstHigh}% APY</strong> auf den Cash-Anteil.
+                </>
+              )}
+            </div>
+
+            {/* Satz 3: Phase */}
+            <div className="mb-2">
+              <strong style={{ color: phaseColor }}>{CRYPTO_PHASE_LABELS[phase]}</strong>.{' '}
+              BTC Dominanz bei {btcD != null ? `${btcD.toFixed(1)}%` : '—'}
+              {btcDChange != null && <> ({btcDChange >= 0 ? '+' : ''}{btcDChange.toFixed(1)}pp 30d)</>}.{' '}
+              {p4Warning && <span style={{ color: COLORS.signalRed }}>⚠ Altseason-Warnung aktiv — Allokation um 40% reduziert. </span>}
+            </div>
+
+            {/* Satz 4: 200WMA */}
+            <div className="mb-2">
+              200-Wochen-MA bei {fmtUsd(wma200)} —{' '}
+              {belowWma ? (
+                <strong style={{ color: COLORS.signalOrange }}>BTC UNTER 200WMA → Bottom Bonus aktiv (+50pp Allokation)</strong>
+              ) : (
+                <span>BTC {wmaDistance}% darüber, kein Bottom Bonus</span>
+              )}.
+            </div>
+
+            {/* Satz 5: Action */}
+            <div>
+              Nächstes Rebalancing:{' '}
+              <strong style={{ color: actionColor }}>{action}</strong>
+              {action === 'HOLD' && ' — alle Positionen innerhalb der NO-ACTION Band (±10pp).'}
+              {action === 'REBALANCE' && ' — Positionen adjustieren am Montag nach Signal.'}
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Ensemble + Phase Hero */}
       <GlassCard>
         <div className="flex items-center justify-between mb-4">
           <span className="text-label uppercase tracking-wider text-muted-blue">₿ Crypto Allokation</span>
-          <span className="text-caption text-muted-blue font-mono">
-            W: {fmtDate(stateDate)} · D: {fmtDate(dailyDate)}
-          </span>
         </div>
 
         <div className="flex items-center justify-between mb-4">
@@ -287,13 +357,13 @@ function CIOTab({
             {alloc.btc > 0 && <div style={{ flex: alloc.btc, backgroundColor: CRYPTO_ASSET_COLORS.BTC }} title={`BTC ${fmtPct(alloc.btc)}`} />}
             {alloc.eth > 0 && <div style={{ flex: alloc.eth, backgroundColor: CRYPTO_ASSET_COLORS.ETH }} title={`ETH ${fmtPct(alloc.eth)}`} />}
             {alloc.sol > 0 && <div style={{ flex: alloc.sol, backgroundColor: CRYPTO_ASSET_COLORS.SOL }} title={`SOL ${fmtPct(alloc.sol)}`} />}
-            {alloc.cash > 0 && <div style={{ flex: alloc.cash, backgroundColor: CRYPTO_ASSET_COLORS.CASH }} title={`Cash ${fmtPct(alloc.cash)}`} />}
+            {alloc.cash > 0 && <div style={{ flex: alloc.cash, backgroundColor: COLORS.signalYellow + '80' }} title={`Yield ${fmtPct(alloc.cash)}`} />}
           </div>
           <div className="flex justify-between text-caption mt-1">
             <span style={{ color: CRYPTO_ASSET_COLORS.BTC }}>● BTC {fmtPct(alloc.btc)}</span>
             <span style={{ color: CRYPTO_ASSET_COLORS.ETH }}>● ETH {fmtPct(alloc.eth)}</span>
             <span style={{ color: CRYPTO_ASSET_COLORS.SOL }}>● SOL {fmtPct(alloc.sol)}</span>
-            <span style={{ color: CRYPTO_ASSET_COLORS.CASH }}>● Cash {fmtPct(alloc.cash)}</span>
+            <span style={{ color: COLORS.signalYellow }}>● Yield {fmtPct(alloc.cash)}</span>
           </div>
         </div>
 
@@ -311,6 +381,23 @@ function CIOTab({
           )}
         </div>
       </GlassCard>
+
+      {/* Stablecoin Yield Info */}
+      {alloc.cash > 0 && (
+        <GlassCard>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-label uppercase tracking-wider" style={{ color: COLORS.signalYellow }}>💰 Stablecoin Yield</span>
+          </div>
+          <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalYellow}08`, borderLeft: `3px solid ${COLORS.signalYellow}` }}>
+            <div className="text-sm text-ice-white" style={{ lineHeight: '1.7' }}>
+              <strong style={{ color: COLORS.signalYellow }}>{fmtPct(alloc.cash)}</strong> des Portfolios in Stablecoin-Lending deployen.{' '}
+              Protokolle: Aave, Morpho, Spark, oder vergleichbar.{' '}
+              Geschätzte Zusatzrendite: <strong style={{ color: COLORS.signalGreen }}>3–8% APY</strong> auf den Cash-Anteil{' '}
+              = <strong>{yieldEstLow}–{yieldEstHigh}pp</strong> zusätzliche Portfolio-Rendite.
+            </div>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Key Metrics Grid */}
       <GlassCard>
