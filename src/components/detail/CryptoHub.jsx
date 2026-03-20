@@ -279,6 +279,8 @@ function CIOTab({
   const cioCap = parseFloat(loadSaved('bcc_crypto_capital', '') || '0');
   const cioCashEur = cioCap > 0 ? cioCap * (alloc.cash || 0.75) : (yieldData?.inputs?.cash_eur || 0);
   const yieldAnnual = cioCashEur * (yieldApy || 0) / 100;
+  const cioBackendCash = yieldData?.inputs?.cash_eur || 7500;
+  const cioScale = cioBackendCash > 0 ? cioCashEur / cioBackendCash : 1;
 
   return (
     <div className="space-y-4">
@@ -462,21 +464,21 @@ function CIOTab({
                     <div key={`t0-${i}`} className="flex items-center gap-2 text-caption">
                       <TierBadge tier="T0" />
                       <span className="text-ice-white font-mono flex-1">{p.coin} {(p.weight * 100).toFixed(0)}%</span>
-                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} — liquid im Wallet</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur * cioScale)} — liquid im Wallet</span>
                     </div>
                   ))}
                   {(yieldData.recommendations?.T1 || []).map((p, i) => (
                     <div key={`t1-${i}`} className="flex items-center gap-2 text-caption">
                       <TierBadge tier="T1" />
                       <span className="text-ice-white font-mono flex-1">{p.product} {(p.weight * 100).toFixed(0)}%</span>
-                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} @ {p.apy?.toFixed(2)}% ({p.apy_source})</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur * cioScale)} @ {p.apy?.toFixed(2)}% ({p.apy_source})</span>
                     </div>
                   ))}
                   {(yieldData.recommendations?.T2 || []).map((p, i) => (
                     <div key={`t2-${i}`} className="flex items-center gap-2 text-caption">
                       <TierBadge tier="T2" />
                       <span className="text-ice-white font-mono flex-1">{p.project} {p.coin}</span>
-                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} @ {p.risk_adj_apy?.toFixed(2)}%</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur * cioScale)} @ {p.risk_adj_apy?.toFixed(2)}%</span>
                     </div>
                   ))}
                 </>
