@@ -1202,6 +1202,30 @@ function YieldTab({ yieldData, alloc }) {
         </GlassCard>
       )}
 
+      {/* Hero: Gesamt-Investition + Yield */}
+      <GlassCard>
+        <div className="flex items-stretch gap-3">
+          <div className="flex-1 rounded-lg px-4 py-3 text-center" style={{ backgroundColor: `${COLORS.baldurBlue}15` }}>
+            <div className="text-caption text-muted-blue mb-1">Gesamt-Investition</div>
+            <div className="text-2xl font-mono font-bold text-ice-white">
+              {fmtEur(usingUserCapital ? userCapital : (inputs.total_capital_eur || 0))}
+            </div>
+            <div className="text-caption text-muted-blue mt-1">
+              davon {fmtPct(cashPct)} Cash = {fmtEur(realCash)}
+            </div>
+          </div>
+          <div className="flex-1 rounded-lg px-4 py-3 text-center" style={{ backgroundColor: `${COLORS.signalGreen}12` }}>
+            <div className="text-caption text-muted-blue mb-1">Yield auf Cash</div>
+            <div className="text-2xl font-mono font-bold" style={{ color: COLORS.signalGreen }}>
+              {fmtEur(annualYield)}<span className="text-sm text-muted-blue">/Jahr</span>
+            </div>
+            <div className="text-caption font-mono mt-1" style={{ color: TIER_COLORS.T1 }}>
+              {apy.weighted_total?.toFixed(2)}% gewichteter APY
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Executive Summary */}
       <GlassCard>
         <div className="flex items-center justify-between mb-3">
