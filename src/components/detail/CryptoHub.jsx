@@ -273,8 +273,12 @@ function CIOTab({
   const hasYield = yieldData && yieldData.regime;
   const yieldRegime = yieldData?.regime;
   const yieldApy = yieldData?.apy?.weighted_total;
-  const yieldAnnual = yieldData?.apy?.annual_yield_eur;
   const tw = yieldData?.tier_weights || {};
+
+  // Scale yield annual to user capital
+  const cioCap = parseFloat(loadSaved('bcc_crypto_capital', '') || '0');
+  const cioCashEur = cioCap > 0 ? cioCap * (alloc.cash || 0.75) : (yieldData?.inputs?.cash_eur || 0);
+  const yieldAnnual = cioCashEur * (yieldApy || 0) / 100;
 
   return (
     <div className="space-y-4">
@@ -418,7 +422,7 @@ function CIOTab({
             </div>
             {hasYield && (
               <div className="text-caption mt-1 font-mono" style={{ fontSize: '9px', color: TIER_COLORS.T1 }}>
-                Gewichteter APY: {yieldApy?.toFixed(2)}% → ~{fmtEur(yieldAnnual || 0)}/Jahr auf {fmtEur(yieldData?.inputs?.cash_eur || 0)} Cash
+                Gewichteter APY: {yieldApy?.toFixed(2)}% → ~{fmtEur(yieldAnnual)}/Jahr auf {fmtEur(cioCashEur)} Cash
               </div>
             )}
           </div>
@@ -1132,6 +1136,10 @@ function YieldTab({ yieldData, alloc }) {
   const yd = yieldData || {};
   const hasData = yd.regime != null;
 
+  // Kapital aus Portfolio Tab (localStorage) lesen
+  const savedCapital = loadSaved('bcc_crypto_capital', '');
+  const userCapital = parseFloat(savedCapital) || 0;
+
   if (!hasData) {
     return (
       <GlassCard>
@@ -1151,10 +1159,49 @@ function YieldTab({ yieldData, alloc }) {
   const t1Products = yd.t1_products || {};
   const basisTrade = yd.basis_trade_info || {};
 
+  // Skalierung: User-Kapital × Cash% statt Backend-Default
+  const cashPct = alloc.cash || inputs.cash_pct || 0.75;
+  const backendCash = inputs.cash_eur || 7500;
+  const realCash = userCapital > 0 ? userCapital * cashPct : backendCash;
+  const scale = backendCash > 0 ? realCash / backendCash : 1;
+  const usingUserCapital = userCapital > 0;
+
+  // Kapital-Tier Warnung wenn User-Kapital in anderem Tier
+  const realCapTier = realCash < 5000 ? 'MICRO' : realCash < 50000 ? 'STANDARD' : 'LARGE';
+  const tierMismatch = usingUserCapital && realCapTier !== yd.capital_tier;
+
+  const annualYield = realCash * (apy.weighted_total || 0) / 100;
+
   const hasDepegIssue = Object.values(depeg).some(d => d.status !== 'OK');
 
   return (
     <div className="space-y-4">
+      {/* Kapital Hinweis */}
+      {!usingUserCapital && (
+        <GlassCard>
+          <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalOrange}10`, borderLeft: `3px solid ${COLORS.signalOrange}` }}>
+            <div className="text-caption" style={{ color: COLORS.signalOrange }}>
+              Kein Kapital hinterlegt — EUR-Beträge basieren auf Backend-Default ({fmtEur(backendCash)} Cash).
+              Im <strong>Portfolio</strong> Tab Kapital eingeben für korrekte Beträge.
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Tier-Mismatch Warnung */}
+      {tierMismatch && (
+        <GlassCard>
+          <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalOrange}10`, borderLeft: `3px solid ${COLORS.signalOrange}` }}>
+            <div className="text-caption" style={{ color: COLORS.signalOrange }}>
+              Dein Cash ({fmtEur(realCash)}) liegt im Kapital-Tier <strong>{realCapTier}</strong>, der Yield Router berechnete mit Tier <strong>{yd.capital_tier}</strong>.
+              {realCapTier === 'MICRO' && ' Bei < €5K: T2 DeFi Lending entfällt (Gas Fees > APY-Vorteil).'}
+              {realCapTier === 'LARGE' && ' Bei ≥ €50K: Multi-Chain T2 Pools (Arbitrum, Base) werden freigeschaltet.'}
+              {' '}Pool-Auswahl kann abweichen — Tier-Gewichte und APYs bleiben korrekt.
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
       {/* Executive Summary */}
       <GlassCard>
         <div className="flex items-center justify-between mb-3">
@@ -1164,11 +1211,11 @@ function YieldTab({ yieldData, alloc }) {
         <div className="px-3 py-3 rounded" style={{ backgroundColor: `${TIER_COLORS.T1}08`, borderLeft: `3px solid ${TIER_COLORS.T1}` }}>
           <div className="text-sm text-ice-white" style={{ lineHeight: '1.8' }}>
             Regime <strong style={{ color: TIER_COLORS.T1 }}>{yd.regime}</strong> (Ensemble {inputs.ensemble?.toFixed(2)}).{' '}
-            Kapital-Tier: <strong>{yd.capital_tier}</strong>.{' '}
-            {fmtEur(inputs.cash_eur || 0)} Cash aufgeteilt in{' '}
+            Kapital-Tier: <strong>{usingUserCapital ? realCapTier : yd.capital_tier}</strong>.{' '}
+            {fmtEur(realCash)} Cash aufgeteilt in{' '}
             T0 {((tw.T0 || 0) * 100).toFixed(0)}% / T1 {((tw.T1 || 0) * 100).toFixed(0)}% / T2 {((tw.T2 || 0) * 100).toFixed(0)}%.{' '}
             Gewichteter APY: <strong style={{ color: COLORS.signalGreen }}>{apy.weighted_total?.toFixed(2)}%</strong>{' '}
-            → ~{fmtEur(apy.annual_yield_eur || 0)}/Jahr.
+            → ~{fmtEur(annualYield)}/Jahr.
           </div>
         </div>
       </GlassCard>
@@ -1184,17 +1231,17 @@ function YieldTab({ yieldData, alloc }) {
           <div className="grid grid-cols-3 gap-2 text-caption font-mono">
             <div className="text-center">
               <div style={{ color: TIER_COLORS.T0 }}>T0 Liquid</div>
-              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T0 || 0))}</div>
+              <div className="text-ice-white">{fmtEur(realCash * (tw.T0 || 0))}</div>
               <div className="text-muted-blue">0% APY</div>
             </div>
             <div className="text-center">
               <div style={{ color: TIER_COLORS.T1 }}>T1 T-Bills</div>
-              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T1 || 0))}</div>
+              <div className="text-ice-white">{fmtEur(realCash * (tw.T1 || 0))}</div>
               <div className="text-muted-blue">{apy.t1_weighted?.toFixed(2)}% APY</div>
             </div>
             <div className="text-center">
               <div style={{ color: TIER_COLORS.T2 }}>T2 Lending</div>
-              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T2 || 0))}</div>
+              <div className="text-ice-white">{fmtEur(realCash * (tw.T2 || 0))}</div>
               <div className="text-muted-blue">{apy.t2_weighted?.toFixed(2)}% APY</div>
             </div>
           </div>
@@ -1244,7 +1291,7 @@ function YieldTab({ yieldData, alloc }) {
                     <span className="text-sm text-ice-white font-mono">{p.coin}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur * scale)}</span>
                     <span className="text-caption text-muted-blue ml-2">({(p.weight * 100).toFixed(0)}%)</span>
                   </div>
                 </div>
@@ -1274,7 +1321,7 @@ function YieldTab({ yieldData, alloc }) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur * scale)}</span>
                     <div className="text-caption font-mono" style={{ color: TIER_COLORS.T1 }}>
                       {p.apy?.toFixed(2)}% <span className="text-muted-blue">({p.apy_source})</span>
                     </div>
@@ -1306,7 +1353,7 @@ function YieldTab({ yieldData, alloc }) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur * scale)}</span>
                     <div className="text-caption font-mono" style={{ color: TIER_COLORS.T2 }}>
                       {p.risk_adj_apy?.toFixed(2)}% <span className="text-muted-blue">risk-adj</span>
                     </div>
@@ -1346,8 +1393,8 @@ function YieldTab({ yieldData, alloc }) {
             <div>Version: {yd.version || '—'}</div>
             <div>Letzer Run: {fmtDate(yd.date)}</div>
             <div>Ensemble Input: {inputs.ensemble?.toFixed(2)}</div>
-            <div>Cash: {fmtPct(inputs.cash_pct)} = {fmtEur(inputs.cash_eur || 0)}</div>
-            <div>Kapital: {fmtEur(inputs.total_capital_eur || 0)}</div>
+            <div>Cash: {fmtPct(cashPct)} = {fmtEur(realCash)}{usingUserCapital ? ' (aus Portfolio)' : ' (Backend-Default)'}</div>
+            <div>Kapital: {usingUserCapital ? fmtEur(userCapital) : fmtEur(inputs.total_capital_eur || 0)}</div>
             <div>Spec: YIELD_ROUTER_SPEC_TEIL1+2</div>
           </div>
         </Section>
