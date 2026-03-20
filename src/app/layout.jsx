@@ -1,5 +1,4 @@
 import '@/styles/globals.css';
-
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -7,10 +6,13 @@ export const viewport = {
   viewportFit: 'cover',
   interactiveWidget: 'resizes-content',
 };
-
 export const metadata = {
   title: 'Baldur Creek Capital',
   description: 'Multi-Agent Trading System Dashboard',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -18,7 +20,6 @@ export const metadata = {
   },
   themeColor: '#0A1628',
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
