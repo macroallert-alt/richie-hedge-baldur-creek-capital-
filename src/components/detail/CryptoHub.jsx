@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Radio, TrendingUp, RefreshCw, PieChart } from 'lucide-react';
+import { FileText, Radio, TrendingUp, RefreshCw, PieChart, Coins } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import {
   COLORS,
@@ -21,6 +21,7 @@ import {
 
 const STATE_URL = process.env.NEXT_PUBLIC_CRYPTO_STATE_URL;
 const DAILY_URL = process.env.NEXT_PUBLIC_CRYPTO_DAILY_URL;
+const YIELD_URL = process.env.NEXT_PUBLIC_CRYPTO_YIELD_URL;
 
 // ═══════════════════════════════════════════════════════
 // SUB-TAB DEFINITIONS
@@ -32,7 +33,25 @@ const TABS = [
   { id: 'cycles', label: 'Cycles', icon: TrendingUp },
   { id: 'rotation', label: 'Rotation', icon: RefreshCw },
   { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+  { id: 'yield', label: 'Yield', icon: Coins },
 ];
+
+// ═══════════════════════════════════════════════════════
+// YIELD TIER COLORS
+// ═══════════════════════════════════════════════════════
+
+const TIER_COLORS = {
+  T0: COLORS.fadedBlue,
+  T1: COLORS.signalYellow,
+  T2: COLORS.signalGreen,
+  T3: '#9B59B6',
+};
+
+const DEPEG_COLORS = {
+  OK: COLORS.signalGreen,
+  WARNING: COLORS.signalOrange,
+  KILL: COLORS.signalRed,
+};
 
 // ═══════════════════════════════════════════════════════
 // HELPERS
@@ -52,6 +71,10 @@ function fmtDate(d) {
   if (!d) return '—';
   try { return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
   catch { return d; }
+}
+
+function fmtEur(val) {
+  return val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 }
 
 function Section({ title, children, defaultOpen = true }) {
@@ -84,6 +107,7 @@ export default function CryptoHub() {
   const [tab, setTab] = useState('cio');
   const [stateData, setStateData] = useState(null);
   const [dailyData, setDailyData] = useState(null);
+  const [yieldData, setYieldData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -91,6 +115,7 @@ export default function CryptoHub() {
     const urls = [
       { url: STATE_URL, setter: setStateData, name: 'state' },
       { url: DAILY_URL, setter: setDailyData, name: 'daily' },
+      { url: YIELD_URL, setter: setYieldData, name: 'yield' },
     ].filter(u => u.url);
     if (!urls.length) return;
     setLoading(true);
@@ -111,6 +136,7 @@ export default function CryptoHub() {
   // Use daily data where available (fresher), fall back to weekly state
   const ws = stateData || {};
   const dd = dailyData || {};
+  const yd = yieldData || {};
 
   const btcPrice = dd.btc_price || ws.btc_price;
   const ensemble = dd.ensemble?.daily ?? ws.ensemble?.value ?? null;
@@ -155,7 +181,7 @@ export default function CryptoHub() {
       <h1 className="text-page-title text-center text-ice-white">Crypto Circle</h1>
 
       {/* Sub-Tab Navigation — Circle Style */}
-      <div className="flex justify-center gap-4 overflow-x-auto pb-1">
+      <div className="flex justify-center gap-3 overflow-x-auto pb-1">
         {TABS.map(t => {
           const Icon = t.icon;
           const isActive = tab === t.id;
@@ -166,18 +192,18 @@ export default function CryptoHub() {
               className="flex flex-col items-center gap-1 flex-shrink-0"
             >
               <div
-                className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
                 style={{
                   backgroundColor: isActive ? `${COLORS.baldurBlue}30` : `${COLORS.fadedBlue}15`,
                   border: `2px solid ${isActive ? COLORS.baldurBlue : COLORS.fadedBlue}50`,
                   boxShadow: isActive ? `0 0 12px ${COLORS.baldurBlue}25` : 'none',
                 }}
               >
-                <Icon size={18} style={{ color: isActive ? COLORS.iceWhite : COLORS.mutedBlue }} />
+                <Icon size={16} style={{ color: isActive ? COLORS.iceWhite : COLORS.mutedBlue }} />
               </div>
               <span className="text-caption leading-none" style={{
                 color: isActive ? COLORS.iceWhite : COLORS.mutedBlue,
-                fontSize: '10px',
+                fontSize: '9px',
               }}>
                 {t.label}
               </span>
@@ -198,6 +224,7 @@ export default function CryptoHub() {
           belowWma={belowWma} wma200={wma200} p4Warning={p4Warning}
           btcD={btcD} btcDChange={btcDChange} display={display}
           alerts={alerts} stateDate={stateDate} dailyDate={dailyDate}
+          yieldData={yd}
         />
       )}
       {tab === 'signals' && (
@@ -216,6 +243,9 @@ export default function CryptoHub() {
       {tab === 'portfolio' && (
         <PortfolioTab alloc={alloc} action={action} weights={weights} btcPrice={btcPrice} ws={ws} />
       )}
+      {tab === 'yield' && (
+        <YieldTab yieldData={yd} alloc={alloc} />
+      )}
     </div>
   );
 }
@@ -228,6 +258,7 @@ function CIOTab({
   btcPrice, ensemble, ensembleWeekly, ensembleChanged, phase, phaseName,
   alloc, action, weights, mom, belowWma, wma200, p4Warning,
   btcD, btcDChange, display, alerts, stateDate, dailyDate,
+  yieldData,
 }) {
   const ensColor = getCryptoEnsembleColor(ensemble);
   const phaseColor = CRYPTO_PHASE_COLORS[phase] || COLORS.mutedBlue;
@@ -237,6 +268,13 @@ function CIOTab({
   const momOnList = Object.entries(mom).filter(([, v]) => v).map(([k]) => k).join(', ');
   const wmaDistance = (btcPrice && wma200) ? ((btcPrice / wma200 - 1) * 100).toFixed(0) : null;
   const cashPct = alloc.cash != null ? (alloc.cash * 100).toFixed(0) : null;
+
+  // Live Yield Data
+  const hasYield = yieldData && yieldData.regime;
+  const yieldRegime = yieldData?.regime;
+  const yieldApy = yieldData?.apy?.weighted_total;
+  const yieldAnnual = yieldData?.apy?.annual_yield_eur;
+  const tw = yieldData?.tier_weights || {};
 
   return (
     <div className="space-y-4">
@@ -280,8 +318,14 @@ function CIOTab({
               <strong style={{ color: CRYPTO_ASSET_COLORS.SOL }}>SOL {fmtPct(alloc.sol)}</strong>.{' '}
               {cashPct && Number(cashPct) > 0 && (
                 <>
-                  Verbleibende <strong>{cashPct}% Cash</strong> — sollten in Stablecoin-Yield
-                  deployed werden (Tokenized T-Bills + DeFi Lending).
+                  Verbleibende <strong>{cashPct}% Cash</strong>
+                  {hasYield ? (
+                    <> — Yield Router empfiehlt{' '}
+                      <strong style={{ color: TIER_COLORS.T1 }}>{yieldApy?.toFixed(2)}% APY</strong>{' '}
+                      ({yieldRegime}, ~{fmtEur(yieldAnnual || 0)}/Jahr).</>
+                  ) : (
+                    <> — sollten in Stablecoin-Yield deployed werden.</>
+                  )}
                 </>
               )}
             </div>
@@ -356,23 +400,27 @@ function CIOTab({
           </div>
         </div>
 
-        {/* Cash Yield Deployment Hinweis */}
+        {/* Cash Yield Deployment — Live from Yield Router */}
         {alloc.cash > 0.01 && (
           <div className="mb-3">
-            <div className="text-caption text-muted-blue mb-1">Cash Yield-Deployment:</div>
+            <div className="text-caption text-muted-blue mb-1">
+              Cash Yield-Deployment{hasYield ? ` (${yieldRegime})` : ''}:
+            </div>
             <div className="flex gap-0.5 h-4 rounded-full overflow-hidden">
-              <div style={{ flex: 0.30, backgroundColor: COLORS.fadedBlue }} title="T0: Halten (liquid)" />
-              <div style={{ flex: 0.50, backgroundColor: COLORS.signalYellow + '80' }} title="T1: Tokenized T-Bills" />
-              <div style={{ flex: 0.20, backgroundColor: COLORS.signalGreen + '60' }} title="T2: DeFi Lending" />
+              <div style={{ flex: tw.T0 || 0.30, backgroundColor: TIER_COLORS.T0 }} title={`T0: Liquid ${((tw.T0 || 0.30) * 100).toFixed(0)}%`} />
+              <div style={{ flex: tw.T1 || 0.50, backgroundColor: TIER_COLORS.T1 + '80' }} title={`T1: T-Bills ${((tw.T1 || 0.50) * 100).toFixed(0)}%`} />
+              <div style={{ flex: tw.T2 || 0.20, backgroundColor: TIER_COLORS.T2 + '60' }} title={`T2: Lending ${((tw.T2 || 0.20) * 100).toFixed(0)}%`} />
             </div>
             <div className="flex justify-between text-caption mt-1" style={{ fontSize: '9px' }}>
-              <span style={{ color: COLORS.fadedBlue }}>● T0 Liquid 30%</span>
-              <span style={{ color: COLORS.signalYellow }}>● T1 T-Bills 50%</span>
-              <span style={{ color: COLORS.signalGreen }}>● T2 Lending 20%</span>
+              <span style={{ color: TIER_COLORS.T0 }}>● T0 Liquid {((tw.T0 || 0.30) * 100).toFixed(0)}%</span>
+              <span style={{ color: TIER_COLORS.T1 }}>● T1 T-Bills {((tw.T1 || 0.50) * 100).toFixed(0)}%</span>
+              <span style={{ color: TIER_COLORS.T2 }}>● T2 Lending {((tw.T2 || 0.20) * 100).toFixed(0)}%</span>
             </div>
-            <div className="text-caption text-muted-blue mt-1" style={{ fontSize: '9px' }}>
-              Yield Router in Vorbereitung — Regime-abhängige Verteilung (T0/T1/T2) wird automatisiert.
-            </div>
+            {hasYield && (
+              <div className="text-caption mt-1 font-mono" style={{ fontSize: '9px', color: TIER_COLORS.T1 }}>
+                Gewichteter APY: {yieldApy?.toFixed(2)}% → ~{fmtEur(yieldAnnual || 0)}/Jahr auf {fmtEur(yieldData?.inputs?.cash_eur || 0)} Cash
+              </div>
+            )}
           </div>
         )}
 
@@ -391,39 +439,62 @@ function CIOTab({
         </div>
       </GlassCard>
 
-      {/* Stablecoin Yield Info Card */}
+      {/* Stablecoin Yield Info Card — Live Data */}
       {alloc.cash > 0.01 && (
         <GlassCard>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-label uppercase tracking-wider" style={{ color: COLORS.signalYellow }}>💰 Cash Yield-Empfehlung</span>
+            <span className="text-label uppercase tracking-wider" style={{ color: TIER_COLORS.T1 }}>💰 Cash Yield-Empfehlung</span>
+            {hasYield && <span className="text-caption font-mono" style={{ color: COLORS.signalGreen }}>LIVE</span>}
           </div>
-          <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalYellow}08`, borderLeft: `3px solid ${COLORS.signalYellow}` }}>
+          <div className="px-3 py-2 rounded" style={{ backgroundColor: `${TIER_COLORS.T1}08`, borderLeft: `3px solid ${TIER_COLORS.T1}` }}>
             <div className="text-sm text-ice-white" style={{ lineHeight: '1.7' }}>
-              <strong>{cashPct}% Cash</strong> sollten nicht idle bleiben. Empfohlene Strategie:
+              <strong>{cashPct}% Cash</strong> sollten nicht idle bleiben.
+              {hasYield ? ` Regime: ${yieldRegime} (Ensemble ${yieldData.inputs?.ensemble?.toFixed(2)}).` : ' Empfohlene Strategie:'}
             </div>
             <div className="mt-2 space-y-1.5">
-              <div className="flex items-center gap-2 text-caption">
-                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: `${COLORS.fadedBlue}30`, color: COLORS.fadedBlue }}>T0</span>
-                <span className="text-ice-white font-mono flex-1">~30% Liquid halten</span>
-                <span className="text-muted-blue">USDC + USDT im Wallet, sofort verfügbar</span>
-              </div>
-              <div className="flex items-center gap-2 text-caption">
-                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: `${COLORS.signalYellow}30`, color: COLORS.signalYellow }}>T1</span>
-                <span className="text-ice-white font-mono flex-1">~50% Tokenized T-Bills</span>
-                <span className="text-muted-blue">USDY (Ondo), sDAI (Maker) — 3.5-4.5% APY</span>
-              </div>
-              <div className="flex items-center gap-2 text-caption">
-                <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
-                  style={{ backgroundColor: `${COLORS.signalGreen}30`, color: COLORS.signalGreen }}>T2</span>
-                <span className="text-ice-white font-mono flex-1">~20% DeFi Lending</span>
-                <span className="text-muted-blue">Aave, Compound, Spark — 2-4% APY</span>
-              </div>
-            </div>
-            <div className="mt-3 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
-              Verteilung ist Regime-abhängig (Ensemble bestimmt wie viel liquid bleibt).
-              Yield Router wird konkrete Pool-Empfehlungen liefern.
+              {hasYield ? (
+                <>
+                  {(yieldData.recommendations?.T0 || []).map((p, i) => (
+                    <div key={`t0-${i}`} className="flex items-center gap-2 text-caption">
+                      <TierBadge tier="T0" />
+                      <span className="text-ice-white font-mono flex-1">{p.coin} {(p.weight * 100).toFixed(0)}%</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} — liquid im Wallet</span>
+                    </div>
+                  ))}
+                  {(yieldData.recommendations?.T1 || []).map((p, i) => (
+                    <div key={`t1-${i}`} className="flex items-center gap-2 text-caption">
+                      <TierBadge tier="T1" />
+                      <span className="text-ice-white font-mono flex-1">{p.product} {(p.weight * 100).toFixed(0)}%</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} @ {p.apy?.toFixed(2)}% ({p.apy_source})</span>
+                    </div>
+                  ))}
+                  {(yieldData.recommendations?.T2 || []).map((p, i) => (
+                    <div key={`t2-${i}`} className="flex items-center gap-2 text-caption">
+                      <TierBadge tier="T2" />
+                      <span className="text-ice-white font-mono flex-1">{p.project} {p.coin}</span>
+                      <span className="text-muted-blue">{fmtEur(p.amount_eur)} @ {p.risk_adj_apy?.toFixed(2)}%</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-caption">
+                    <TierBadge tier="T0" />
+                    <span className="text-ice-white font-mono flex-1">~30% Liquid halten</span>
+                    <span className="text-muted-blue">USDC + USDT im Wallet, sofort verfügbar</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-caption">
+                    <TierBadge tier="T1" />
+                    <span className="text-ice-white font-mono flex-1">~50% Tokenized T-Bills</span>
+                    <span className="text-muted-blue">USDY (Ondo), sDAI (Maker) — 3.5-4.5% APY</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-caption">
+                    <TierBadge tier="T2" />
+                    <span className="text-ice-white font-mono flex-1">~20% DeFi Lending</span>
+                    <span className="text-muted-blue">Aave, Compound, Spark — 2-4% APY</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </GlassCard>
@@ -464,6 +535,15 @@ function CIOTab({
   );
 }
 
+function TierBadge({ tier }) {
+  return (
+    <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+      style={{ backgroundColor: `${TIER_COLORS[tier]}30`, color: TIER_COLORS[tier] }}>
+      {tier}
+    </span>
+  );
+}
+
 function MetricBox({ label, value, sub, subColor }) {
   return (
     <div className="rounded-lg px-3 py-2" style={{ backgroundColor: `${COLORS.fadedBlue}10` }}>
@@ -499,7 +579,6 @@ function SignalsTab({ mom, ensemble, btcD, btcDChange, phase, phaseName, belowWm
 
   return (
     <div className="space-y-4">
-      {/* Momentum Signals */}
       <GlassCard>
         <Section title="Momentum Signale" defaultOpen={true}>
           <div className="mb-3">
@@ -537,7 +616,6 @@ function SignalsTab({ mom, ensemble, btcD, btcDChange, phase, phaseName, belowWm
         </Section>
       </GlassCard>
 
-      {/* 200WMA Status */}
       <GlassCard>
         <Section title="200-Wochen-MA (Bottom Bonus)" defaultOpen={true}>
           <div className="flex items-center justify-between">
@@ -567,7 +645,6 @@ function SignalsTab({ mom, ensemble, btcD, btcDChange, phase, phaseName, belowWm
         </Section>
       </GlassCard>
 
-      {/* BTC Dominance / Phase */}
       <GlassCard>
         <Section title="Trickle-Down Phase (BTC.D)" defaultOpen={true}>
           <div className="flex items-center justify-between mb-3">
@@ -593,7 +670,6 @@ function SignalsTab({ mom, ensemble, btcD, btcDChange, phase, phaseName, belowWm
           <div className="px-3 py-2 rounded" style={{ backgroundColor: `${CRYPTO_PHASE_COLORS[phase]}08`, borderLeft: `3px solid ${CRYPTO_PHASE_COLORS[phase]}` }}>
             <div className="text-sm text-ice-white font-mono">{CRYPTO_PHASE_LABELS[phase]}</div>
           </div>
-          {/* Phase Schwellen */}
           <div className="mt-3 space-y-1">
             {[
               { p: 1, label: 'BTC_FIRST', cond: 'Δ > +2.0pp' },
@@ -625,7 +701,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
   const score = display.rainbow_score;
   const halvingPct = display.halving_phase;
 
-  // Rainbow band color gradient
   const BAND_COLORS = {
     1: '#0000FF', 2: '#0066FF', 3: '#00CCFF', 4: '#00FF66',
     5: '#FFFF00', 6: '#FFAA00', 7: '#FF6600', 8: '#FF0000',
@@ -637,7 +712,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
 
   return (
     <div className="space-y-4">
-      {/* Rainbow Chart */}
       <GlassCard>
         <Section title="Rainbow Chart (Display)" defaultOpen={true}>
           {band != null ? (
@@ -658,7 +732,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
                   </div>
                 )}
               </div>
-              {/* Rainbow Bands Visual */}
               <div className="flex gap-0.5 h-4 rounded-full overflow-hidden mb-1">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(b => (
                   <div key={b} className="flex-1 relative" style={{ backgroundColor: BAND_COLORS[b] }}>
@@ -684,7 +757,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
         </Section>
       </GlassCard>
 
-      {/* 200WMA */}
       <GlassCard>
         <Section title="200-Wochen-MA" defaultOpen={true}>
           <div className="flex items-center justify-between">
@@ -708,7 +780,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
         </Section>
       </GlassCard>
 
-      {/* Halving Phase */}
       <GlassCard>
         <Section title="Halving-Zyklus" defaultOpen={true}>
           <div className="mb-2">
@@ -728,7 +799,6 @@ function CyclesTab({ display, btcPrice, belowWma, wma200 }) {
         </Section>
       </GlassCard>
 
-      {/* Pi Cycle (Display) */}
       <GlassCard>
         <Section title="Pi Cycle (Display only)" defaultOpen={false}>
           <div className="text-caption text-muted-blue" style={{ lineHeight: '1.6' }}>
@@ -751,7 +821,6 @@ function RotationTab({ phase, phaseName, weights, btcDChange }) {
 
   return (
     <div className="space-y-4">
-      {/* Current Phase */}
       <GlassCard>
         <Section title="Aktuelle Trickle-Down Phase" defaultOpen={true}>
           <div className="flex items-center gap-3 mb-4">
@@ -772,7 +841,6 @@ function RotationTab({ phase, phaseName, weights, btcDChange }) {
         </Section>
       </GlassCard>
 
-      {/* Tier Weights */}
       <GlassCard>
         <Section title="Tier-Gewichte (Phase abhängig)" defaultOpen={true}>
           <div className="space-y-3">
@@ -797,7 +865,6 @@ function RotationTab({ phase, phaseName, weights, btcDChange }) {
         </Section>
       </GlassCard>
 
-      {/* Phase Comparison */}
       <GlassCard>
         <Section title="Gewichte pro Phase" defaultOpen={true}>
           <div className="overflow-x-auto">
@@ -832,7 +899,6 @@ function RotationTab({ phase, phaseName, weights, btcDChange }) {
         </Section>
       </GlassCard>
 
-      {/* Phase Schwellen Referenz */}
       <GlassCard>
         <Section title="Phase-Schwellen (BTC.D 30d Δ)" defaultOpen={false}>
           <div className="space-y-2 text-caption">
@@ -856,7 +922,7 @@ function RotationTab({ phase, phaseName, weights, btcDChange }) {
 }
 
 // ═══════════════════════════════════════════════════════
-// TAB 5: PORTFOLIO — Kapital, Ist vs Ziel, Rebalancing-Anweisungen
+// TAB 5: PORTFOLIO — Kapital, Ist vs Ziel, Rebalancing
 // ═══════════════════════════════════════════════════════
 
 function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
@@ -865,27 +931,14 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
 
   const capitalNum = parseFloat(capital) || 0;
 
-  const updateCapital = (val) => {
-    setCapital(val);
-    savePersistent('bcc_crypto_capital', val);
-  };
-
+  const updateCapital = (val) => { setCapital(val); savePersistent('bcc_crypto_capital', val); };
   const updateHolding = (asset, val) => {
-    setHoldings(prev => {
-      const next = { ...prev, [asset]: val };
-      savePersistent('bcc_crypto_holdings', next);
-      return next;
-    });
+    setHoldings(prev => { const next = { ...prev, [asset]: val }; savePersistent('bcc_crypto_holdings', next); return next; });
   };
-
   const resetAll = () => {
-    setCapital('');
-    setHoldings({ BTC: '', ETH: '', SOL: '', CASH: '' });
-    savePersistent('bcc_crypto_capital', '');
-    savePersistent('bcc_crypto_holdings', { BTC: '', ETH: '', SOL: '', CASH: '' });
+    setCapital(''); setHoldings({ BTC: '', ETH: '', SOL: '', CASH: '' });
+    savePersistent('bcc_crypto_capital', ''); savePersistent('bcc_crypto_holdings', { BTC: '', ETH: '', SOL: '', CASH: '' });
   };
-
-  const fmtEur = (val) => val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
   const assets = [
     { key: 'BTC', label: 'Bitcoin', allocKey: 'btc' },
@@ -894,31 +947,27 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
     { key: 'CASH', label: 'Stablecoins', allocKey: 'cash' },
   ];
 
-  // Berechnungen
   const totalHoldings = assets.reduce((s, a) => s + (parseFloat(holdings[a.key]) || 0), 0);
   const hasAnyHoldings = assets.some(a => (parseFloat(holdings[a.key]) || 0) > 0);
-  const materialThreshold = capitalNum * 0.02; // 2% = irrelevant
+  const materialThreshold = capitalNum * 0.02;
 
-  // Rebalancing-Daten berechnen
   const rebalData = assets.map(a => {
     const ist = parseFloat(holdings[a.key]) || 0;
     const zielPct = alloc[a.allocKey] || 0;
     const ziel = capitalNum * zielPct;
-    const delta = ziel - ist; // positiv = kaufen, negativ = verkaufen
+    const delta = ziel - ist;
     const absDelta = Math.abs(delta);
     const material = absDelta >= materialThreshold;
     const istPct = capitalNum > 0 ? ist / capitalNum : 0;
     return { ...a, ist, ziel, zielPct, delta, absDelta, material, istPct };
   });
 
-  const totalDelta = rebalData.reduce((s, r) => s + r.absDelta, 0);
   const needsRebal = rebalData.some(r => r.material);
   const buys = rebalData.filter(r => r.delta > 0 && r.material);
   const sells = rebalData.filter(r => r.delta < 0 && r.material);
 
   return (
     <div className="space-y-4">
-      {/* Ziel-Allokation (immer sichtbar) */}
       <GlassCard>
         <Section title="Ziel-Allokation (V8+Warn Signal)" defaultOpen={true}>
           <div className="space-y-2">
@@ -934,10 +983,7 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
                     </span>
                   </div>
                   <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{
-                      width: `${pct * 100}%`,
-                      backgroundColor: CRYPTO_ASSET_COLORS[a.key] || COLORS.fadedBlue,
-                    }} />
+                    <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, backgroundColor: CRYPTO_ASSET_COLORS[a.key] || COLORS.fadedBlue }} />
                   </div>
                 </div>
               );
@@ -953,24 +999,14 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
         </Section>
       </GlassCard>
 
-      {/* Kapital + Ist-Bestände */}
       <GlassCard>
         <Section title="Mein Crypto Portfolio" defaultOpen={true}>
           <div className="mb-3">
             <label className="text-caption text-muted-blue block mb-1">Crypto-Kapital (Zielwert gesamt)</label>
             <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="z.B. 10000"
-                value={capital}
-                onChange={(e) => updateCapital(e.target.value)}
+              <input type="number" placeholder="z.B. 10000" value={capital} onChange={(e) => updateCapital(e.target.value)}
                 className="flex-1 rounded px-3 py-2 text-sm outline-none"
-                style={{
-                  backgroundColor: `${COLORS.fadedBlue}20`,
-                  color: COLORS.iceWhite,
-                  border: `1px solid ${COLORS.fadedBlue}40`,
-                }}
-              />
+                style={{ backgroundColor: `${COLORS.fadedBlue}20`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}40` }} />
               <span className="text-caption text-muted-blue">EUR</span>
             </div>
           </div>
@@ -981,27 +1017,14 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
               <div className="space-y-2 mb-3">
                 {assets.map(a => (
                   <div key={a.key} className="flex items-center gap-2">
-                    <span className="text-sm font-mono w-14" style={{ color: CRYPTO_ASSET_COLORS[a.key] || COLORS.mutedBlue }}>
-                      {a.key}
-                    </span>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={holdings[a.key]}
-                      onChange={(e) => updateHolding(a.key, e.target.value)}
+                    <span className="text-sm font-mono w-14" style={{ color: CRYPTO_ASSET_COLORS[a.key] || COLORS.mutedBlue }}>{a.key}</span>
+                    <input type="number" placeholder="0" value={holdings[a.key]} onChange={(e) => updateHolding(a.key, e.target.value)}
                       className="flex-1 rounded px-2 py-1.5 text-sm outline-none font-mono"
-                      style={{
-                        backgroundColor: `${COLORS.fadedBlue}15`,
-                        color: COLORS.iceWhite,
-                        border: `1px solid ${COLORS.fadedBlue}30`,
-                      }}
-                    />
+                      style={{ backgroundColor: `${COLORS.fadedBlue}15`, color: COLORS.iceWhite, border: `1px solid ${COLORS.fadedBlue}30` }} />
                     <span className="text-caption text-muted-blue w-6">€</span>
                   </div>
                 ))}
               </div>
-
-              {/* Summe */}
               <div className="flex items-center justify-between py-2 border-t border-white/10">
                 <span className="text-caption text-muted-blue">Ist Gesamt</span>
                 <span className="text-sm font-mono text-ice-white">{fmtEur(totalHoldings)}</span>
@@ -1015,30 +1038,23 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
                   {totalHoldings >= capitalNum ? '+' : ''}{fmtEur(totalHoldings - capitalNum)}
                 </span>
               </div>
-
               <button onClick={resetAll} className="text-caption px-3 py-1 rounded"
-                style={{ color: COLORS.signalRed, border: `1px solid ${COLORS.signalRed}40` }}>
-                Reset
-              </button>
+                style={{ color: COLORS.signalRed, border: `1px solid ${COLORS.signalRed}40` }}>Reset</button>
             </>
           )}
         </Section>
       </GlassCard>
 
-      {/* Rebalancing-Rechner — nur wenn Kapital + Holdings eingegeben */}
       {capitalNum > 0 && hasAnyHoldings && (
         <GlassCard>
           <Section title="Rebalancing-Anweisungen" defaultOpen={true}>
             {!needsRebal ? (
               <div className="px-3 py-3 rounded text-center"
                 style={{ backgroundColor: `${COLORS.signalGreen}10`, borderLeft: `3px solid ${COLORS.signalGreen}` }}>
-                <span className="text-sm font-mono" style={{ color: COLORS.signalGreen }}>
-                  ✓ Alle Positionen innerhalb der Toleranz (±2%)
-                </span>
+                <span className="text-sm font-mono" style={{ color: COLORS.signalGreen }}>✓ Alle Positionen innerhalb der Toleranz (±2%)</span>
               </div>
             ) : (
               <>
-                {/* Ist vs Ziel Tabelle */}
                 <div className="mb-4">
                   <div className="grid grid-cols-5 gap-1 text-caption font-mono mb-1 pb-1 border-b border-white/10">
                     <span className="text-muted-blue">Asset</span>
@@ -1048,31 +1064,22 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
                     <span className="text-muted-blue text-right">Aktion</span>
                   </div>
                   {rebalData.map(r => {
-                    const deltaColor = !r.material ? COLORS.signalGreen
-                      : r.delta > 0 ? COLORS.signalGreen : COLORS.signalRed;
-                    const actionLabel = !r.material ? '✓ OK'
-                      : r.delta > 0 ? 'KAUFEN' : 'VERKAUFEN';
+                    const deltaColor = !r.material ? COLORS.signalGreen : r.delta > 0 ? COLORS.signalGreen : COLORS.signalRed;
+                    const actionLabel = !r.material ? '✓ OK' : r.delta > 0 ? 'KAUFEN' : 'VERKAUFEN';
                     return (
                       <div key={r.key} className="grid grid-cols-5 gap-1 text-caption font-mono py-1 border-b border-white/5"
                         style={{ opacity: r.material ? 1 : 0.5 }}>
                         <span style={{ color: CRYPTO_ASSET_COLORS[r.key] }}>{r.key}</span>
                         <span className="text-right text-muted-blue">{fmtEur(r.ist)}</span>
                         <span className="text-right text-ice-white">{fmtEur(r.ziel)}</span>
-                        <span className="text-right" style={{ color: deltaColor }}>
-                          {r.delta >= 0 ? '+' : ''}{fmtEur(r.delta)}
-                        </span>
-                        <span className="text-right font-bold" style={{ color: deltaColor }}>
-                          {actionLabel}
-                        </span>
+                        <span className="text-right" style={{ color: deltaColor }}>{r.delta >= 0 ? '+' : ''}{fmtEur(r.delta)}</span>
+                        <span className="text-right font-bold" style={{ color: deltaColor }}>{actionLabel}</span>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* Konkrete Anweisungen */}
                 {sells.length > 0 && (
-                  <div className="mb-3 px-3 py-2 rounded"
-                    style={{ backgroundColor: `${COLORS.signalRed}08`, borderLeft: `3px solid ${COLORS.signalRed}` }}>
+                  <div className="mb-3 px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalRed}08`, borderLeft: `3px solid ${COLORS.signalRed}` }}>
                     <div className="text-caption font-bold mb-1" style={{ color: COLORS.signalRed }}>VERKAUFEN:</div>
                     {sells.map(r => (
                       <div key={r.key} className="text-sm font-mono text-ice-white">
@@ -1083,8 +1090,7 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
                   </div>
                 )}
                 {buys.length > 0 && (
-                  <div className="px-3 py-2 rounded"
-                    style={{ backgroundColor: `${COLORS.signalGreen}08`, borderLeft: `3px solid ${COLORS.signalGreen}` }}>
+                  <div className="px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalGreen}08`, borderLeft: `3px solid ${COLORS.signalGreen}` }}>
                     <div className="text-caption font-bold mb-1" style={{ color: COLORS.signalGreen }}>KAUFEN:</div>
                     {buys.map(r => (
                       <div key={r.key} className="text-sm font-mono text-ice-white">
@@ -1094,7 +1100,6 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
                     ))}
                   </div>
                 )}
-
                 <div className="mt-3 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
                   Toleranz: ±2% vom Kapital ({fmtEur(materialThreshold)}). Kleinere Abweichungen werden ignoriert.
                 </div>
@@ -1104,7 +1109,6 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
         </GlassCard>
       )}
 
-      {/* System Info */}
       <GlassCard>
         <Section title="System" defaultOpen={false}>
           <div className="space-y-1 text-caption text-muted-blue font-mono">
@@ -1113,6 +1117,238 @@ function PortfolioTab({ alloc, action, weights, btcPrice, ws }) {
             <div>Weekly Run: {ws.date || '—'}</div>
             <div>13 Parameter, 3 Komponenten</div>
             <div>Backtest: CAGR 72.53%, Sharpe 1.66, MaxDD -54.73%</div>
+          </div>
+        </Section>
+      </GlassCard>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 6: YIELD — Cash Management Advisor Detail
+// ═══════════════════════════════════════════════════════
+
+function YieldTab({ yieldData, alloc }) {
+  const yd = yieldData || {};
+  const hasData = yd.regime != null;
+
+  if (!hasData) {
+    return (
+      <GlassCard>
+        <div className="text-center py-12">
+          <p className="text-lg text-muted-blue">Yield Router noch nicht gelaufen.</p>
+          <p className="text-caption text-muted-blue mt-2">Läuft wöchentlich Sonntag nach dem Orchestrator.</p>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  const tw = yd.tier_weights || {};
+  const depeg = yd.depeg_status || {};
+  const recs = yd.recommendations || {};
+  const apy = yd.apy || {};
+  const inputs = yd.inputs || {};
+  const t1Products = yd.t1_products || {};
+  const basisTrade = yd.basis_trade_info || {};
+
+  const hasDepegIssue = Object.values(depeg).some(d => d.status !== 'OK');
+
+  return (
+    <div className="space-y-4">
+      {/* Executive Summary */}
+      <GlassCard>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-label uppercase tracking-wider" style={{ color: TIER_COLORS.T1 }}>Cash Management Advisor</span>
+          <span className="text-caption text-muted-blue font-mono">{fmtDate(yd.date)}</span>
+        </div>
+        <div className="px-3 py-3 rounded" style={{ backgroundColor: `${TIER_COLORS.T1}08`, borderLeft: `3px solid ${TIER_COLORS.T1}` }}>
+          <div className="text-sm text-ice-white" style={{ lineHeight: '1.8' }}>
+            Regime <strong style={{ color: TIER_COLORS.T1 }}>{yd.regime}</strong> (Ensemble {inputs.ensemble?.toFixed(2)}).{' '}
+            Kapital-Tier: <strong>{yd.capital_tier}</strong>.{' '}
+            {fmtEur(inputs.cash_eur || 0)} Cash aufgeteilt in{' '}
+            T0 {((tw.T0 || 0) * 100).toFixed(0)}% / T1 {((tw.T1 || 0) * 100).toFixed(0)}% / T2 {((tw.T2 || 0) * 100).toFixed(0)}%.{' '}
+            Gewichteter APY: <strong style={{ color: COLORS.signalGreen }}>{apy.weighted_total?.toFixed(2)}%</strong>{' '}
+            → ~{fmtEur(apy.annual_yield_eur || 0)}/Jahr.
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Tier Balken */}
+      <GlassCard>
+        <Section title="Tier-Allokation" defaultOpen={true}>
+          <div className="flex gap-0.5 h-8 rounded-lg overflow-hidden mb-2">
+            {tw.T0 > 0 && <div className="flex items-center justify-center text-xs font-bold font-mono" style={{ flex: tw.T0, backgroundColor: TIER_COLORS.T0, color: '#fff' }}>T0 {((tw.T0) * 100).toFixed(0)}%</div>}
+            {tw.T1 > 0 && <div className="flex items-center justify-center text-xs font-bold font-mono" style={{ flex: tw.T1, backgroundColor: TIER_COLORS.T1 + '90', color: '#000' }}>T1 {((tw.T1) * 100).toFixed(0)}%</div>}
+            {tw.T2 > 0 && <div className="flex items-center justify-center text-xs font-bold font-mono" style={{ flex: tw.T2, backgroundColor: TIER_COLORS.T2 + '80', color: '#000' }}>T2 {((tw.T2) * 100).toFixed(0)}%</div>}
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-caption font-mono">
+            <div className="text-center">
+              <div style={{ color: TIER_COLORS.T0 }}>T0 Liquid</div>
+              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T0 || 0))}</div>
+              <div className="text-muted-blue">0% APY</div>
+            </div>
+            <div className="text-center">
+              <div style={{ color: TIER_COLORS.T1 }}>T1 T-Bills</div>
+              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T1 || 0))}</div>
+              <div className="text-muted-blue">{apy.t1_weighted?.toFixed(2)}% APY</div>
+            </div>
+            <div className="text-center">
+              <div style={{ color: TIER_COLORS.T2 }}>T2 Lending</div>
+              <div className="text-ice-white">{fmtEur((inputs.cash_eur || 0) * (tw.T2 || 0))}</div>
+              <div className="text-muted-blue">{apy.t2_weighted?.toFixed(2)}% APY</div>
+            </div>
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* Depeg Monitor */}
+      <GlassCard>
+        <Section title="Depeg Monitor" defaultOpen={hasDepegIssue}>
+          <div className="space-y-2">
+            {Object.entries(depeg).map(([coin, info]) => (
+              <div key={coin} className="flex items-center justify-between py-1 border-b border-white/5">
+                <span className="text-sm text-ice-white font-mono">{coin}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-caption text-muted-blue font-mono">${info.price?.toFixed(4)}</span>
+                  <span className="text-caption font-mono" style={{
+                    color: info.deviation > 0.005 ? (info.deviation > 0.02 ? COLORS.signalRed : COLORS.signalOrange) : COLORS.signalGreen,
+                  }}>
+                    {(info.deviation * 100).toFixed(2)}%
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-xs font-bold"
+                    style={{ backgroundColor: `${DEPEG_COLORS[info.status]}20`, color: DEPEG_COLORS[info.status] }}>
+                    {info.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {Object.keys(depeg).length === 0 && (
+              <div className="text-caption text-muted-blue">Keine Depeg-Daten verfügbar.</div>
+            )}
+          </div>
+          <div className="mt-2 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
+            Kill Switch: {'>'}2% Abweichung = GESPERRT. {'>'}0.5% = WARNING.
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* T0 Detail */}
+      <GlassCard>
+        <Section title="T0 — Liquid Cash" defaultOpen={true}>
+          {(recs.T0 || []).length > 0 ? (
+            <div className="space-y-2">
+              {recs.T0.map((p, i) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <TierBadge tier="T0" />
+                    <span className="text-sm text-ice-white font-mono">{p.coin}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <span className="text-caption text-muted-blue ml-2">({(p.weight * 100).toFixed(0)}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-caption text-muted-blue">Kein T0 im aktuellen Regime.</div>
+          )}
+          <div className="mt-2 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
+            Sofort verfügbar wenn Signal dreht. 0% APY.
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* T1 Detail */}
+      <GlassCard>
+        <Section title="T1 — Tokenized T-Bills" defaultOpen={true}>
+          {(recs.T1 || []).length > 0 ? (
+            <div className="space-y-2">
+              {recs.T1.map((p, i) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <TierBadge tier="T1" />
+                    <div>
+                      <span className="text-sm text-ice-white font-mono">{p.product}</span>
+                      <div className="text-caption text-muted-blue">{p.issuer} · {p.chain}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <div className="text-caption font-mono" style={{ color: TIER_COLORS.T1 }}>
+                      {p.apy?.toFixed(2)}% <span className="text-muted-blue">({p.apy_source})</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-caption text-muted-blue">Kein T1 im aktuellen Regime.</div>
+          )}
+          <div className="mt-2 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
+            Tokenisierte US Treasury Bills. Underlying: echte T-Bills. Redemption: 0-2 Tage.
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* T2 Detail */}
+      <GlassCard>
+        <Section title="T2 — DeFi Lending" defaultOpen={true}>
+          {(recs.T2 || []).length > 0 ? (
+            <div className="space-y-2">
+              {recs.T2.map((p, i) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <TierBadge tier="T2" />
+                    <div>
+                      <span className="text-sm text-ice-white font-mono">{p.project} · {p.coin}</span>
+                      <div className="text-caption text-muted-blue">{p.chain} · TVL ${(p.tvl_usd / 1e6).toFixed(0)}M</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm text-ice-white font-mono">{fmtEur(p.amount_eur)}</span>
+                    <div className="text-caption font-mono" style={{ color: TIER_COLORS.T2 }}>
+                      {p.risk_adj_apy?.toFixed(2)}% <span className="text-muted-blue">risk-adj</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-caption text-muted-blue">
+              {yd.capital_tier === 'MICRO' ? 'T2 deaktiviert (Kapital < €5K — Gas Fees > APY-Vorteil).'
+                : tw.T2 === 0 ? 'T2 = 0% im aktuellen Regime (Cash muss sofort verfügbar sein).'
+                : 'Keine qualifizierten T2 Pools.'}
+            </div>
+          )}
+          <div className="mt-2 text-caption text-muted-blue" style={{ fontSize: '10px' }}>
+            {yd.t2_qualified_pools || 0} qualifizierte Pools gescannt. Nur Base APY (Reward APY ignoriert).
+            Risk-Adjusted = Base APY − Chain Risk − SC Expected Loss.
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* T3 Basis Trade Info */}
+      <GlassCard>
+        <Section title="T3 — Basis Trade (nur Info)" defaultOpen={false}>
+          <div className="text-caption text-muted-blue" style={{ lineHeight: '1.6' }}>
+            Long Spot BTC + Short Perpetual Futures. Delta-neutral, verdient Funding Rate.
+            Typischer APY: <strong className="text-ice-white">{basisTrade.typical_apy || '—'}</strong>.
+            {basisTrade.note && <div className="mt-1">{basisTrade.note}</div>}
+          </div>
+        </Section>
+      </GlassCard>
+
+      {/* System Info */}
+      <GlassCard>
+        <Section title="System" defaultOpen={false}>
+          <div className="space-y-1 text-caption text-muted-blue font-mono">
+            <div>Version: {yd.version || '—'}</div>
+            <div>Letzer Run: {fmtDate(yd.date)}</div>
+            <div>Ensemble Input: {inputs.ensemble?.toFixed(2)}</div>
+            <div>Cash: {fmtPct(inputs.cash_pct)} = {fmtEur(inputs.cash_eur || 0)}</div>
+            <div>Kapital: {fmtEur(inputs.total_capital_eur || 0)}</div>
+            <div>Spec: YIELD_ROUTER_SPEC_TEIL1+2</div>
           </div>
         </Section>
       </GlassCard>
