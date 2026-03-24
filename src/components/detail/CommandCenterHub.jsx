@@ -1049,8 +1049,27 @@ function CalendarTab({ d }) {
 function RadarTab({ d, w }) {
   const diverg = d.divergences || {};
   const align = d.alignment || {};
-  const cuAu = diverg.cu_au || {};
-  const vix = diverg.vix_analysis || {};
+
+  // Cu/Au und VIX sind im pairs-Array, nicht als separate Keys
+  const cuAuEntry = (diverg.pairs || []).find(p => p.pair === 'COPPER/GLD') || {};
+  const vixEntry = (diverg.pairs || []).find(p => p.pair === 'VIX_PROXY') || {};
+
+  // Cu/Au Daten extrahieren
+  const cuAu = {
+    z_score: cuAuEntry.z_score ?? cuAuEntry.cu_au_z ?? null,
+    signal: cuAuEntry.signal || 'UNAVAILABLE',
+    interpretation: cuAuEntry.interpretation || null,
+  };
+
+  // VIX Daten extrahieren
+  const vix = {
+    z_score: vixEntry.vix_z ?? null,
+    signal: vixEntry.signal || 'UNAVAILABLE',
+    confirms: vixEntry.vix_z_signal === 'CONFIRMATION' || diverg.vix_confirms || false,
+    corr_watch: vixEntry.corr_signal === 'WATCH' || diverg.vix_corr_watch || false,
+    corr_val: vixEntry.correlation_21d ?? null,
+    interpretation: vixEntry.interpretation || null,
+  };
 
   return (
     <div className="space-y-4">
@@ -1261,18 +1280,18 @@ function RadarTab({ d, w }) {
               VIX misst die erwartete Volatilität im S&P 500. Hohe VIX = Markt erwartet große Schwankungen. Niedrige VIX = Markt ist ruhig (oder complacent).
             </div>
 
-            {vix.z_score != null && (
+            {(vix.z_score != null || vix.corr_val != null) && (
               <div className="text-xs mt-1" style={{ color: CC_VIX_COLORS[vix.signal] || COLORS.mutedBlue }}>
-                <strong>Aktuell (Z={fmtZ(vix.z_score)}):</strong>{' '}
-                {vix.signal === 'CONFIRMATION'
+                <strong>Aktuell{vix.z_score != null ? ` (Z=${fmtZ(vix.z_score)})` : ''}{vix.corr_val != null ? ` · Korrelation VIX/SPY: ${vix.corr_val.toFixed(2)}` : ''}:</strong>{' '}
+                {vix.confirms
                   ? 'VIX extrem hoch (Z>+2.0) — bestätigt Stress-Signale aus den Divergenz-Paaren. Wenn gleichzeitig DBC/SPY oder XLF/SPY auf EXTREME → Signal ist sehr ernst zu nehmen.'
-                  : vix.signal === 'WATCH'
+                  : vix.corr_watch
                   ? 'VIX/SPY Korrelation anomal (>−0.2) — Stealth Hedging: jemand Großes kauft Absicherung während der Markt noch steigt. Oft ein Vorläufer für plötzliche Korrekturen.'
                   : 'VIX im Normalbereich. Keine Bestätigung von Stress-Signalen durch Volatilität.'}
               </div>
             )}
 
-            {vix.signal === 'CONFIRMATION' && (
+            {vix.confirms && (
               <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalRed}50` }}>
                 <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
                 <div className="text-xs text-muted-blue py-0.5">→ Hohe VIX → Options-Absicherung wird teurer → Hedging-Kosten steigen für alle Marktteilnehmer</div>
@@ -1280,7 +1299,7 @@ function RadarTab({ d, w }) {
                 <div className="text-xs text-muted-blue py-0.5">→ Bei VIX{'>'}30 historisch erhöhtes Risiko für Cascade-Selling (Margin Calls, Forced Liquidation)</div>
               </div>
             )}
-            {vix.signal === 'WATCH' && (
+            {vix.corr_watch && (
               <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalOrange}50` }}>
                 <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
                 <div className="text-xs text-muted-blue py-0.5">→ Stealth Hedging → institutionelle Investoren sichern sich ab → sie erwarten einen Move</div>
