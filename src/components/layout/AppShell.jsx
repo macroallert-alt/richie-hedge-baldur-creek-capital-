@@ -23,6 +23,7 @@ import CyclesDetail from '@/components/detail/CyclesDetail';
 import SecularTrendsDetail from '@/components/detail/SecularTrendsDetail';
 import ThesenDetail from '@/components/detail/ThesenDetail';
 import CryptoHub from '@/components/detail/CryptoHub';
+import CommandCenterHub from '@/components/detail/CommandCenterHub';
 import SettingsPage from '@/components/settings/SettingsPage';
 import StaleWarning from '@/components/shared/StaleWarning';
 import ToastNotification from '@/components/shared/ToastNotification';
@@ -32,6 +33,7 @@ import { useDashboardContext } from '@/context/DashboardContext';
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardHub,
+  'command-center': CommandCenterHub,
   cio: CIODetail,
   briefing: BriefingDetail,
   risk: RiskDetail,
