@@ -1281,6 +1281,10 @@ function IntelTab({ d }) {
                     </div>
                     <div className="text-xs text-muted-blue mb-1 italic">{desc}</div>
                     <div className="text-sm text-muted-blue leading-relaxed">{stripCite(text)}</div>
+                  </div>
+                );
+              }).filter(Boolean);
+            })()}
             <ExplainBox>
               Jedes der 8 internen Systeme liefert eine andere Perspektive auf denselben Trigger.
               V16 reagiert monatlich, Cycles wöchentlich, Thesen haben konkrete Katalysatoren.
