@@ -301,6 +301,17 @@ const ALIGNMENT_CONTEXT = {
 // HELPERS
 // ═══════════════════════════════════════════════════════
 
+// Entfernt LLM Web Search Zitations-Tags wie <cite index="15-1">...</cite>
+// und andere XML-artige Tags die der LLM in Responses einfügt
+function stripCite(text) {
+  if (!text || typeof text !== 'string') return text || '';
+  return text
+    .replace(/<cite[^>]*>/gi, '')
+    .replace(/<\/cite>/gi, '')
+    .replace(/<\/?antml:[^>]*>/gi, '')
+    .trim();
+}
+
 function fmtPct(v, d = 2) {
   if (v == null) return '—';
   return `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(d)}%`;
@@ -519,7 +530,7 @@ function DashboardTab({ d, w }) {
             <Brain size={14} style={{ color: COLORS.baldurBlue }} />
             <span className="text-xs uppercase tracking-wider font-bold" style={{ color: COLORS.baldurBlue }}>Intelligence</span>
           </div>
-          <p className="text-sm text-ice-white">{intelligence.summary_one_liner}</p>
+          <p className="text-sm text-ice-white">{stripCite(intelligence.summary_one_liner)}</p>
           {intelligence.portfolio_action_required && (
             <p className="text-xs mt-1" style={{ color: COLORS.signalRed }}>⚠ Portfolio-Aktion empfohlen — siehe § Intel Tab für Details</p>
           )}
@@ -786,7 +797,7 @@ function IntelTab({ d }) {
         </div>
         <div className="text-base text-ice-white leading-relaxed px-4 py-3 rounded"
           style={{ backgroundColor: `${COLORS.baldurBlue}08`, borderLeft: `3px solid ${COLORS.baldurBlue}` }}>
-          {intelligence.summary_one_liner || 'Keine Zusammenfassung verfügbar.'}
+          {stripCite(intelligence.summary_one_liner) || 'Keine Zusammenfassung verfügbar.'}
         </div>
         {intelligence.portfolio_action_required && (
           <div className="mt-2 px-4 py-2 rounded" style={{ backgroundColor: `${COLORS.signalRed}12`, borderLeft: `3px solid ${COLORS.signalRed}` }}>
@@ -807,13 +818,13 @@ function IntelTab({ d }) {
                 intelligence.trigger_analysis.severity === 'HIGH' ? COLORS.signalOrange : COLORS.signalYellow}>
                 {intelligence.trigger_analysis.severity || 'MODERATE'}
               </Pill>
-              <span className="text-sm text-ice-white font-bold">{intelligence.trigger_analysis.primary_trigger}</span>
+              <span className="text-sm text-ice-white font-bold">{stripCite(intelligence.trigger_analysis.primary_trigger)}</span>
             </div>
             {intelligence.trigger_analysis.trigger_type && (
               <div className="text-xs text-muted-blue mb-1">Typ: {intelligence.trigger_analysis.trigger_type}</div>
             )}
             {intelligence.trigger_analysis.interpretation && (
-              <div className="text-sm text-muted-blue leading-relaxed mt-2">{intelligence.trigger_analysis.interpretation}</div>
+              <div className="text-sm text-muted-blue leading-relaxed mt-2">{stripCite(intelligence.trigger_analysis.interpretation)}</div>
             )}
             <div className="text-xs text-muted-blue mt-2">Daten-Layer Trigger: {triggerReasons.join(', ')}</div>
           </Section>
@@ -831,10 +842,10 @@ function IntelTab({ d }) {
               Confidence: {intelligence.time_gap_warning.confidence}
             </Pill>
           </div>
-          <div className="text-sm text-ice-white leading-relaxed mb-2">{intelligence.time_gap_warning.description}</div>
+          <div className="text-sm text-ice-white leading-relaxed mb-2">{stripCite(intelligence.time_gap_warning.description)}</div>
           {intelligence.time_gap_warning.historical_basis && (
             <div className="text-xs mt-2" style={{ color: COLORS.signalOrange }}>
-              <strong>Historische Basis:</strong> {intelligence.time_gap_warning.historical_basis}
+              <strong>Historische Basis:</strong> {stripCite(intelligence.time_gap_warning.historical_basis)}
             </div>
           )}
           <ExplainBox>
@@ -869,11 +880,7 @@ function IntelTab({ d }) {
                       <span className="text-sm text-ice-white font-bold">{name}</span>
                     </div>
                     <div className="text-xs text-muted-blue mb-1 italic">{desc}</div>
-                    <div className="text-sm text-muted-blue leading-relaxed">{text}</div>
-                  </div>
-                );
-              }).filter(Boolean);
-            })()}
+                    <div className="text-sm text-muted-blue leading-relaxed">{stripCite(text)}</div>
             <ExplainBox>
               Jedes der 8 internen Systeme liefert eine andere Perspektive auf denselben Trigger.
               V16 reagiert monatlich, Cycles wöchentlich, Thesen haben konkrete Katalysatoren.
@@ -894,9 +901,9 @@ function IntelTab({ d }) {
                 <div key={i} className="py-3 border-b border-white/5">
                   <div className="flex items-center gap-2 mb-1">
                     <Pill color={sevColor}>{t.severity}</Pill>
-                    <span className="text-sm text-ice-white font-bold">{t.title}</span>
+                    <span className="text-sm text-ice-white font-bold">{stripCite(t.title)}</span>
                   </div>
-                  <div className="text-sm text-muted-blue leading-relaxed">{t.description}</div>
+                  <div className="text-sm text-muted-blue leading-relaxed">{stripCite(t.description)}</div>
                   {t.exposed_assets?.length > 0 && (
                     <div className="text-xs text-muted-blue mt-1">
                       <strong className="text-ice-white">Betroffene Assets:</strong> {t.exposed_assets.join(', ')}
@@ -904,12 +911,12 @@ function IntelTab({ d }) {
                   )}
                   {t.time_horizon && (
                     <div className="text-xs text-muted-blue mt-1">
-                      <strong className="text-ice-white">Zeithorizont:</strong> {t.time_horizon}
+                      <strong className="text-ice-white">Zeithorizont:</strong> {stripCite(t.time_horizon)}
                     </div>
                   )}
                   {t.action_suggestion && (
                     <div className="text-xs mt-2 px-3 py-1.5 rounded" style={{ backgroundColor: `${sevColor}12`, color: sevColor }}>
-                      → {t.action_suggestion}
+                      → {stripCite(t.action_suggestion)}
                     </div>
                   )}
                 </div>
@@ -941,9 +948,9 @@ function IntelTab({ d }) {
                   <div className="flex items-center gap-2 mb-1">
                     <span>{cfg.icon}</span>
                     <Pill color={cfg.color}>{cfg.label}</Pill>
-                    <span className="text-sm text-ice-white font-bold">{s.title}</span>
+                    <span className="text-sm text-ice-white font-bold">{stripCite(s.title)}</span>
                   </div>
-                  <div className="text-sm text-muted-blue leading-relaxed">{s.description}</div>
+                  <div className="text-sm text-muted-blue leading-relaxed">{stripCite(s.description)}</div>
                   {s.affected_assets?.length > 0 && (
                     <div className="text-xs text-muted-blue mt-1">Assets: {s.affected_assets.join(', ')}</div>
                   )}
@@ -960,9 +967,9 @@ function IntelTab({ d }) {
           <Section title="Second-Order Effekte" subtitle="Was der Markt noch nicht einpreist">
             {intelligence.second_order_effects.map((e, i) => (
               <div key={i} className="py-3 border-b border-white/5">
-                <div className="text-sm text-ice-white font-bold mb-1">{e.effect}</div>
+                <div className="text-sm text-ice-white font-bold mb-1">{stripCite(e.effect)}</div>
                 <div className="text-xs text-muted-blue">
-                  <strong className="text-ice-white">Mechanismus:</strong> {e.mechanism}
+                  <strong className="text-ice-white">Mechanismus:</strong> {stripCite(e.mechanism)}
                 </div>
                 {e.affected_assets?.length > 0 && (
                   <div className="text-xs text-muted-blue mt-1">
