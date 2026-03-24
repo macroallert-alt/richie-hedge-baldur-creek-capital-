@@ -1645,6 +1645,24 @@ function CalendarTab({ d }) {
   const cal = d.calendar || {};
   const surprises = d.surprises || {};
   const decayEvents = d.active_events_decay || [];
+  const reactions = d.market_reactions?.reactions || [];
+
+  // Merge surprise-Daten in gestrige Events (surprises sitzen im separaten Array)
+  const surpriseList = surprises.yesterday_surprises || [];
+  const yesterdayEnriched = (cal.yesterday || []).map(ev => {
+    const surprise = surpriseList.find(s =>
+      s.event && ev.event && s.event.toLowerCase().includes(ev.event.toLowerCase().substring(0, 15))
+    );
+    const reaction = reactions.find(r =>
+      r.event && ev.event && r.event.toLowerCase().includes(ev.event.toLowerCase().substring(0, 15))
+    );
+    return {
+      ...ev,
+      surprise_direction: ev.surprise_direction || surprise?.direction,
+      surprise_pct: ev.surprise_pct ?? surprise?.surprise_pct,
+      reaction: ev.reaction || reaction?.reaction,
+    };
+  });
 
   function EventList({ events, showResult = false, label }) {
     if (!events?.length) return <p className="text-xs text-muted-blue py-2">Keine Events.</p>;
@@ -1708,7 +1726,7 @@ function CalendarTab({ d }) {
       {/* Gestern */}
       <GlassCard>
         <Section title="Gestern" subtitle="Events mit Ergebnissen + Markt-Reaktion">
-          <EventList events={cal.yesterday} showResult={true} />
+          <EventList events={yesterdayEnriched} showResult={true} />
         </Section>
       </GlassCard>
 
