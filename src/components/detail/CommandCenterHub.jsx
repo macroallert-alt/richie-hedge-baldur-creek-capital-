@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  LayoutDashboard, ShieldAlert, Zap, CalendarDays, Radar, Cog,
+  LayoutDashboard, ShieldAlert, Zap, CalendarDays, Radar, Cog, Brain,
 } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import {
@@ -33,6 +33,7 @@ const WEEKLY_URL = process.env.NEXT_PUBLIC_CC_WEEKLY_URL;
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'intel',     label: 'Intel',     icon: Brain },
   { id: 'threats',   label: 'Threats',   icon: ShieldAlert },
   { id: 'signals',   label: 'Signals',   icon: Zap },
   { id: 'calendar',  label: 'Calendar',  icon: CalendarDays },
@@ -471,6 +472,7 @@ export default function CommandCenterHub() {
       {error && <div className="text-caption text-center" style={{ color: COLORS.signalOrange }}>Fehler: {error}</div>}
 
       {tab === 'dashboard' && <DashboardTab d={d} w={weekly} />}
+      {tab === 'intel' && <IntelTab d={d} />}
       {tab === 'threats' && <ThreatsTab d={d} />}
       {tab === 'signals' && <SignalsTab d={d} />}
       {tab === 'calendar' && <CalendarTab d={d} />}
@@ -504,12 +506,28 @@ function DashboardTab({ d, w }) {
   const alignFilled = Math.round(alignScore * 10);
 
   const hasTrigger = triggerReasons.length > 0;
+  const intelligence = d.intelligence;
 
   return (
     <div className="space-y-4">
 
-      {/* Trigger Banner */}
-      {hasTrigger && (
+      {/* Intelligence Summary (wenn vorhanden) */}
+      {intelligence?.summary_one_liner && (
+        <div className="rounded-lg border-l-4 px-4 py-3"
+          style={{ backgroundColor: `${COLORS.baldurBlue}10`, borderLeftColor: COLORS.baldurBlue }}>
+          <div className="flex items-center gap-2 mb-1">
+            <Brain size={14} style={{ color: COLORS.baldurBlue }} />
+            <span className="text-xs uppercase tracking-wider font-bold" style={{ color: COLORS.baldurBlue }}>Intelligence</span>
+          </div>
+          <p className="text-sm text-ice-white">{intelligence.summary_one_liner}</p>
+          {intelligence.portfolio_action_required && (
+            <p className="text-xs mt-1" style={{ color: COLORS.signalRed }}>⚠ Portfolio-Aktion empfohlen — siehe § Intel Tab für Details</p>
+          )}
+        </div>
+      )}
+
+      {/* Trigger Banner (wenn Intelligence NICHT gelaufen) */}
+      {hasTrigger && !intelligence && (
         <div className="rounded-lg border-l-4 px-4 py-3"
           style={{ backgroundColor: `${COLORS.signalOrange}12`, borderLeftColor: COLORS.signalOrange }}>
           <p className="text-sm font-bold mb-1" style={{ color: COLORS.signalOrange }}>
@@ -723,7 +741,275 @@ function DashboardTab({ d, w }) {
 
 
 // ═══════════════════════════════════════════════════════
-// TAB 2: THREATS — Portfolio-Bedrohungen + Regret-Matrix
+// TAB 2: INTEL — Intelligence Layer Gesamt-Analyse
+// Der Knotenpunkt: LLM liest alle 8 Systeme und liefert
+// Summary, Trigger, Zeitlücken, Threats, Signals, Second-Order
+// ═══════════════════════════════════════════════════════
+
+function IntelTab({ d }) {
+  const intelligence = d.intelligence;
+  const triggered = d.intelligence_triggered;
+  const triggerReasons = d.trigger_reasons || [];
+
+  // Kein Trigger → ruhiger Tag
+  if (!triggered || !intelligence) {
+    return (
+      <GlassCard>
+        <div className="text-center py-10">
+          <div className="text-4xl mb-3">✓</div>
+          <p className="text-lg" style={{ color: COLORS.signalGreen }}>Ruhiger Tag — keine Intelligence-Analyse nötig</p>
+          <p className="text-xs text-muted-blue mt-3 max-w-md mx-auto">
+            Der Daten-Layer hat keine Trigger-Bedingung erkannt (keine extremen Divergenzen, kein Alignment-Drop,
+            keine Timeline-Konvergenz, keine Surprise). An 70-80% der Handelstage ist das der Normalfall.
+          </p>
+          <p className="text-xs text-muted-blue mt-2">
+            Die quantitativen Daten (Divergenzen, Liquidität, Alignment) sind in den anderen Tabs weiterhin sichtbar.
+          </p>
+          <ExplainBox>
+            Der Intelligence Layer kostet ~$0.05-0.10 pro Aufruf und läuft nur wenn mindestens eine Bedingung erfüllt ist:
+            Divergenz EXTREME, Alignment-Drop {'>'}0.20, Timeline-Konvergenz (3+ in 14d), Liq-Kombi Signal, oder Anomalie.
+            Das spart Kosten und reduziert Noise.
+          </ExplainBox>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+
+      {/* Summary One-Liner — das Wichtigste zuerst */}
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-3">
+          <Brain size={18} style={{ color: COLORS.baldurBlue }} />
+          <span className="text-label uppercase tracking-wider" style={{ color: COLORS.baldurBlue }}>Intelligence Summary</span>
+        </div>
+        <div className="text-base text-ice-white leading-relaxed px-4 py-3 rounded"
+          style={{ backgroundColor: `${COLORS.baldurBlue}08`, borderLeft: `3px solid ${COLORS.baldurBlue}` }}>
+          {intelligence.summary_one_liner || 'Keine Zusammenfassung verfügbar.'}
+        </div>
+        {intelligence.portfolio_action_required && (
+          <div className="mt-2 px-4 py-2 rounded" style={{ backgroundColor: `${COLORS.signalRed}12`, borderLeft: `3px solid ${COLORS.signalRed}` }}>
+            <span className="text-sm font-bold" style={{ color: COLORS.signalRed }}>⚠ Portfolio-Aktion empfohlen</span>
+          </div>
+        )}
+        {!intelligence.portfolio_action_required && (
+          <div className="mt-2 text-xs text-muted-blue px-4">Keine Portfolio-Aktion erforderlich.</div>
+        )}
+      </GlassCard>
+
+      {/* Trigger-Analyse — warum wurde der Intelligence Layer aktiviert? */}
+      {intelligence.trigger_analysis && (
+        <GlassCard>
+          <Section title="Trigger-Analyse" subtitle="Warum wurde die Intelligence aktiviert?">
+            <div className="flex items-center gap-2 mb-2">
+              <Pill color={intelligence.trigger_analysis.severity === 'CRITICAL' ? COLORS.signalRed :
+                intelligence.trigger_analysis.severity === 'HIGH' ? COLORS.signalOrange : COLORS.signalYellow}>
+                {intelligence.trigger_analysis.severity || 'MODERATE'}
+              </Pill>
+              <span className="text-sm text-ice-white font-bold">{intelligence.trigger_analysis.primary_trigger}</span>
+            </div>
+            {intelligence.trigger_analysis.trigger_type && (
+              <div className="text-xs text-muted-blue mb-1">Typ: {intelligence.trigger_analysis.trigger_type}</div>
+            )}
+            {intelligence.trigger_analysis.interpretation && (
+              <div className="text-sm text-muted-blue leading-relaxed mt-2">{intelligence.trigger_analysis.interpretation}</div>
+            )}
+            <div className="text-xs text-muted-blue mt-2">Daten-Layer Trigger: {triggerReasons.join(', ')}</div>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Zeitlücken-Warnung — das wertvollste Signal */}
+      {intelligence.time_gap_warning?.exists && (
+        <GlassCard>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">⏰</span>
+            <span className="text-label uppercase tracking-wider text-muted-blue">Zeitlücke erkannt</span>
+            <Pill color={intelligence.time_gap_warning.confidence === 'HIGH' ? COLORS.signalRed :
+              intelligence.time_gap_warning.confidence === 'MEDIUM' ? COLORS.signalOrange : COLORS.signalYellow}>
+              Confidence: {intelligence.time_gap_warning.confidence}
+            </Pill>
+          </div>
+          <div className="text-sm text-ice-white leading-relaxed mb-2">{intelligence.time_gap_warning.description}</div>
+          {intelligence.time_gap_warning.historical_basis && (
+            <div className="text-xs mt-2" style={{ color: COLORS.signalOrange }}>
+              <strong>Historische Basis:</strong> {intelligence.time_gap_warning.historical_basis}
+            </div>
+          )}
+          <ExplainBox>
+            Zeitlücken = was der Command Center JETZT sieht, das V16 erst in 4-8 Wochen in seinen monatlichen Daten erkennt.
+            Das ist dein Handlungsfenster. V16 ändert die Allokation automatisch — aber erst wenn die monatlichen Indikatoren
+            drehen. Der Command Center sieht die täglichen Leading Signals und kann 4-8 Wochen früher warnen.
+          </ExplainBox>
+        </GlassCard>
+      )}
+
+      {/* System-Linsen-Analyse — jedes System durch die Event-Linse */}
+      {intelligence.system_lens_analysis && (
+        <GlassCard>
+          <Section title="System-Linsen" subtitle="Derselbe Trigger — 6 verschiedene Perspektiven">
+            {(() => {
+              const lensConfig = [
+                { key: 'v16_regime', name: 'V16 Regime', icon: '📊', desc: 'Wie verändert der Trigger den V16 State? Zeitlücke?' },
+                { key: 'cycles', name: 'Cycles', icon: '🔄', desc: 'Beschleunigt/bremst der Trigger eine Zyklus-Transition?' },
+                { key: 'thesen', name: 'Thesen', icon: '💡', desc: 'Triggert das einen Katalysator einer Investment-These?' },
+                { key: 'secular', name: 'Säkulare Trends', icon: '📈', desc: 'Verstärkt/schwächt das einen langfristigen Trend?' },
+                { key: 'crypto', name: 'Crypto', icon: '₿', desc: 'Impact auf das Crypto Ensemble und Trickle-Down?' },
+                { key: 'relative_value', name: 'Relative Value', icon: '⚖️', desc: 'Verschiebt das ein Ratio-Paar das bereits extrem steht?' },
+              ];
+
+              return lensConfig.map(({ key, name, icon, desc }) => {
+                const text = intelligence.system_lens_analysis[key];
+                if (!text || text === '?' || text === 'null' || text === 'N/A') return null;
+                return (
+                  <div key={key} className="py-3 border-b border-white/5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm">{icon}</span>
+                      <span className="text-sm text-ice-white font-bold">{name}</span>
+                    </div>
+                    <div className="text-xs text-muted-blue mb-1 italic">{desc}</div>
+                    <div className="text-sm text-muted-blue leading-relaxed">{text}</div>
+                  </div>
+                );
+              }).filter(Boolean);
+            })()}
+            <ExplainBox>
+              Jedes der 8 internen Systeme liefert eine andere Perspektive auf denselben Trigger.
+              V16 reagiert monatlich, Cycles wöchentlich, Thesen haben konkrete Katalysatoren.
+              Die Linsen-Analyse zeigt wo die Systeme übereinstimmen und wo sie sich widersprechen.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Threats aus Intelligence */}
+      {intelligence.threats?.length > 0 && (
+        <GlassCard>
+          <Section title="Threats" subtitle={`${intelligence.threats.length} Portfolio-Bedrohungen erkannt`}>
+            {intelligence.threats.map((t, i) => {
+              const sevColor = t.severity === 'CRITICAL' ? COLORS.signalRed :
+                t.severity === 'HIGH' ? COLORS.signalOrange : COLORS.signalYellow;
+              return (
+                <div key={i} className="py-3 border-b border-white/5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Pill color={sevColor}>{t.severity}</Pill>
+                    <span className="text-sm text-ice-white font-bold">{t.title}</span>
+                  </div>
+                  <div className="text-sm text-muted-blue leading-relaxed">{t.description}</div>
+                  {t.exposed_assets?.length > 0 && (
+                    <div className="text-xs text-muted-blue mt-1">
+                      <strong className="text-ice-white">Betroffene Assets:</strong> {t.exposed_assets.join(', ')}
+                    </div>
+                  )}
+                  {t.time_horizon && (
+                    <div className="text-xs text-muted-blue mt-1">
+                      <strong className="text-ice-white">Zeithorizont:</strong> {t.time_horizon}
+                    </div>
+                  )}
+                  {t.action_suggestion && (
+                    <div className="text-xs mt-2 px-3 py-1.5 rounded" style={{ backgroundColor: `${sevColor}12`, color: sevColor }}>
+                      → {t.action_suggestion}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <ExplainBox>
+              Intelligence-Threats basieren auf der LLM-Analyse aller System-Daten und Web Search.
+              Für quantitative Regret-Matrizen (Kosten von Handeln vs. Nichtstun) siehe den § Threats Tab.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Signals aus Intelligence */}
+      {intelligence.signals?.length > 0 && (
+        <GlassCard>
+          <Section title="Signals" subtitle={`${intelligence.signals.length} erkannt`}>
+            {intelligence.signals.map((s, i) => {
+              const typeConfig = {
+                TIME_GAP:              { color: COLORS.baldurBlue, icon: '⏰', label: 'Zeitlücke' },
+                CATALYST_TRIGGERED:    { color: COLORS.signalYellow, icon: '⚡', label: 'Katalysator' },
+                REGIME_SHIFT:          { color: COLORS.signalOrange, icon: '🔄', label: 'Regime-Shift' },
+                DIVERGENCE_CONFIRMED:  { color: COLORS.signalRed, icon: '📊', label: 'Divergenz bestätigt' },
+                MARKET_ABSORBED:       { color: COLORS.signalGreen, icon: '🟢', label: 'Markt absorbiert' },
+              };
+              const cfg = typeConfig[s.type] || { color: COLORS.mutedBlue, icon: '📌', label: s.type };
+              return (
+                <div key={i} className="py-3 border-b border-white/5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span>{cfg.icon}</span>
+                    <Pill color={cfg.color}>{cfg.label}</Pill>
+                    <span className="text-sm text-ice-white font-bold">{s.title}</span>
+                  </div>
+                  <div className="text-sm text-muted-blue leading-relaxed">{s.description}</div>
+                  {s.affected_assets?.length > 0 && (
+                    <div className="text-xs text-muted-blue mt-1">Assets: {s.affected_assets.join(', ')}</div>
+                  )}
+                </div>
+              );
+            })}
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Second-Order Effects */}
+      {intelligence.second_order_effects?.length > 0 && (
+        <GlassCard>
+          <Section title="Second-Order Effekte" subtitle="Was der Markt noch nicht einpreist">
+            {intelligence.second_order_effects.map((e, i) => (
+              <div key={i} className="py-3 border-b border-white/5">
+                <div className="text-sm text-ice-white font-bold mb-1">{e.effect}</div>
+                <div className="text-xs text-muted-blue">
+                  <strong className="text-ice-white">Mechanismus:</strong> {e.mechanism}
+                </div>
+                {e.affected_assets?.length > 0 && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    Assets: {e.affected_assets.join(', ')}{e.timeframe ? ` · Zeitrahmen: ${e.timeframe}` : ''}
+                  </div>
+                )}
+              </div>
+            ))}
+            <ExplainBox>
+              Second-Order Effekte sind Folgewirkungen die nicht offensichtlich sind.
+              Beispiel: Hot CPI → Fed kann nicht senken → Mortgage Rates steigen → Housing Slowdown → Bau-Aktien fallen.
+              Der Markt preist oft nur den ersten Schritt ein, nicht die Kette.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Fehler-Info wenn Intelligence nur Fallback lieferte */}
+      {intelligence._error && (
+        <GlassCard>
+          <div className="text-xs text-muted-blue">
+            <strong style={{ color: COLORS.signalOrange }}>Intelligence Layer Fehler:</strong> {intelligence._error}
+          </div>
+        </GlassCard>
+      )}
+      {intelligence._parse_error && (
+        <GlassCard>
+          <div className="text-xs text-muted-blue">
+            <strong style={{ color: COLORS.signalOrange }}>JSON Parse Fehler:</strong> {intelligence._parse_error}
+            <div className="mt-1 font-mono text-caption" style={{ maxHeight: '100px', overflow: 'auto' }}>
+              {intelligence._raw_response?.substring(0, 500)}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Meta-Info */}
+      <div className="text-caption text-center text-muted-blue">
+        Intelligence getriggert durch: {triggerReasons.join(', ')} · {d.date || ''}
+      </div>
+    </div>
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════
+// TAB 3: THREATS — Portfolio-Bedrohungen + Regret-Matrix
 // ═══════════════════════════════════════════════════════
 
 function ThreatsTab({ d }) {
@@ -915,16 +1201,21 @@ function SignalsTab({ d }) {
         </GlassCard>
       )}
 
-      {/* Intelligence Layer Placeholder */}
-      {!intelligence && (
+      {/* Hinweis auf Intel Tab */}
+      {d.intelligence && (
         <GlassCard>
-          <div className="text-center py-8">
-            <div className="text-3xl mb-2">🔮</div>
-            <p className="text-sm text-muted-blue">Intelligence Layer (Etappe B) noch nicht aktiv.</p>
-            <p className="text-caption text-muted-blue mt-2">
-              Hier werden erscheinen: Zeitlücken-Warnungen (wann V16 seinen State ändert), Katalysator-Trigger
-              für Investment-Thesen, Second-Order-Effekte, und historische Base Rates.
-              Aktuell sind nur die quantitativen Daten aus dem Daten-Layer verfügbar.
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-blue">
+              Vollständige Intelligence-Analyse (Zeitlücken, System-Linsen, Second-Order Effects) im <strong className="text-ice-white">§ Intel</strong> Tab.
+            </p>
+          </div>
+        </GlassCard>
+      )}
+      {!d.intelligence && (
+        <GlassCard>
+          <div className="text-center py-4">
+            <p className="text-xs text-muted-blue">
+              Kein Intelligence-Trigger heute. Quantitative Signale (Alignment, Markt-Reaktionen) werden hier angezeigt wenn vorhanden.
             </p>
           </div>
         </GlassCard>
