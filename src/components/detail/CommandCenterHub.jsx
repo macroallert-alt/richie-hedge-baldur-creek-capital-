@@ -48,20 +48,29 @@ const TABS = [
 const PAIR_CONTEXT = {
   'DBC/SPY': {
     name: 'Commodities vs. Aktien',
-    what: 'Misst ob Rohstoffe (Energie, Metalle, Agrar) schneller steigen als US-Aktien. Trigger-Richtung: Z>+2.0 (Commodities outperformen).',
-    levels: {
-      NORMAL: 'Commodities und Aktien laufen im historischen Normalbereich. Kein Handlungsbedarf.',
-      MODERATE: 'Commodities outperformen leicht — Inputkosten steigen, aber noch im Rahmen. Beobachten ob der Trend anhält.',
-      ELEVATED: 'Commodities ziehen deutlich davon. Inputkosten-Inflation baut sich auf. Wenn das weitergeht, geraten Unternehmensmargen unter Druck → SPY-Risiko steigt.',
-      EXTREME: 'Commodities outperformen extrem — Inputkosten-Inflation drückt Margen. In 75% der historischen Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
-      EXTREME_UNCONFIRMED: 'Signal in Gegenrichtung (Commodities underperformen). Nicht Backtest-bestätigt, wird überwacht aber löst keinen Trigger aus.',
+    what: 'Misst das Verhältnis Rohstoffe (Energie, Metalle, Agrar) zu US-Aktien.',
+    trigger_direction: 'positive',  // Z>+2.0 ist der bestätigte Trigger
+    trigger_threshold: '+2.0',
+    z_positive: 'DBC outperformt SPY → Commodities steigen schneller als Aktien. Inputkosten-Inflation baut sich auf.',
+    z_negative: 'SPY outperformt DBC → Aktien stärker als Rohstoffe. Eher Wachstums-Regime, wenig Inflationsdruck.',
+    levels_positive: {
+      NORMAL: 'Commodities und Aktien im Gleichgewicht. Kein Inflationsdruck über Inputkosten.',
+      MODERATE: 'Commodities outperformen leicht. Inputkosten steigen, aber Margen noch nicht unter Druck.',
+      ELEVATED: 'Commodities ziehen deutlich davon. Inputkosten-Inflation baut sich auf → SPY-Margen unter Druck → Risiko steigt.',
+      EXTREME: 'Commodities outperformen extrem — Inflation drückt Margen. In 75% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
+    },
+    levels_negative: {
+      NORMAL: 'Aktien und Commodities im Gleichgewicht. Normaler Zustand.',
+      MODERATE: 'Aktien outperformen Rohstoffe leicht. Wachstums-Regime, kein Stress.',
+      ELEVATED: 'Aktien outperformen Rohstoffe deutlich. Kann auf nachlassende globale Nachfrage hindeuten — oder Tech-Rally ohne Breite.',
+      EXTREME_UNCONFIRMED: 'Aktien outperformen Rohstoffe extrem (Gegenrichtung zum Trigger Z>+2.0). Nicht Backtest-bestätigt. Kein Handlungsbedarf — eher ein Wachstumssignal.',
     },
     backtest: 'In 75% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
     lead_days: 80,
     affected: 'SPY und alle SPY-korrelierten Assets (XLK, XLY, XLI, IWM)',
     chains: [
       'Steigende Rohstoffpreise → höhere Inputkosten → Margendruck → SPY Earnings Risk',
-      'Wenn Energie treibt → GLD profitiert (Inflation-Hedge) → GLD-Position im Portfolio stabilisiert',
+      'Wenn Energie treibt → GLD profitiert (Inflation-Hedge) → GLD-Position stabilisiert',
       'TIP/SPY steigt parallel → Inflationserwartungen werden bestätigt',
       'Bei gleichzeitig CONTRACTING Liquidität → V16 dreht Richtung STRESS (4-8 Wochen)',
     ],
@@ -72,13 +81,22 @@ const PAIR_CONTEXT = {
   },
   'VGK/SPY': {
     name: 'Europa vs. USA',
-    what: 'Misst ob europäische Aktien relativ zu US-Aktien fallen. Trigger-Richtung: Z<-3.0 (Europa underperformt).',
-    levels: {
-      NORMAL: 'Europa und USA laufen im normalen Verhältnis. Keine regionale Verschiebung sichtbar.',
-      MODERATE: 'Europa beginnt zu underperformen. Kann EUR-Schwäche, Energie-Sorgen oder politische Unsicherheit signalisieren.',
-      ELEVATED: 'Europa underperformt deutlich. Mögliche Ursachen: EUR fällt, EZB-Unsicherheit, Energiepreise. Aufmerksamkeit auf europäische Positionen.',
-      EXTREME: 'Europa underperformt massiv — typisch bei EUR-Schwäche, Energiekrise, oder politischer Unsicherheit. In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
-      EXTREME_UNCONFIRMED: 'Europa outperformt extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    what: 'Misst das Verhältnis europäische Aktien zu US-Aktien.',
+    trigger_direction: 'negative',  // Z<-3.0 ist der bestätigte Trigger
+    trigger_threshold: '-3.0',
+    z_positive: 'VGK outperformt SPY → Europa stärker als USA. Kann auf EUR-Stärke oder US-Schwäche hindeuten.',
+    z_negative: 'SPY outperformt VGK → Europa schwächelt relativ zu USA. Mögliche Ursachen: EUR-Schwäche, EZB-Politik, Energiepreise.',
+    levels_negative: {
+      NORMAL: 'Europa und USA im normalen Verhältnis. Keine regionale Verschiebung.',
+      MODERATE: 'Europa beginnt zu underperformen. Kann EUR-Schwäche oder politische Unsicherheit signalisieren.',
+      ELEVATED: 'Europa underperformt deutlich. EUR fällt, EZB unter Druck. Europäische Positionen (VGK) beobachten.',
+      EXTREME: 'Europa underperformt massiv — EUR-Schwäche, Energiekrise, oder politische Krise. In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
+    },
+    levels_positive: {
+      NORMAL: 'Europa und USA im Gleichgewicht. Normaler Zustand.',
+      MODERATE: 'Europa outperformt leicht. Kann EUR-Stärke oder US-Schwäche signalisieren.',
+      ELEVATED: 'Europa outperformt deutlich. US-Positionen könnten relativ underperformen. Rotation beobachten.',
+      EXTREME_UNCONFIRMED: 'Europa outperformt extrem (Gegenrichtung zum Trigger Z<-3.0). Nicht Backtest-bestätigt. Kein Handlungsbedarf.',
     },
     backtest: 'In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: 76,
@@ -95,13 +113,22 @@ const PAIR_CONTEXT = {
   },
   'DBC/TLT': {
     name: 'Commodities vs. Anleihen',
-    what: 'Misst ob Rohstoffe relativ zu US-Staatsanleihen fallen. Trigger-Richtung: Z<-2.0 (Rohstoffe underperformen = Deflationsangst).',
-    levels: {
-      NORMAL: 'Commodities und Anleihen im Gleichgewicht. Keine Deflations- oder Inflationsangst erkennbar.',
-      MODERATE: 'Leichte Verschiebung zwischen Commodities und Bonds. Markt beginnt eine Richtung einzupreisen.',
-      ELEVATED: 'Deutliche Verschiebung. Wenn Anleihen outperformen → Markt preist Wachstumsverlangsamung ein. Wenn Commodities outperformen → Inflationsdruck.',
-      EXTREME: 'Wenn DBC/TLT extrem negativ: Deflations-Signal — Rohstoffe fallen während Anleihen steigen (Flucht in Sicherheit). In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Tagen. Schnellstes Signal.',
-      EXTREME_UNCONFIRMED: 'Signal in Gegenrichtung (Commodities outperformen Bonds extrem). Nicht Backtest-bestätigt, nur überwacht.',
+    what: 'Misst das Verhältnis Rohstoffe zu US-Staatsanleihen.',
+    trigger_direction: 'negative',  // Z<-2.0 ist der bestätigte Trigger
+    trigger_threshold: '-2.0',
+    z_positive: 'DBC outperformt TLT → Commodities steigen, Anleihen fallen. Inflation-Regime: Rohstoffe stark, Zinsen steigen, Bonds verlieren.',
+    z_negative: 'TLT outperformt DBC → Anleihen steigen, Rohstoffe fallen. Deflations-/Rezessionsangst: Flucht in sichere Anleihen.',
+    levels_negative: {
+      NORMAL: 'Commodities und Anleihen im Gleichgewicht. Weder Inflations- noch Deflationsangst dominant.',
+      MODERATE: 'Anleihen beginnen Commodities outzuperformen. Erste Anzeichen von Wachstumssorgen.',
+      ELEVATED: 'Anleihen outperformen deutlich — Markt preist Wachstumsverlangsamung ein. Zyklische Positionen (DBC, XLI) beobachten.',
+      EXTREME: 'Deflations-Signal: Rohstoffe brechen ein während Anleihen steigen (Flucht in Sicherheit). In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Tagen. Schnellstes Signal.',
+    },
+    levels_positive: {
+      NORMAL: 'Commodities und Anleihen im Gleichgewicht. Normaler Zustand.',
+      MODERATE: 'Commodities outperformen Bonds leicht. Eher Inflation als Deflation.',
+      ELEVATED: 'Commodities outperformen Bonds deutlich — Inflation-Regime. Anleihen verlieren, Rohstoffe stark. Bestätigt DBC/SPY wenn das auch hoch steht.',
+      EXTREME_UNCONFIRMED: 'Commodities outperformen Bonds extrem (Gegenrichtung zum Trigger Z<-2.0). Dies ist KEIN Deflationssignal — im Gegenteil: es bestätigt ein Inflation-Regime. Passt zum DBC/SPY Signal. Kein eigener Trigger, kein Handlungsbedarf aus diesem Paar.',
     },
     backtest: 'In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Handelstagen. Schnellstes Signal der 5 Paare.',
     lead_days: 65,
@@ -118,13 +145,22 @@ const PAIR_CONTEXT = {
   },
   'TIP/SPY': {
     name: 'Inflationserwartungen vs. Aktien',
-    what: 'Misst ob inflationsgeschützte Anleihen (TIPS) schneller steigen als Aktien — ein Zeichen für steigende Inflationserwartungen. Trigger-Richtung: Z>+2.0.',
-    levels: {
-      NORMAL: 'Inflationserwartungen im Normalbereich. Breakeven-Inflation stabil. Kein Handlungsbedarf.',
-      MODERATE: 'Inflationserwartungen steigen leicht. Markt beginnt höhere Inflation einzupreisen als die Fed kommuniziert.',
+    what: 'Misst ob inflationsgeschützte Anleihen (TIPS) schneller steigen als Aktien — Proxy für Breakeven-Inflation.',
+    trigger_direction: 'positive',  // Z>+2.0 ist der bestätigte Trigger
+    trigger_threshold: '+2.0',
+    z_positive: 'TIP outperformt SPY → Inflationserwartungen steigen schneller als Aktien. Markt preist mehr Inflation ein.',
+    z_negative: 'SPY outperformt TIP → Aktien stärker als Inflationsschutz. Inflation ist nicht das dominante Thema.',
+    levels_positive: {
+      NORMAL: 'Inflationserwartungen im Normalbereich. Breakeven-Inflation stabil.',
+      MODERATE: 'Inflationserwartungen steigen leicht. Markt beginnt höhere Inflation einzupreisen.',
       ELEVATED: 'Breakeven-Inflation steigt spürbar. TIPS outperformen Aktien. Markt zweifelt an Fed-Glaubwürdigkeit. GLD und TIP profitieren.',
       EXTREME: 'Markt preist deutlich höhere Inflation ein als die Fed kommuniziert. In 66.7% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Tagen — weil steigende Inflation Zinserhöhungen erzwingt die Aktien belasten.',
-      EXTREME_UNCONFIRMED: 'Breakeven-Inflation fällt extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    },
+    levels_negative: {
+      NORMAL: 'Aktien und TIPS im Gleichgewicht. Inflationserwartungen neutral.',
+      MODERATE: 'Aktien outperformen TIPS. Wachstum dominiert, Inflation kein Thema.',
+      ELEVATED: 'Aktien outperformen TIPS deutlich. Deflationserwartungen oder starkes Wachstum ohne Inflation.',
+      EXTREME_UNCONFIRMED: 'Aktien outperformen TIPS extrem (Gegenrichtung zum Trigger Z>+2.0). Breakeven-Inflation fällt stark. Nicht Backtest-bestätigt.',
     },
     backtest: 'In 66.7% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: null,
@@ -141,13 +177,22 @@ const PAIR_CONTEXT = {
   },
   'XLF/SPY': {
     name: 'Finanzsektor vs. Gesamtmarkt',
-    what: 'Misst ob der Finanzsektor relativ zum Gesamtmarkt einbricht. Financials sind ein Frühindikator für Kreditstress. Trigger-Richtung: Z<-2.5.',
-    levels: {
-      NORMAL: 'Finanzsektor und Gesamtmarkt laufen im Gleichschritt. Kein Kreditstress erkennbar.',
-      MODERATE: 'Banken beginnen leicht zu underperformen. Kann frühe Anzeichen von Kreditstress sein — oder normales Sektorrotation.',
-      ELEVATED: 'Finanzsektor underperformt deutlich. Typisch bei steigenden Kreditausfällen oder Zinsstruktur-Problemen. Kreditvergabe könnte sich verlangsamen.',
-      EXTREME: 'Banken underperformen extrem — typisch bei steigenden Kreditausfällen, Yield-Curve-Inversion, oder systemischem Stress. In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
-      EXTREME_UNCONFIRMED: 'Financials outperformen extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    what: 'Misst ob der Finanzsektor relativ zum Gesamtmarkt einbricht. Financials = Frühindikator für Kreditstress.',
+    trigger_direction: 'negative',  // Z<-2.5 ist der bestätigte Trigger
+    trigger_threshold: '-2.5',
+    z_positive: 'XLF outperformt SPY → Banken stark, Kreditumfeld gesund. Eher bullish.',
+    z_negative: 'SPY outperformt XLF → Banken schwächeln relativ. Kann frühe Anzeichen von Kreditstress signalisieren.',
+    levels_negative: {
+      NORMAL: 'Finanzsektor und Gesamtmarkt im Gleichschritt. Kein Kreditstress.',
+      MODERATE: 'Banken beginnen zu underperformen. Kann Kreditstress-Frühsignal sein — oder normale Sektorrotation.',
+      ELEVATED: 'Finanzsektor underperformt deutlich. Steigende Kreditausfälle oder Zinsstruktur-Probleme möglich. Kreditvergabe verlangsamt sich.',
+      EXTREME: 'Banken underperformen extrem — Kreditausfälle, Yield-Curve-Inversion, oder systemischer Stress. In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
+    },
+    levels_positive: {
+      NORMAL: 'Banken und Gesamtmarkt im Gleichschritt. Normaler Zustand.',
+      MODERATE: 'Banken outperformen leicht. Gesundes Kreditumfeld.',
+      ELEVATED: 'Banken outperformen deutlich. Steigende Zinsen helfen Margen. Eher bullish für Finanzsektor.',
+      EXTREME_UNCONFIRMED: 'Banken outperformen extrem (Gegenrichtung zum Trigger Z<-2.5). Nicht Backtest-bestätigt. Eher positives Signal für Kreditumfeld.',
     },
     backtest: 'In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
     lead_days: 66,
@@ -164,11 +209,28 @@ const PAIR_CONTEXT = {
   },
 };
 
-// Helper: Erklärung für ein Paar basierend auf Signal-Level
-function getPairExplanation(pair, signal) {
+// Helper: Richtungsabhängige Erklärung für ein Paar
+function getPairExplanation(pair, signal, zScore) {
   const ctx = PAIR_CONTEXT[pair];
-  if (!ctx?.levels) return null;
-  return ctx.levels[signal] || ctx.levels.NORMAL || null;
+  if (!ctx) return null;
+
+  const isPositive = (zScore || 0) >= 0;
+  const levels = isPositive ? ctx.levels_positive : ctx.levels_negative;
+  if (!levels) return null;
+
+  // Bei EXTREME_UNCONFIRMED: immer aus der Gegenrichtung nehmen
+  if (signal === 'EXTREME_UNCONFIRMED') {
+    return (isPositive ? ctx.levels_positive : ctx.levels_negative)?.EXTREME_UNCONFIRMED || null;
+  }
+
+  return levels[signal] || levels.NORMAL || null;
+}
+
+// Helper: Richtungserklärung (was bedeutet der aktuelle Z-Wert?)
+function getPairDirectionText(pair, zScore) {
+  const ctx = PAIR_CONTEXT[pair];
+  if (!ctx) return null;
+  return (zScore || 0) >= 0 ? ctx.z_positive : ctx.z_negative;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -525,7 +587,8 @@ function DashboardTab({ d, w }) {
         {(diverg.pairs || []).filter(p => p.signal !== 'UNAVAILABLE').map((p, i) => {
           const ctx = PAIR_CONTEXT[p.pair] || {};
           const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
-          const explanation = getPairExplanation(p.pair, p.signal);
+          const explanation = getPairExplanation(p.pair, p.signal, p.z_score);
+          const directionText = getPairDirectionText(p.pair, p.z_score);
 
           return (
             <div key={i} className="py-2 border-b border-white/5">
@@ -535,12 +598,16 @@ function DashboardTab({ d, w }) {
                   Z={fmtZ(p.z_score)} <Pill color={sigColor}>{p.signal}</Pill>
                 </span>
               </div>
-              <div className="text-xs text-muted-blue mt-1">{ctx.what}</div>
-              {explanation && p.signal !== 'NORMAL' && (
-                <div className="text-xs mt-1" style={{ color: sigColor }}>{explanation}</div>
+              <div className="text-xs text-muted-blue mt-1">{ctx.what} Bestätigter Trigger: Z{ctx.trigger_threshold}.</div>
+              {directionText && (
+                <div className="text-xs mt-1" style={{ color: p.signal === 'NORMAL' ? COLORS.mutedBlue : sigColor }}>
+                  <strong>Aktuell (Z={fmtZ(p.z_score)}):</strong> {directionText}
+                </div>
               )}
-              {p.signal === 'NORMAL' && explanation && (
-                <div className="text-xs mt-1 text-muted-blue">{explanation}</div>
+              {explanation && (
+                <div className="text-xs mt-1" style={{ color: p.signal === 'NORMAL' ? COLORS.mutedBlue : sigColor }}>
+                  {explanation}
+                </div>
               )}
             </div>
           );
@@ -976,7 +1043,8 @@ function RadarTab({ d, w }) {
             const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
             const isExtreme = p.signal === 'EXTREME' || p.signal === 'EXTREME_UNCONFIRMED';
             const isElevatedOrAbove = isExtreme || p.signal === 'ELEVATED';
-            const explanation = getPairExplanation(p.pair, p.signal);
+            const explanation = getPairExplanation(p.pair, p.signal, p.z_score);
+            const directionText = getPairDirectionText(p.pair, p.z_score);
 
             return (
               <div key={i} className="mb-4 pb-3 border-b border-white/5">
@@ -991,18 +1059,29 @@ function RadarTab({ d, w }) {
                   </div>
                 </div>
 
-                {/* Was misst es — IMMER */}
-                {ctx.what && <div className="text-xs text-muted-blue mt-1">{ctx.what}</div>}
+                {/* Was misst es + Trigger-Schwelle — IMMER */}
+                {ctx.what && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    {ctx.what} Bestätigter Trigger: Z{ctx.trigger_threshold}.
+                  </div>
+                )}
 
-                {/* Stufenspezifische Erklärung — IMMER */}
+                {/* Was bedeutet der aktuelle Z-Wert richtungsmäßig — IMMER */}
+                {directionText && (
+                  <div className="text-xs mt-1" style={{ color: sigColor }}>
+                    <strong>Aktuell (Z={fmtZ(p.z_score)}):</strong> {directionText}
+                  </div>
+                )}
+
+                {/* Stufenspezifische Erklärung (richtungsabhängig) — IMMER */}
                 {explanation && (
                   <div className="text-xs mt-1" style={{ color: p.signal === 'NORMAL' ? COLORS.mutedBlue : sigColor }}>
                     {explanation}
                   </div>
                 )}
 
-                {/* Backtest-Ergebnis bei EXTREME */}
-                {isExtreme && ctx.backtest && (
+                {/* Backtest-Ergebnis NUR bei bestätigtem EXTREME (nicht UNCONFIRMED) */}
+                {p.signal === 'EXTREME' && ctx.backtest && (
                   <div className="text-xs mt-1 font-bold" style={{ color: COLORS.signalOrange }}>
                     Historisch: {ctx.backtest}
                     {ctx.lead_days && ` Lead-Zeit: ${ctx.lead_days} Tage.`}
