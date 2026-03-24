@@ -1051,9 +1051,9 @@ export default function IntelDetail({ dashboard }) {
                       <span className="text-caption text-signal-orange font-medium ml-auto">HIGH</span>
                     )}
                   </div>
-                  {s.portfolio_assets && s.portfolio_assets.length > 0 && (
+                  {s.portfolio_assets && (Array.isArray(s.portfolio_assets) ? s.portfolio_assets.length > 0 : s.portfolio_assets) && (
                     <p className="text-caption text-muted-blue mt-1">
-                      Portfolio-Assets: {s.portfolio_assets.join(', ')}
+                      Portfolio-Assets: {Array.isArray(s.portfolio_assets) ? s.portfolio_assets.join(', ') : s.portfolio_assets}
                     </p>
                   )}
                 </div>
