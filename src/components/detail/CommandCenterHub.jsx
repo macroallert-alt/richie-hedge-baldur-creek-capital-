@@ -298,6 +298,179 @@ const ALIGNMENT_CONTEXT = {
 };
 
 // ═══════════════════════════════════════════════════════
+// EVENT-ERKLÄRUNGEN — Was misst der Indikator, was bedeutet das Ergebnis
+// ═══════════════════════════════════════════════════════
+
+const EVENT_EXPLAINERS = {
+  // TIER A — Impact 10
+  'CPI': {
+    what: 'Consumer Price Index — misst die Inflation die Verbraucher tatsächlich spüren (Nahrung, Energie, Miete, Dienstleistungen).',
+    hot: 'Inflation höher als erwartet → Fed unter Druck Zinsen hoch zu halten → schlecht für Aktien und Anleihen, gut für Gold und Commodities.',
+    cold: 'Inflation niedriger als erwartet → Fed kann lockerer werden → gut für Aktien und Anleihen.',
+    portfolio: 'Betrifft SPY, TLT, GLD, TIP direkt. Bei hot CPI: GLD und DBC profitieren, TLT und SPY unter Druck.',
+  },
+  'Core CPI': {
+    what: 'CPI ohne volatile Nahrung und Energie — zeigt den "sticky" Inflationstrend den die Fed wirklich beobachtet.',
+    hot: 'Kerninflation höher → Fed muss länger restriktiv bleiben → Zinsen bleiben hoch → Aktien und Anleihen leiden.',
+    cold: 'Kerninflation fällt → stärkster Indikator für kommende Zinssenkungen → bullish für alles.',
+    portfolio: 'Wichtiger als Headline CPI für Fed-Entscheidungen. Direkt betroffen: TLT, SPY, HYG.',
+  },
+  'FOMC': {
+    what: 'Federal Open Market Committee — die Fed entscheidet über US-Zinsen. Der wichtigste einzelne Event für alle Märkte.',
+    hot: 'Zinserhöhung oder hawkishe Sprache → Dollar steigt, Aktien fallen, Anleihen fallen, Gold fällt.',
+    cold: 'Zinssenkung oder dovishe Sprache → Dollar fällt, Aktien steigen, Anleihen steigen, Gold steigt.',
+    portfolio: 'Betrifft JEDE Position im Portfolio. Tonalität oft wichtiger als die Entscheidung selbst.',
+  },
+  'Non-Farm Payrolls': {
+    what: 'NFP — Anzahl neuer Jobs in den USA (ohne Landwirtschaft). Wichtigster Arbeitsmarkt-Indikator, erscheint monatlich am ersten Freitag.',
+    hot: 'Mehr Jobs als erwartet → Wirtschaft stark → aber Fed hält Zinsen hoch → gemischtes Signal.',
+    cold: 'Weniger Jobs als erwartet → Rezessionsangst → aber Fed kann senken → auch gemischtes Signal. Richtung hängt vom Regime ab.',
+    portfolio: 'SPY reagiert stark. Bei schwachen NFP: TLT steigt (Zinssenkung), HYG unter Druck (Kreditrisiko).',
+  },
+  'NFP': {
+    what: 'Non-Farm Payrolls — siehe Non-Farm Payrolls.',
+    hot: 'Starker Arbeitsmarkt → Fed hawkish → Dollar stark → Aktien gemischt.',
+    cold: 'Schwacher Arbeitsmarkt → Rezessionssorgen → TLT steigt, SPY fällt.',
+    portfolio: 'Betrifft SPY, TLT, HYG, DXY.',
+  },
+  'ECB': {
+    what: 'Europäische Zentralbank Zinsentscheid — bestimmt Zinsen für die Eurozone. Direkt relevant für VGK und EUR-Assets.',
+    hot: 'Zinserhöhung/hawkish → EUR steigt, VGK unter Druck, europäische Anleihen fallen.',
+    cold: 'Zinssenkung/dovish → EUR fällt, Dollar steigt, VGK könnte profitieren von lockererer Politik.',
+    portfolio: 'VGK direkt betroffen. Indirekt: EUR/USD bewegt DXY → beeinflusst Commodities und EM.',
+  },
+  // TIER B — Impact 7
+  'PPI': {
+    what: 'Producer Price Index — Inflation auf Produzentenebene. Vorläufer des CPI: steigende Produzentenpreise werden an Verbraucher weitergegeben.',
+    hot: 'Produzentenpreise steigen → CPI folgt in 1-2 Monaten → Fed bleibt restriktiv.',
+    cold: 'Produzentenpreise fallen → Inflationsdruck lässt nach → CPI wird folgen.',
+    portfolio: 'Leading Indicator für CPI. Betrifft SPY, TLT indirekt über Zinserwartungen.',
+  },
+  'PCE': {
+    what: 'Personal Consumption Expenditures — das BEVORZUGTE Inflationsmaß der Fed (nicht CPI!). Breiter gefasst, berücksichtigt Substitutionseffekte.',
+    hot: 'PCE über Erwartung → Fed muss restriktiv bleiben → Zinsen hoch → schlecht für Aktien.',
+    cold: 'PCE unter Erwartung → Fed-Pfad zu Zinssenkungen → bullish für Aktien und Anleihen.',
+    portfolio: 'Die Fed schaut auf Core PCE, nicht CPI. Betrifft Zinspfad → TLT, SPY, HYG.',
+  },
+  'GDP': {
+    what: 'Gross Domestic Product — Gesamtwirtschaftsleistung. Erscheint quartalsweise mit Revisionen.',
+    hot: 'Stärkeres Wachstum als erwartet → bullish für Aktien, aber kann Fed hawkish machen.',
+    cold: 'Schwächeres Wachstum → Rezessionssorgen → TLT steigt, SPY unter Druck, HYG-Spreads weiten.',
+    portfolio: 'Breit. SPY, HYG, XLF bei schwachem GDP unter Druck. TLT, GLD als Sicherheit.',
+  },
+  'Retail Sales': {
+    what: 'US-Einzelhandelsumsätze — misst die Konsumausgaben, die ~70% des US-BIP ausmachen.',
+    hot: 'Starker Konsum → Wirtschaft robust → aber Inflationsdruck → Fed dilemma.',
+    cold: 'Schwacher Konsum → Wachstumssorgen → Rezessionsrisiko steigt.',
+    portfolio: 'SPY (Consumer Discretionary), HYG (Kreditqualität), XLP (Consumer Staples relativ stärker bei Schwäche).',
+  },
+  'ISM Manufacturing': {
+    what: 'ISM Manufacturing PMI — unter 50 = Kontraktion der Industrie. Einer der ältesten und zuverlässigsten US-Konjunkturindikatoren.',
+    hot: 'Über 50 = Expansion → bullish für zyklische Assets (SPY, DBC, XLI).',
+    cold: 'Unter 50 = Kontraktion → Rezessionssignal → SPY fällt, TLT steigt. Unter 47 = historisch immer Rezession.',
+    portfolio: 'DBC, XLI, XLF bei schwachem ISM unter Druck. TLT, GLD, XLU profitieren.',
+  },
+  'ISM Services': {
+    what: 'ISM Services PMI — Services = ~80% der US-Wirtschaft. Wichtiger als Manufacturing PMI für die Gesamtwirtschaft.',
+    hot: 'Services expandieren → Wirtschaft gesund → Fed bleibt hawkish.',
+    cold: 'Services kontrahieren → ernsthafte Rezessionsgefahr → Fed muss senken.',
+    portfolio: 'Breiter als ISM Manufacturing. Betrifft SPY, HYG, XLF direkt.',
+  },
+  'FOMC Minutes': {
+    what: 'Protokoll der letzten FOMC-Sitzung — zeigt die Diskussion hinter der Entscheidung, Hawk/Dove Verteilung, kommende Richtung.',
+    hot: 'Hawkishe Töne dominieren → Zinsen bleiben hoch oder steigen → Dollar steigt, Aktien unter Druck.',
+    cold: 'Dovishe Töne → Zinssenkungen wahrscheinlicher → bullish für Aktien und Anleihen.',
+    portfolio: 'Tonalität oft wichtiger als die letzte Entscheidung. Bewegt TLT, SPY, GLD.',
+  },
+  'BOJ': {
+    what: 'Bank of Japan Zinsentscheid — Japan hat die lockerste Geldpolitik weltweit. Jede Straffung bewegt den Yen und globale Carry Trades.',
+    hot: 'BOJ strafft → Yen steigt massiv → Carry Trade Unwind → globaler Risk-Off.',
+    cold: 'BOJ hält locker → Yen bleibt schwach → Carry Trade intakt → Risk-On.',
+    portfolio: 'Indirekt über Carry Trade. BOJ Hawkishness = globaler Risk-Off der SPY, HYG trifft.',
+  },
+  // TIER C — Impact 4
+  'Jobless Claims': {
+    what: 'Wöchentliche Erstanträge auf Arbeitslosenhilfe. Hochfrequenter Arbeitsmarkt-Indikator.',
+    hot: 'Weniger Anträge = starker Arbeitsmarkt → Fed bleibt restriktiv.',
+    cold: 'Mehr Anträge = Arbeitsmarkt schwächelt → Rezessionsfrühsignal wenn Trend anhält.',
+    portfolio: 'Einzelne Woche wenig aussagekräftig. Trend über 4 Wochen relevant für SPY, HYG.',
+  },
+  'Consumer Confidence': {
+    what: 'Verbrauchervertrauen — misst die Stimmung der US-Konsumenten. Leading Indicator für Konsumausgaben.',
+    hot: 'Hohes Vertrauen → Konsum bleibt stark → bullish für SPY.',
+    cold: 'Fallendes Vertrauen → Konsumenten werden vorsichtig → Wachstumsrisiko.',
+    portfolio: 'SPY, Consumer Discretionary (XLY). Trend wichtiger als Einzelwert.',
+  },
+  'PMI': {
+    what: 'Purchasing Managers Index — Einkaufsmanagerindex. Über 50 = Expansion, unter 50 = Kontraktion. Flash PMI = frühe Schätzung.',
+    hot: 'Über 50 und steigend → Wachstum beschleunigt → bullish für zyklische Assets.',
+    cold: 'Unter 50 oder stark fallend → Wachstum verlangsamt sich → defensiv positionieren.',
+    portfolio: 'Je nach Land: US PMI → SPY, DBC. EU PMI → VGK. CN PMI → Commodities, EM.',
+  },
+  'Housing Starts': {
+    what: 'US-Baubeginne — Leading Indicator für Bausektor und breitere Wirtschaft.',
+    hot: 'Mehr Baubeginne → Wirtschaft investiert → bullish für Bau-Aktien und Commodities.',
+    cold: 'Weniger Baubeginne → Immobilienmarkt schwächelt → Hypotheken-Stress möglich.',
+    portfolio: 'VNQ, XHB direkt. Indirekt: Kupfer (Bau-Nachfrage), XLF (Hypotheken-Exposure).',
+  },
+  'Construction Spending': {
+    what: 'US-Bauausgaben — monatliche Gesamtausgaben für Bauprojekte (Wohn, Gewerbe, Staat).',
+    hot: 'Steigende Bauausgaben → Wirtschaft investiert → positiv für Industriesektor und Commodities.',
+    cold: 'Fallende Bauausgaben → Investitionsschwäche → bestätigt Wachstumsverlangsamung. Kupfer und Bau-Aktien unter Druck.',
+    portfolio: 'DBC (Kupfer-Komponente), XLI (Industrie), XHB (Homebuilder). Bei Schwäche: TLT profitiert.',
+  },
+  'Trade Balance': {
+    what: 'Handelsbilanz — Exporte minus Importe. Wachsendes Defizit = USA importiert mehr als es exportiert.',
+    hot: 'Schrumpfendes Defizit → US-Exporte stark → Dollar kann stärken.',
+    cold: 'Wachsendes Defizit → mehr Nachfrage nach ausländischen Gütern → Dollar-Druck.',
+    portfolio: 'Meist niedriger Impact. Relevant bei Trade War Eskalation → dann massiv für DBC, EM, VGK.',
+  },
+  'Durable Goods': {
+    what: 'Aufträge für langlebige Güter — Leading Indicator für Business Investment. Volatil, oft durch Flugzeug-Aufträge verzerrt.',
+    hot: 'Starke Aufträge → Unternehmen investieren → Wachstum intakt.',
+    cold: 'Schwache Aufträge (ex Transport) → Unternehmen halten sich zurück → Rezessionssignal.',
+    portfolio: 'XLI (Industrie), SPY breit. Ex-Transport wichtiger als Headline.',
+  },
+  'Industrial Production': {
+    what: 'US-Industrieproduktion — misst den Output von Fabriken, Bergbau und Utilities.',
+    hot: 'Steigende Produktion → Wirtschaft produziert mehr → bullish.',
+    cold: 'Fallende Produktion → Nachfrage sinkt → bestätigt Manufacturing-Schwäche.',
+    portfolio: 'DBC (Rohstoff-Nachfrage), XLI (Industrie). Trend über 3 Monate aussagekräftiger als Einzelmonat.',
+  },
+  'Chicago Fed': {
+    what: 'Chicago Fed National Activity Index — 85 Indikatoren in einer Zahl. Über 0 = überdurchschnittliches Wachstum, unter 0 = unterdurchschnittlich.',
+    hot: 'Positiv und steigend → breites Wachstum bestätigt → bullish.',
+    cold: 'Negativ und fallend → Wirtschaft unter Trend → Rezessionsrisiko wenn anhaltend unter -0.35.',
+    portfolio: 'Breit gefasster Composite. Bestätigt oder widerspricht ISM, PMI Signale. SPY, HYG.',
+  },
+  'Bill Auction': {
+    what: 'US Treasury Auktion für kurzlaufende Staatsanleihen. Yield zeigt wo der Markt den risikofreien Zins sieht.',
+    hot: 'Höhere Yields → Markt erwartet höhere Zinsen länger → "higher for longer".',
+    cold: 'Niedrigere Yields → Markt preist Zinssenkungen ein → dovish Signal.',
+    portfolio: 'Niedriger direkter Impact. Aber Trend bei T-Bill Yields zeigt Zinserwartungen → TLT, SPY.',
+  },
+};
+
+// Helper: Finde Erklärung für einen Event-Namen
+function getEventExplainer(eventName) {
+  if (!eventName) return null;
+  const name = eventName.toLowerCase();
+  for (const [key, explainer] of Object.entries(EVENT_EXPLAINERS)) {
+    if (name.includes(key.toLowerCase())) return explainer;
+  }
+  return null;
+}
+
+// Helper: Surprise-Richtung zu Erklärungsfeld mappen
+function getSurpriseExplanation(eventName, direction) {
+  const exp = getEventExplainer(eventName);
+  if (!exp) return null;
+  if (direction === 'HOT' || direction === 'HAWKISH' || direction === 'STRONG') return exp.hot;
+  if (direction === 'COLD' || direction === 'DOVISH' || direction === 'WEAK') return exp.cold;
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
 
@@ -809,6 +982,105 @@ function IntelTab({ d }) {
         )}
       </GlassCard>
 
+      {/* Events Gestern — Was ist passiert und was bedeutet es? */}
+      {(() => {
+        const yesterdayEvents = d.calendar?.yesterday || [];
+        const surprises = d.surprises?.yesterday_surprises || [];
+        const reactions = d.market_reactions?.reactions || [];
+        // Nur Events mit Impact ≥ 3 ODER mit Surprise zeigen
+        const relevantEvents = yesterdayEvents.filter(ev =>
+          (ev.impact_score || 0) >= 3 ||
+          ev.surprise_direction && ev.surprise_direction !== 'INLINE'
+        );
+        if (relevantEvents.length === 0) return null;
+
+        return (
+          <GlassCard>
+            <Section title="Events Gestern" subtitle="Was ist passiert und was bedeutet das?">
+              {relevantEvents.map((ev, i) => {
+                const exp = getEventExplainer(ev.event);
+                const surpriseColor = CC_SURPRISE_COLORS[ev.surprise_direction] || COLORS.mutedBlue;
+                const reaction = reactions.find(r => r.event === ev.event);
+                const reactionColor = reaction ? (CC_REACTION_COLORS[reaction.reaction] || COLORS.mutedBlue) : null;
+                const surpriseExpl = getSurpriseExplanation(ev.event, ev.surprise_direction);
+
+                return (
+                  <div key={i} className="py-3 border-b border-white/5">
+                    {/* Event Header */}
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-sm text-ice-white font-bold">{ev.event}</span>
+                        <span className="text-caption text-muted-blue ml-2">{ev.country}</span>
+                      </div>
+                      <ImpactBar score={ev.impact_score} />
+                    </div>
+
+                    {/* Was misst dieser Indikator? */}
+                    {exp?.what && (
+                      <div className="text-xs text-muted-blue mt-1">{exp.what}</div>
+                    )}
+
+                    {/* Ergebnis + Surprise */}
+                    {ev.actual != null && (
+                      <div className="text-xs mt-2 px-3 py-2 rounded" style={{ backgroundColor: `${surpriseColor}08`, borderLeft: `2px solid ${surpriseColor}40` }}>
+                        <div>
+                          <span className="text-muted-blue">Konsens: {ev.consensus ?? '—'}</span>
+                          <span className="text-ice-white mx-2">→ Ergebnis: <strong>{ev.actual}</strong></span>
+                          {ev.surprise_direction && ev.surprise_direction !== 'INLINE' && (
+                            <Pill color={surpriseColor}>{ev.surprise_direction}</Pill>
+                          )}
+                          {ev.surprise_pct != null && (
+                            <span className="text-muted-blue ml-1">({(ev.surprise_pct * 100).toFixed(1)}% Abweichung)</span>
+                          )}
+                        </div>
+
+                        {/* Was bedeutet dieses Ergebnis? */}
+                        {surpriseExpl && (
+                          <div className="text-xs mt-1" style={{ color: surpriseColor }}>
+                            <strong>Implikation:</strong> {surpriseExpl}
+                          </div>
+                        )}
+
+                        {/* Portfolio-Relevanz */}
+                        {exp?.portfolio && (
+                          <div className="text-xs text-muted-blue mt-1">
+                            <strong className="text-ice-white">Portfolio:</strong> {exp.portfolio}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Markt-Reaktion wenn vorhanden */}
+                    {reaction && (
+                      <div className="text-xs mt-1 flex items-center gap-2">
+                        <span className="text-muted-blue">Markt-Reaktion:</span>
+                        <Pill color={reactionColor}>{reaction.reaction}</Pill>
+                        {reaction.reaction === 'ABSORBED' && (
+                          <span className="text-muted-blue">— Markt hat die Nachricht ignoriert (bullish Signal)</span>
+                        )}
+                        {reaction.reaction === 'REJECTED' && (
+                          <span className="text-muted-blue">— Markt hat positiv reagiert verkauft (bearish Signal)</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Event ohne Actual aber mit Konsens */}
+                    {ev.actual == null && ev.consensus != null && (
+                      <div className="text-xs text-muted-blue mt-1">Konsens: {ev.consensus} — Ergebnis noch nicht verfügbar.</div>
+                    )}
+                  </div>
+                );
+              })}
+              <ExplainBox>
+                Nur Events mit Impact Score ≥3 oder signifikanter Überraschung werden hier gezeigt.
+                Impact Score = historischer Markt-Impact × Portfolio-Geo-Exposure.
+                Alle Events inkl. niedrigem Impact im § Calendar Tab.
+              </ExplainBox>
+            </Section>
+          </GlassCard>
+        );
+      })()}
+
       {/* Trigger-Analyse — warum wurde der Intelligence Layer aktiviert? */}
       {intelligence.trigger_analysis && (
         <GlassCard>
@@ -1247,9 +1519,11 @@ function CalendarTab({ d }) {
     return events.slice(0, 15).map((ev, i) => {
       const surpriseColor = CC_SURPRISE_COLORS[ev.surprise_direction] || COLORS.mutedBlue;
       const reactionColor = CC_REACTION_COLORS[ev.reaction] || COLORS.mutedBlue;
+      const exp = getEventExplainer(ev.event);
+      const surpriseExpl = getSurpriseExplanation(ev.event, ev.surprise_direction);
 
       return (
-        <div key={i} className="py-2 border-b border-white/5">
+        <div key={i} className="py-3 border-b border-white/5">
           <div className="flex justify-between items-center">
             <div>
               <span className="text-caption text-muted-blue mr-2">{fmtTime(ev.time)}</span>
@@ -1259,6 +1533,12 @@ function CalendarTab({ d }) {
             <ImpactBar score={ev.impact_score} />
           </div>
 
+          {/* Was misst dieser Indikator? */}
+          {exp?.what && (
+            <div className="text-xs text-muted-blue mt-1">{exp.what}</div>
+          )}
+
+          {/* Ergebnis mit Erklärung */}
           {showResult && ev.actual != null && (
             <div className="mt-1 text-xs">
               <span className="text-muted-blue">Konsens: {ev.consensus}</span>
@@ -1268,11 +1548,22 @@ function CalendarTab({ d }) {
                 <span className="text-muted-blue ml-1">({(ev.surprise_pct * 100).toFixed(1)}%)</span>
               )}
               {ev.reaction && <span className="ml-2" style={{ color: reactionColor }}>→ {ev.reaction}</span>}
+              {/* Was bedeutet dieses Ergebnis? */}
+              {surpriseExpl && (
+                <div className="mt-1" style={{ color: surpriseColor }}>→ {surpriseExpl}</div>
+              )}
             </div>
           )}
 
+          {/* Heute/Zukunft: Konsens + was erwartet wird */}
           {!showResult && ev.consensus != null && (
-            <div className="mt-1 text-xs text-muted-blue">Konsens: {ev.consensus}</div>
+            <div className="mt-1 text-xs text-muted-blue">
+              Konsens: {ev.consensus}
+              {exp?.portfolio && <span className="ml-1">· Portfolio-Relevanz: {exp.portfolio}</span>}
+            </div>
+          )}
+          {!showResult && !ev.consensus && exp?.portfolio && (
+            <div className="mt-1 text-xs text-muted-blue">Portfolio-Relevanz: {exp.portfolio}</div>
           )}
         </div>
       );
