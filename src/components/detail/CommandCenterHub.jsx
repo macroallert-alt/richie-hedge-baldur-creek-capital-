@@ -449,6 +449,120 @@ const EVENT_EXPLAINERS = {
     cold: 'Niedrigere Yields → Markt preist Zinssenkungen ein → dovish Signal.',
     portfolio: 'Niedriger direkter Impact. Aber Trend bei T-Bill Yields zeigt Zinserwartungen → TLT, SPY.',
   },
+  'Note Auction': {
+    what: 'US Treasury Auktion für mittelfristige Staatsanleihen (2Y, 5Y, 7Y, 10Y). Zeigt Nachfrage nach US-Schulden.',
+    hot: 'Schwache Nachfrage (hohe Yield, niedriger Bid-to-Cover) → Markt will Prämie für US-Schulden → Zinsen steigen.',
+    cold: 'Starke Nachfrage → Flight to Safety oder erwartete Zinssenkungen → TLT profitiert.',
+    portfolio: 'TLT direkt. Bei schwachen Auktionen: Zinsen steigen → SPY, HYG unter Druck.',
+  },
+  'Bond Auction': {
+    what: 'Staatsanleihen-Auktion. Yield zeigt Marktzins, Bid-to-Cover zeigt Nachfrage.',
+    hot: 'Schwache Nachfrage → höhere Yields nötig → Zinsumfeld verschärft sich.',
+    cold: 'Starke Nachfrage → Investoren suchen Sicherheit → bullish für Anleihen.',
+    portfolio: 'TLT, LQD betroffen. Trend wichtiger als Einzelauktion.',
+  },
+  'Core Inflation': {
+    what: 'Kerninflation — CPI oder PCE ohne volatile Nahrung und Energie. Der "sticky" Inflationstrend den Zentralbanken beobachten.',
+    hot: 'Kerninflation über Erwartung → Zentralbank muss restriktiv bleiben → schlecht für Aktien und Anleihen.',
+    cold: 'Kerninflation unter Erwartung → Zinssenkungen wahrscheinlicher → bullish.',
+    portfolio: 'TLT, SPY, HYG — alles was vom Zinspfad abhängt.',
+  },
+  'Inflation Rate': {
+    what: 'Inflationsrate (Headline) — Gesamtinflation inkl. Nahrung und Energie.',
+    hot: 'Inflation über Erwartung → Zentralbank unter Druck → Zinsen hoch oder höher.',
+    cold: 'Inflation unter Erwartung → Lockerungsspielraum → bullish für Aktien.',
+    portfolio: 'Abhängig vom Land: US → SPY, TLT. JP → BOJ-Reaktion → Yen → globale Carry Trades.',
+  },
+  'Composite PMI': {
+    what: 'Zusammengesetzter Einkaufsmanagerindex — Manufacturing + Services. Gibt das breiteste Bild der Wirtschaftsaktivität.',
+    hot: 'Über 50 und steigend → breites Wachstum → bullish für Risk-Assets.',
+    cold: 'Unter 50 oder stark fallend → breite Wachstumsschwäche → defensiv positionieren.',
+    portfolio: 'Breitester PMI. US → SPY. EU → VGK. Trend über 3 Monate aussagekräftiger.',
+  },
+  'Services PMI': {
+    what: 'Services Einkaufsmanagerindex — Services = ~80% der entwickelten Volkswirtschaften. Wichtiger als Manufacturing PMI.',
+    hot: 'Services expandieren → Wirtschaft gesund → Risk-On.',
+    cold: 'Services kontrahieren → ernsthafte Wachstumssorgen → Risk-Off.',
+    portfolio: 'Breit. US Services PMI schwach → SPY, HYG unter Druck. EU → VGK.',
+  },
+  'Manufacturing PMI': {
+    what: 'Manufacturing Einkaufsmanagerindex — Industriesektor. Über 50 = Expansion, unter 50 = Kontraktion.',
+    hot: 'Industrie expandiert → Nachfrage nach Rohstoffen steigt → DBC, XLI profitieren.',
+    cold: 'Industrie kontrahiert → Rezessionssignal → zyklische Assets unter Druck.',
+    portfolio: 'DBC, XLI direkt. Bei schwachem Manufacturing: TLT, GLD als Sicherheit.',
+  },
+  'CB Consumer': {
+    what: 'Conference Board Consumer Confidence — umfassendste US-Verbraucherumfrage mit Present Situation + Expectations.',
+    hot: 'Hohes Vertrauen → Konsumenten geben aus → bullish für SPY, Consumer Discretionary.',
+    cold: 'Fallendes Vertrauen → Konsumenten werden vorsichtig → Wachstumsrisiko. Expectations-Komponente ist Leading Indicator.',
+    portfolio: 'SPY, XLY (Consumer Discretionary). Expectations < 80 historisch Rezessionssignal.',
+  },
+  'Michigan Consumer': {
+    what: 'University of Michigan Consumer Sentiment — älteste US-Verbraucherumfrage. Enthält auch Inflationserwartungen.',
+    hot: 'Hohes Sentiment → Konsum stark. Aber hohe Inflationserwartungen = hawkish für Fed.',
+    cold: 'Niedriges Sentiment → Konsumenten pessimistisch → Wachstumssorgen.',
+    portfolio: 'SPY, XLY. Inflationserwartungen-Komponente bewegt TLT und Fed-Erwartungen.',
+  },
+  'Initial Jobless': {
+    what: 'Wöchentliche Erstanträge auf Arbeitslosenhilfe. Hochfrequentester US-Arbeitsmarkt-Indikator.',
+    hot: 'Weniger Anträge = starker Arbeitsmarkt → Fed bleibt restriktiv.',
+    cold: 'Mehr Anträge = Arbeitsmarkt schwächelt → Rezessionsfrühsignal wenn Trend anhält über 4 Wochen.',
+    portfolio: 'Einzelwoche wenig aussagekräftig. Trend über 4 Wochen relevant für SPY, HYG.',
+  },
+  'Continuing Jobless': {
+    what: 'Fortlaufende Arbeitslosenhilfe-Anträge — zeigt wie lange Menschen arbeitslos bleiben. Steigender Trend = Arbeitsmarkt verschlechtert sich.',
+    hot: 'Fallend → Menschen finden schnell neue Jobs → Arbeitsmarkt gesund.',
+    cold: 'Steigend → Langzeitarbeitslosigkeit nimmt zu → ernsteres Signal als Initial Claims.',
+    portfolio: 'HYG, SPY bei steigendem Trend unter Druck. TLT profitiert.',
+  },
+  'Richmond Fed': {
+    what: 'Richmond Fed Manufacturing/Services Index — regionale Fed-Umfrage für Ostküste. Unter 0 = Kontraktion.',
+    hot: 'Positiv und steigend → regionale Wirtschaft expandiert.',
+    cold: 'Negativ und fallend → bestätigt ISM-Schwäche wenn andere regionale Feds auch schwach.',
+    portfolio: 'Niedriger direkter Impact. Aber Muster aus 5 regionalen Feds (NY, Philly, Richmond, KC, Dallas) = ISM Preview.',
+  },
+  'Dallas Fed': {
+    what: 'Dallas Fed Manufacturing/Services Index — regionale Fed-Umfrage für Texas/Süden. Energiesektor-lastig.',
+    hot: 'Positiv → Texas-Wirtschaft (Energie, Tech) expandiert.',
+    cold: 'Negativ → Energie-Schwäche oder breitere Verlangsamung im Süden.',
+    portfolio: 'XLE (Energie) wenn Dallas Fed Services schwach. Regionaler Indikator.',
+  },
+  'Fed': {
+    what: 'Fed-Offizieller Rede — einzelne FOMC-Mitglieder geben Hinweise auf kommende Geldpolitik.',
+    hot: 'Hawkishe Töne → Zinsen bleiben hoch → Dollar steigt, Aktien unter Druck.',
+    cold: 'Dovishe Töne → Zinssenkungen wahrscheinlicher → bullish für Aktien und Anleihen.',
+    portfolio: 'Abhängig vom Sprecher: Fed Chair = höchster Impact. Stimmberechtigte Mitglieder > Nicht-stimmberechtigte.',
+  },
+  'Crude Oil': {
+    what: 'Rohöl-Lagerbestandsveränderung (API oder EIA). Steigende Bestände = Überangebot, fallende = starke Nachfrage.',
+    hot: 'Fallende Bestände → Nachfrage > Angebot → Ölpreis steigt → DBC, XLE profitieren.',
+    cold: 'Steigende Bestände → Überangebot → Ölpreis fällt → DBC, XLE unter Druck.',
+    portfolio: 'DBC (Energie-Komponente), XLE. Bei starkem Anstieg der Ölpreise: Inflationsdruck → TLT unter Druck.',
+  },
+  'Money Supply': {
+    what: 'Geldmenge (M2) — wie viel Geld im Umlauf ist. Steigendes M2 = mehr Liquidität = tendenziell bullish für Assets.',
+    hot: 'M2 steigt → mehr Geld jagt gleich viele Assets → bullish für SPY, GLD, Crypto.',
+    cold: 'M2 fällt → weniger Liquidität → bearish für Risk-Assets.',
+    portfolio: 'Breit. Trend über Monate wichtiger als Einzelmonat. Korreliert mit Net Liquidity Indikator.',
+  },
+  'Redbook': {
+    what: 'Redbook Retail Sales — wöchentlicher Einzelhandelsumsatz-Vergleich zum Vorjahr. Hochfrequenter Konsum-Indikator.',
+    hot: 'Starkes Wachstum → Konsument gibt aus → bullish für Retail-Aktien.',
+    cold: 'Schwaches Wachstum → Konsumschwäche → bestätigt schwache Retail Sales wenn Trend anhält.',
+    portfolio: 'Niedriger Impact. Trend bestätigt oder widerspricht offizielle Retail Sales Daten.',
+  },
+  'Retail Sales': {
+    what: 'Einzelhandelsumsätze — misst die Konsumausgaben. In den USA ~70% des BIP, in Japan ebenfalls sehr wichtig.',
+    hot: 'Starker Konsum → Wirtschaft robust → aber auch Inflationsdruck.',
+    cold: 'Schwacher Konsum → Wachstumssorgen → Rezessionsrisiko steigt.',
+    portfolio: 'SPY (Consumer Discretionary), HYG (Kreditqualität), XLP (relativ stärker bei Schwäche).',
+  },
+  'Chicago PMI': {
+    what: 'Chicago Purchasing Managers Index — regionaler Industrieindex für Chicago-Raum. Über 50 = Expansion.',
+    hot: 'Über 50 → regionale Industrie expandiert → positiv für ISM-Erwartung.',
+    cold: 'Unter 50 → Kontraktion → Rezessionssignal wenn anhaltend. Korreliert mit ISM Manufacturing.',
+    portfolio: 'Preview für ISM Manufacturing. DBC, XLI bei Schwäche unter Druck.',
+  },
 };
 
 // Helper: Finde Erklärung für einen Event-Namen
@@ -985,12 +1099,26 @@ function IntelTab({ d }) {
       {/* Events Gestern — Was ist passiert und was bedeutet es? */}
       {(() => {
         const yesterdayEvents = d.calendar?.yesterday || [];
-        const surprises = d.surprises?.yesterday_surprises || [];
+        const surpriseList = d.surprises?.yesterday_surprises || [];
         const reactions = d.market_reactions?.reactions || [];
-        // Nur Events mit Impact ≥ 3 ODER mit Surprise zeigen
-        const relevantEvents = yesterdayEvents.filter(ev =>
-          (ev.impact_score || 0) >= 3 ||
-          ev.surprise_direction && ev.surprise_direction !== 'INLINE'
+
+        // Merge surprise-Daten in Events (surprises sind separates Array)
+        const enriched = yesterdayEvents.map(ev => {
+          const surprise = surpriseList.find(s =>
+            s.event && ev.event && s.event.toLowerCase().includes(ev.event.toLowerCase().substring(0, 15))
+          );
+          return {
+            ...ev,
+            surprise_direction: ev.surprise_direction || surprise?.direction,
+            surprise_pct: ev.surprise_pct ?? surprise?.surprise_pct,
+          };
+        });
+
+        // Zeige Events mit Impact ≥ 2 ODER mit Surprise (nicht INLINE)
+        const relevantEvents = enriched.filter(ev =>
+          (ev.impact_score || 0) >= 2 ||
+          (ev.surprise_direction && ev.surprise_direction !== 'INLINE') ||
+          (ev.actual != null && ev.consensus != null && ev.actual !== ev.consensus)
         );
         if (relevantEvents.length === 0) return null;
 
