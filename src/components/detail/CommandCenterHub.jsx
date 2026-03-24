@@ -48,8 +48,14 @@ const TABS = [
 const PAIR_CONTEXT = {
   'DBC/SPY': {
     name: 'Commodities vs. Aktien',
-    what: 'Misst ob Rohstoffe (Energie, Metalle, Agrar) schneller steigen als US-Aktien.',
-    extreme_meaning: 'Commodities outperformen extrem — typisches Zeichen für Inputkosten-Inflation, die Unternehmensmargen unter Druck setzt.',
+    what: 'Misst ob Rohstoffe (Energie, Metalle, Agrar) schneller steigen als US-Aktien. Trigger-Richtung: Z>+2.0 (Commodities outperformen).',
+    levels: {
+      NORMAL: 'Commodities und Aktien laufen im historischen Normalbereich. Kein Handlungsbedarf.',
+      MODERATE: 'Commodities outperformen leicht — Inputkosten steigen, aber noch im Rahmen. Beobachten ob der Trend anhält.',
+      ELEVATED: 'Commodities ziehen deutlich davon. Inputkosten-Inflation baut sich auf. Wenn das weitergeht, geraten Unternehmensmargen unter Druck → SPY-Risiko steigt.',
+      EXTREME: 'Commodities outperformen extrem — Inputkosten-Inflation drückt Margen. In 75% der historischen Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
+      EXTREME_UNCONFIRMED: 'Signal in Gegenrichtung (Commodities underperformen). Nicht Backtest-bestätigt, wird überwacht aber löst keinen Trigger aus.',
+    },
     backtest: 'In 75% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
     lead_days: 80,
     affected: 'SPY und alle SPY-korrelierten Assets (XLK, XLY, XLI, IWM)',
@@ -59,11 +65,21 @@ const PAIR_CONTEXT = {
       'TIP/SPY steigt parallel → Inflationserwartungen werden bestätigt',
       'Bei gleichzeitig CONTRACTING Liquidität → V16 dreht Richtung STRESS (4-8 Wochen)',
     ],
+    chains_elevated: [
+      'Inputkosten steigen → Margen-Druck baut sich auf, aber noch kein Drawdown-Signal',
+      'GLD könnte profitieren wenn Inflation-Narrativ sich festigt',
+    ],
   },
   'VGK/SPY': {
     name: 'Europa vs. USA',
-    what: 'Misst ob europäische Aktien relativ zu US-Aktien fallen.',
-    extreme_meaning: 'Europa underperformt massiv — typisch bei EUR-Schwäche, Energiekrise, oder politischer Unsicherheit in der Eurozone.',
+    what: 'Misst ob europäische Aktien relativ zu US-Aktien fallen. Trigger-Richtung: Z<-3.0 (Europa underperformt).',
+    levels: {
+      NORMAL: 'Europa und USA laufen im normalen Verhältnis. Keine regionale Verschiebung sichtbar.',
+      MODERATE: 'Europa beginnt zu underperformen. Kann EUR-Schwäche, Energie-Sorgen oder politische Unsicherheit signalisieren.',
+      ELEVATED: 'Europa underperformt deutlich. Mögliche Ursachen: EUR fällt, EZB-Unsicherheit, Energiepreise. Aufmerksamkeit auf europäische Positionen.',
+      EXTREME: 'Europa underperformt massiv — typisch bei EUR-Schwäche, Energiekrise, oder politischer Unsicherheit. In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
+      EXTREME_UNCONFIRMED: 'Europa outperformt extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    },
     backtest: 'In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: 76,
     affected: 'VGK direkt, indirekt SPY (globaler Risk-Off)',
@@ -72,12 +88,22 @@ const PAIR_CONTEXT = {
       'Wenn gleichzeitig DBC/SPY hoch → Stagflation-Signal verstärkt sich',
       'ECB unter Druck → hawkish Reaction → europäische Anleihen fallen',
     ],
+    chains_elevated: [
+      'Europa-Schwäche beginnt → EUR unter Druck → beobachten ob Dollar-Stärke folgt',
+      'VGK-Position im Portfolio prüfen falls Trend sich verstärkt',
+    ],
   },
   'DBC/TLT': {
     name: 'Commodities vs. Anleihen',
-    what: 'Misst ob Rohstoffe relativ zu US-Staatsanleihen fallen.',
-    extreme_meaning: 'Wenn DBC/TLT extrem negativ: Deflations-Signal — Rohstoffe fallen während Anleihen steigen (Flucht in Sicherheit).',
-    backtest: 'In 54.5% der Fälle folgte ein Drawdown innerhalb von 21 Handelstagen. Schnellstes Signal der 5 Paare.',
+    what: 'Misst ob Rohstoffe relativ zu US-Staatsanleihen fallen. Trigger-Richtung: Z<-2.0 (Rohstoffe underperformen = Deflationsangst).',
+    levels: {
+      NORMAL: 'Commodities und Anleihen im Gleichgewicht. Keine Deflations- oder Inflationsangst erkennbar.',
+      MODERATE: 'Leichte Verschiebung zwischen Commodities und Bonds. Markt beginnt eine Richtung einzupreisen.',
+      ELEVATED: 'Deutliche Verschiebung. Wenn Anleihen outperformen → Markt preist Wachstumsverlangsamung ein. Wenn Commodities outperformen → Inflationsdruck.',
+      EXTREME: 'Wenn DBC/TLT extrem negativ: Deflations-Signal — Rohstoffe fallen während Anleihen steigen (Flucht in Sicherheit). In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Tagen. Schnellstes Signal.',
+      EXTREME_UNCONFIRMED: 'Signal in Gegenrichtung (Commodities outperformen Bonds extrem). Nicht Backtest-bestätigt, nur überwacht.',
+    },
+    backtest: 'In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Handelstagen. Schnellstes Signal der 5 Paare.',
     lead_days: 65,
     affected: 'DBC, HYG, zyklische Sektoren (XLI, XLE)',
     chains: [
@@ -85,12 +111,22 @@ const PAIR_CONTEXT = {
       'TLT steigt → Renditen fallen → Signal für Wachstumsverlangsamung',
       'Bei Bestätigung durch Cu/Au bearish → Rezessionssignal verstärkt',
     ],
+    chains_elevated: [
+      'Anleihen beginnen Commodities outzuperformen → Wachstumssorgen nehmen zu',
+      'TLT-Position profitiert, aber zyklische Positionen (DBC, XLI) unter Beobachtung',
+    ],
   },
   'TIP/SPY': {
     name: 'Inflationserwartungen vs. Aktien',
-    what: 'Misst ob inflationsgeschützte Anleihen (TIPS) schneller steigen als Aktien — ein Zeichen für steigende Inflationserwartungen.',
-    extreme_meaning: 'Markt preist deutlich höhere Inflation ein als die Fed kommuniziert. Breakeven-Inflation steigt.',
-    backtest: 'In 66.7% der Fälle folgte ein SPY-Drawdown innerhalb von 63 Tagen.',
+    what: 'Misst ob inflationsgeschützte Anleihen (TIPS) schneller steigen als Aktien — ein Zeichen für steigende Inflationserwartungen. Trigger-Richtung: Z>+2.0.',
+    levels: {
+      NORMAL: 'Inflationserwartungen im Normalbereich. Breakeven-Inflation stabil. Kein Handlungsbedarf.',
+      MODERATE: 'Inflationserwartungen steigen leicht. Markt beginnt höhere Inflation einzupreisen als die Fed kommuniziert.',
+      ELEVATED: 'Breakeven-Inflation steigt spürbar. TIPS outperformen Aktien. Markt zweifelt an Fed-Glaubwürdigkeit. GLD und TIP profitieren.',
+      EXTREME: 'Markt preist deutlich höhere Inflation ein als die Fed kommuniziert. In 66.7% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Tagen — weil steigende Inflation Zinserhöhungen erzwingt die Aktien belasten.',
+      EXTREME_UNCONFIRMED: 'Breakeven-Inflation fällt extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    },
+    backtest: 'In 66.7% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: null,
     affected: 'SPY, TLT (bei Zinsanstieg), alle Fixed-Income-Positionen',
     chains: [
@@ -98,11 +134,21 @@ const PAIR_CONTEXT = {
       'Bestätigt DBC/SPY Signal: Inflation ist das Thema, nicht Wachstum',
       'GLD profitiert als Inflationsschutz → GLD-Gewicht im Portfolio stabilisiert',
     ],
+    chains_elevated: [
+      'Inflationserwartungen steigen → Fed-Glaubwürdigkeit unter Druck',
+      'GLD und TIP profitieren → defensive Rotation beginnt',
+    ],
   },
   'XLF/SPY': {
     name: 'Finanzsektor vs. Gesamtmarkt',
-    what: 'Misst ob der Finanzsektor relativ zum Gesamtmarkt einbricht. Financials sind ein Frühindikator für Kreditstress.',
-    extreme_meaning: 'Banken underperformen extrem — typisch bei steigenden Kreditausfällen, Yield-Curve-Inversion, oder systemischem Stress.',
+    what: 'Misst ob der Finanzsektor relativ zum Gesamtmarkt einbricht. Financials sind ein Frühindikator für Kreditstress. Trigger-Richtung: Z<-2.5.',
+    levels: {
+      NORMAL: 'Finanzsektor und Gesamtmarkt laufen im Gleichschritt. Kein Kreditstress erkennbar.',
+      MODERATE: 'Banken beginnen leicht zu underperformen. Kann frühe Anzeichen von Kreditstress sein — oder normales Sektorrotation.',
+      ELEVATED: 'Finanzsektor underperformt deutlich. Typisch bei steigenden Kreditausfällen oder Zinsstruktur-Problemen. Kreditvergabe könnte sich verlangsamen.',
+      EXTREME: 'Banken underperformen extrem — typisch bei steigenden Kreditausfällen, Yield-Curve-Inversion, oder systemischem Stress. In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
+      EXTREME_UNCONFIRMED: 'Financials outperformen extrem (Gegenrichtung). Nicht Backtest-bestätigt, nur überwacht.',
+    },
     backtest: 'In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
     lead_days: 66,
     affected: 'XLF direkt, SPY und HYG indirekt (Kreditkanal)',
@@ -111,8 +157,19 @@ const PAIR_CONTEXT = {
       'Wenn gleichzeitig HYG schwach → Credit Stress bestätigt',
       'Bei gleichzeitig VIX-Bestätigung → systemisches Risiko steigt',
     ],
+    chains_elevated: [
+      'Banken beginnen zu schwächeln → Kreditvergabe könnte sich verlangsamen',
+      'HYG beobachten — wenn Credit Spreads parallel steigen, bestätigt sich das Signal',
+    ],
   },
 };
+
+// Helper: Erklärung für ein Paar basierend auf Signal-Level
+function getPairExplanation(pair, signal) {
+  const ctx = PAIR_CONTEXT[pair];
+  if (!ctx?.levels) return null;
+  return ctx.levels[signal] || ctx.levels.NORMAL || null;
+}
 
 // ═══════════════════════════════════════════════════════
 // ALIGNMENT ERKLÄRUNG
@@ -459,26 +516,35 @@ function DashboardTab({ d, w }) {
         </ExplainBox>
       </GlassCard>
 
-      {/* Divergenzen kompakt */}
+      {/* Divergenzen kompakt — ALLE Paare mit Erklärung */}
       <GlassCard>
         <div className="flex items-center justify-between mb-2">
           <span className="text-label uppercase tracking-wider text-muted-blue">Divergenzen</span>
           <Pill color={CC_ALERT_LEVEL_COLORS[diverg.alert_level] || COLORS.mutedBlue}>{diverg.alert_level || '—'}</Pill>
         </div>
-        {(diverg.pairs || []).filter(p => p.signal !== 'NORMAL' && p.signal !== 'UNAVAILABLE').length === 0 ? (
-          <p className="text-xs text-muted-blue">Alle Paare im Normalbereich. Kein Handlungsbedarf.</p>
-        ) : (
-          (diverg.pairs || []).filter(p => p.signal !== 'NORMAL' && p.signal !== 'UNAVAILABLE').map((p, i) => (
-            <div key={i} className="py-1.5 border-b border-white/5">
+        {(diverg.pairs || []).filter(p => p.signal !== 'UNAVAILABLE').map((p, i) => {
+          const ctx = PAIR_CONTEXT[p.pair] || {};
+          const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
+          const explanation = getPairExplanation(p.pair, p.signal);
+
+          return (
+            <div key={i} className="py-2 border-b border-white/5">
               <div className="flex justify-between text-sm">
-                <span className="text-ice-white">{p.pair} <span className="text-muted-blue">({PAIR_CONTEXT[p.pair]?.name || p.name || ''})</span></span>
-                <span style={{ color: CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue }}>
-                  Z={fmtZ(p.z_score)} {p.signal}
+                <span className="text-ice-white">{p.pair} <span className="text-muted-blue">({ctx.name || p.name || ''})</span></span>
+                <span style={{ color: sigColor }}>
+                  Z={fmtZ(p.z_score)} <Pill color={sigColor}>{p.signal}</Pill>
                 </span>
               </div>
+              <div className="text-xs text-muted-blue mt-1">{ctx.what}</div>
+              {explanation && p.signal !== 'NORMAL' && (
+                <div className="text-xs mt-1" style={{ color: sigColor }}>{explanation}</div>
+              )}
+              {p.signal === 'NORMAL' && explanation && (
+                <div className="text-xs mt-1 text-muted-blue">{explanation}</div>
+              )}
             </div>
-          ))
-        )}
+          );
+        })}
         <ExplainBox>
           Cross-Asset Divergenzen messen ob kritische Marktpaare historisch ungewöhnlich auseinanderlaufen.
           Z-Score über ±2.0 = seltener als in 5% der letzten 252 Tage → EXTREME.
@@ -909,6 +975,8 @@ function RadarTab({ d, w }) {
             const ctx = PAIR_CONTEXT[p.pair] || {};
             const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
             const isExtreme = p.signal === 'EXTREME' || p.signal === 'EXTREME_UNCONFIRMED';
+            const isElevatedOrAbove = isExtreme || p.signal === 'ELEVATED';
+            const explanation = getPairExplanation(p.pair, p.signal);
 
             return (
               <div key={i} className="mb-4 pb-3 border-b border-white/5">
@@ -919,38 +987,51 @@ function RadarTab({ d, w }) {
                   </div>
                   <div className="text-right">
                     <span className="font-mono text-sm" style={{ color: sigColor }}>Z={fmtZ(p.z_score)}</span>
-                    <Pill color={sigColor}>{p.signal}</Pill>
+                    {' '}<Pill color={sigColor}>{p.signal}</Pill>
                   </div>
                 </div>
 
-                {/* Was misst es? */}
+                {/* Was misst es — IMMER */}
                 {ctx.what && <div className="text-xs text-muted-blue mt-1">{ctx.what}</div>}
 
-                {/* Bei Extreme: volle Erklärung */}
-                {isExtreme && ctx.extreme_meaning && (
-                  <div className="text-xs mt-1" style={{ color: COLORS.signalOrange }}>{ctx.extreme_meaning}</div>
-                )}
-                {isExtreme && ctx.backtest && (
-                  <div className="text-xs mt-1" style={{ color: COLORS.signalOrange }}>
-                    Historisch: {ctx.backtest}
+                {/* Stufenspezifische Erklärung — IMMER */}
+                {explanation && (
+                  <div className="text-xs mt-1" style={{ color: p.signal === 'NORMAL' ? COLORS.mutedBlue : sigColor }}>
+                    {explanation}
                   </div>
                 )}
 
-                {/* Unconfirmed Erklärung */}
-                {p.signal === 'EXTREME_UNCONFIRMED' && (
-                  <div className="text-xs mt-1 text-muted-blue italic">
-                    Signal in Gegenrichtung der Backtest-Bestätigung. Wird überwacht, löst aber keinen Trigger aus.
+                {/* Backtest-Ergebnis bei EXTREME */}
+                {isExtreme && ctx.backtest && (
+                  <div className="text-xs mt-1 font-bold" style={{ color: COLORS.signalOrange }}>
+                    Historisch: {ctx.backtest}
+                    {ctx.lead_days && ` Lead-Zeit: ${ctx.lead_days} Tage.`}
+                  </div>
+                )}
+
+                {/* Betroffene Assets bei ELEVATED+ */}
+                {isElevatedOrAbove && ctx.affected && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    <strong className="text-ice-white">Betroffene Assets:</strong> {ctx.affected}
                   </div>
                 )}
 
                 {/* Interpretation vom Agent */}
                 {p.interpretation && <div className="text-xs text-muted-blue mt-1 italic">{p.interpretation}</div>}
 
-                {/* Ketteneffekte bei EXTREME */}
+                {/* Ketteneffekte — EXTREME: volle Ketten, ELEVATED: vereinfachte Ketten */}
                 {isExtreme && ctx.chains?.length > 0 && (
                   <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
                     <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
                     {ctx.chains.map((c, j) => (
+                      <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
+                    ))}
+                  </div>
+                )}
+                {!isExtreme && isElevatedOrAbove && ctx.chains_elevated?.length > 0 && (
+                  <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
+                    <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Mögliche Ketteneffekte:</div>
+                    {ctx.chains_elevated.map((c, j) => (
                       <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
                     ))}
                   </div>
