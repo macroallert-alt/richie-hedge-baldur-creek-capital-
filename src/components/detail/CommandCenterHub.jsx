@@ -636,7 +636,7 @@ function DashboardTab({ d, w }) {
           <span className="text-label uppercase tracking-wider text-muted-blue">Divergenzen</span>
           <Pill color={CC_ALERT_LEVEL_COLORS[diverg.alert_level] || COLORS.mutedBlue}>{diverg.alert_level || '—'}</Pill>
         </div>
-        {(diverg.pairs || []).filter(p => p.signal !== 'UNAVAILABLE').map((p, i) => {
+        {(diverg.pairs || []).filter(p => p.signal !== 'UNAVAILABLE' && !['COPPER/GLD', 'VIX_PROXY'].includes(p.pair)).map((p, i) => {
           const ctx = PAIR_CONTEXT[p.pair] || {};
           const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
           const explanation = getPairExplanation(p.pair, p.signal, p.z_score);
@@ -1094,7 +1094,7 @@ function RadarTab({ d, w }) {
       {/* Divergenz-Paare Detail */}
       <GlassCard>
         <Section title="Cross-Asset Divergenzen" subtitle={`Alert Level: ${diverg.alert_level || '—'}`}>
-          {(diverg.pairs || []).map((p, i) => {
+          {(diverg.pairs || []).filter(p => !['COPPER/GLD', 'VIX_PROXY'].includes(p.pair)).map((p, i) => {
             const ctx = PAIR_CONTEXT[p.pair] || {};
             const sigColor = CC_DIVERGENCE_SIGNAL_COLORS[p.signal] || COLORS.mutedBlue;
             const isExtreme = p.signal === 'EXTREME' || p.signal === 'EXTREME_UNCONFIRMED';
@@ -1190,40 +1190,108 @@ function RadarTab({ d, w }) {
         </Section>
       </GlassCard>
 
-      {/* Cu/Au + VIX */}
+      {/* Cu/Au + VIX — eigene Indikatoren (nicht Teil der 5 Ratio-Paare) */}
       <GlassCard>
-        <Section title="Zusätzliche Indikatoren" subtitle="Kupfer/Gold + VIX">
+        <Section title="Zusätzliche Indikatoren" subtitle="Kupfer/Gold Ratio + VIX Volatilität">
           {/* Cu/Au */}
-          <div className="mb-3 pb-2 border-b border-white/5">
+          <div className="mb-4 pb-3 border-b border-white/5">
             <div className="flex justify-between text-sm">
-              <span className="text-ice-white">Kupfer/Gold Ratio</span>
-              <Pill color={CC_CU_AU_COLORS[cuAu.signal] || COLORS.mutedBlue}>{cuAu.signal || '—'}</Pill>
+              <div>
+                <span className="text-ice-white font-bold">Kupfer/Gold Ratio</span>
+                <span className="text-caption text-muted-blue ml-2">Wachstum vs. Angst</span>
+              </div>
+              <div className="text-right">
+                {cuAu.z_score != null && <span className="font-mono text-sm" style={{ color: CC_CU_AU_COLORS[cuAu.signal] || COLORS.mutedBlue }}>Z={fmtZ(cuAu.z_score)}</span>}
+                {' '}<Pill color={CC_CU_AU_COLORS[cuAu.signal] || COLORS.mutedBlue}>{cuAu.signal || '—'}</Pill>
+              </div>
             </div>
+
+            <div className="text-xs text-muted-blue mt-1">
+              Kupfer = industrielle Nachfrage (Wachstum). Gold = Angst (Sicherheit). Das Verhältnis zeigt ob der Markt eher Wachstum oder Angst einpreist.
+            </div>
+
             {cuAu.z_score != null && (
-              <div className="text-xs text-muted-blue mt-1">Z={fmtZ(cuAu.z_score)}</div>
+              <div className="text-xs mt-1" style={{ color: CC_CU_AU_COLORS[cuAu.signal] || COLORS.mutedBlue }}>
+                <strong>Aktuell (Z={fmtZ(cuAu.z_score)}):</strong>{' '}
+                {cuAu.signal === 'BEARISH'
+                  ? 'Kupfer fällt relativ zu Gold → Markt preist Rezession ein. Historisch 6-12 Monate Leading für wirtschaftliche Abschwächung. Zyklische Assets (DBC, XLI, XLE) unter Druck.'
+                  : cuAu.signal === 'BULLISH'
+                  ? 'Kupfer steigt relativ zu Gold → Markt preist Reflation/Wachstum ein. Industrielle Nachfrage stark. Positiv für zyklische Assets.'
+                  : 'Kupfer und Gold im Gleichgewicht. Weder Wachstumseuphorie noch Rezessionsangst dominant.'}
+              </div>
             )}
+
+            {cuAu.signal === 'BEARISH' && (
+              <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalRed}50` }}>
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Kupfer fällt → industrielle Nachfrage sinkt → Wachstumsverlangsamung voraus</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Gold steigt → Flucht in Sicherheit → bestätigt DBC/TLT wenn negativ</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Bei gleichzeitig XLF/SPY negativ → Rezessionssignal doppelt bestätigt</div>
+              </div>
+            )}
+            {cuAu.signal === 'BULLISH' && (
+              <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalGreen}50` }}>
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Kupfer steigt → industrielle Nachfrage stark → Wachstum intakt</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Bestätigt DBC/SPY wenn positiv → Commodities-Rally breit abgestützt</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Zyklische Sektoren (XLI, XLE) profitieren</div>
+              </div>
+            )}
+
             <ExplainBox>
-              Kupfer = industrielle Nachfrage. Gold = Angst. Ratio fällt → Rezessionsangst.
-              Z{'<'}-1.5 = BEARISH (Rezession voraus, 6-12 Monate Leading). Z{'>'}+1.5 = BULLISH (Reflation).
+              Schwellenwerte: Z{'<'}-1.5 = BEARISH (Rezession voraus, 6-12 Monate Leading). Z{'>'}+1.5 = BULLISH (Reflation).
+              Zwischen -1.5 und +1.5 = NEUTRAL. Kupfer/Gold ist einer der zuverlässigsten Leading-Indikatoren für den Konjunkturzyklus.
             </ExplainBox>
           </div>
 
           {/* VIX */}
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-ice-white">VIX Analyse</span>
-              <Pill color={CC_VIX_COLORS[vix.signal] || COLORS.mutedBlue}>{vix.signal || '—'}</Pill>
+              <div>
+                <span className="text-ice-white font-bold">VIX Analyse</span>
+                <span className="text-caption text-muted-blue ml-2">Volatilität + Bestätigung</span>
+              </div>
+              <div className="text-right">
+                {vix.z_score != null && <span className="font-mono text-sm" style={{ color: CC_VIX_COLORS[vix.signal] || COLORS.mutedBlue }}>Z={fmtZ(vix.z_score)}</span>}
+                {' '}<Pill color={CC_VIX_COLORS[vix.signal] || COLORS.mutedBlue}>{vix.signal || '—'}</Pill>
+              </div>
             </div>
+
+            <div className="text-xs text-muted-blue mt-1">
+              VIX misst die erwartete Volatilität im S&P 500. Hohe VIX = Markt erwartet große Schwankungen. Niedrige VIX = Markt ist ruhig (oder complacent).
+            </div>
+
             {vix.z_score != null && (
-              <div className="text-xs text-muted-blue mt-1">
-                Z={fmtZ(vix.z_score)}
-                {vix.confirms && <span style={{ color: COLORS.signalRed }}> — BESTÄTIGUNG: VIX bestätigt Divergenz-Signale</span>}
-                {vix.corr_watch && <span style={{ color: COLORS.signalOrange }}> — WATCH: VIX/SPY Korrelation anomal ({'>'}−0.2)</span>}
+              <div className="text-xs mt-1" style={{ color: CC_VIX_COLORS[vix.signal] || COLORS.mutedBlue }}>
+                <strong>Aktuell (Z={fmtZ(vix.z_score)}):</strong>{' '}
+                {vix.signal === 'CONFIRMATION'
+                  ? 'VIX extrem hoch (Z>+2.0) — bestätigt Stress-Signale aus den Divergenz-Paaren. Wenn gleichzeitig DBC/SPY oder XLF/SPY auf EXTREME → Signal ist sehr ernst zu nehmen.'
+                  : vix.signal === 'WATCH'
+                  ? 'VIX/SPY Korrelation anomal (>−0.2) — Stealth Hedging: jemand Großes kauft Absicherung während der Markt noch steigt. Oft ein Vorläufer für plötzliche Korrekturen.'
+                  : 'VIX im Normalbereich. Keine Bestätigung von Stress-Signalen durch Volatilität.'}
               </div>
             )}
+
+            {vix.signal === 'CONFIRMATION' && (
+              <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalRed}50` }}>
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Hohe VIX → Options-Absicherung wird teurer → Hedging-Kosten steigen für alle Marktteilnehmer</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Bestätigt EXTREME-Signale aus anderen Paaren → Gesamtbild wird bearisher</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Bei VIX{'>'}30 historisch erhöhtes Risiko für Cascade-Selling (Margin Calls, Forced Liquidation)</div>
+              </div>
+            )}
+            {vix.signal === 'WATCH' && (
+              <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${COLORS.signalOrange}50` }}>
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
+                <div className="text-xs text-muted-blue py-0.5">→ Stealth Hedging → institutionelle Investoren sichern sich ab → sie erwarten einen Move</div>
+                <div className="text-xs text-muted-blue py-0.5">→ SPY kann kurzfristig weiter steigen (Hedges erlauben Carry), aber der nächste Rücksetzer wird schärfer</div>
+              </div>
+            )}
+
             <ExplainBox>
-              VIX Z{'>'}+2.0 = Volatilität extrem hoch → bestätigt andere Stress-Signale.
-              VIX/SPY Korrelation {'>'}−0.2 = Stealth Hedging — jemand kauft Schutz während der Markt steigt.
+              VIX dient als Bestätigungssignal — es löst keinen eigenständigen Trigger aus.
+              Z{'>'}+2.0 = CONFIRMATION (bestätigt andere Stress-Signale).
+              VIX/SPY Korrelation {'>'}−0.2 = WATCH (Stealth Hedging — normalerweise laufen VIX und SPY gegenläufig).
             </ExplainBox>
           </div>
         </Section>
