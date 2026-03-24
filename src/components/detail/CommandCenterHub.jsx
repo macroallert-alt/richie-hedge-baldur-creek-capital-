@@ -68,15 +68,22 @@ const PAIR_CONTEXT = {
     backtest: 'In 75% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Handelstagen.',
     lead_days: 80,
     affected: 'SPY und alle SPY-korrelierten Assets (XLK, XLY, XLI, IWM)',
-    chains: [
+    chains_positive: [
       'Steigende Rohstoffpreise → höhere Inputkosten → Margendruck → SPY Earnings Risk',
       'Wenn Energie treibt → GLD profitiert (Inflation-Hedge) → GLD-Position stabilisiert',
       'TIP/SPY steigt parallel → Inflationserwartungen werden bestätigt',
       'Bei gleichzeitig CONTRACTING Liquidität → V16 dreht Richtung STRESS (4-8 Wochen)',
     ],
-    chains_elevated: [
+    chains_negative: [
+      'Rohstoffe schwächer als Aktien → Inflationsdruck lässt nach → SPY-Margen entspannen sich',
+      'Wachstum dominiert Inflation → eher bullish für Aktien',
+    ],
+    chains_elevated_positive: [
       'Inputkosten steigen → Margen-Druck baut sich auf, aber noch kein Drawdown-Signal',
       'GLD könnte profitieren wenn Inflation-Narrativ sich festigt',
+    ],
+    chains_elevated_negative: [
+      'Rohstoffe underperformen leicht → globale Nachfrage könnte nachlassen',
     ],
   },
   'VGK/SPY': {
@@ -101,14 +108,21 @@ const PAIR_CONTEXT = {
     backtest: 'In 83% der Fälle folgte ein breiter Risk-Off Move mit SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: 76,
     affected: 'VGK direkt, indirekt SPY (globaler Risk-Off)',
-    chains: [
+    chains_negative: [
       'Europa-Schwäche → EUR fällt → Dollar steigt → DXY-Stärke belastet EM + Commodities',
       'Wenn gleichzeitig DBC/SPY hoch → Stagflation-Signal verstärkt sich',
       'ECB unter Druck → hawkish Reaction → europäische Anleihen fallen',
     ],
-    chains_elevated: [
+    chains_positive: [
+      'Europa outperformt → EUR stärkt sich → Dollar schwächt sich → positiv für EM + Commodities',
+      'Kann Rotation von US nach Europa signalisieren → VGK profitiert',
+    ],
+    chains_elevated_negative: [
       'Europa-Schwäche beginnt → EUR unter Druck → beobachten ob Dollar-Stärke folgt',
       'VGK-Position im Portfolio prüfen falls Trend sich verstärkt',
+    ],
+    chains_elevated_positive: [
+      'Europa outperformt → prüfen ob EUR-Rally nachhaltig oder nur Gegenbewegung',
     ],
   },
   'DBC/TLT': {
@@ -133,14 +147,24 @@ const PAIR_CONTEXT = {
     backtest: 'In 54.5% der Fälle folgte ein Drawdown in DBC und zyklischen Sektoren (XLI, XLE, HYG) innerhalb von 21 Handelstagen. Schnellstes Signal der 5 Paare.',
     lead_days: 65,
     affected: 'DBC, HYG, zyklische Sektoren (XLI, XLE)',
-    chains: [
+    chains_negative: [
       'Rohstoffe fallen + Anleihen steigen = Rezessionsangst → V16 dreht defensiv',
       'TLT steigt → Renditen fallen → Signal für Wachstumsverlangsamung',
       'Bei Bestätigung durch Cu/Au bearish → Rezessionssignal verstärkt',
     ],
-    chains_elevated: [
+    chains_positive: [
+      'Rohstoffe steigen + Anleihen fallen = Inflation-Regime → bestätigt DBC/SPY Signal',
+      'TLT fällt → Renditen steigen → Zinsdruck auf Aktien und Immobilien',
+      'GLD profitiert als Inflation-Hedge → Portfolio-Stabilisierung über Gold',
+      'Bei gleichzeitig DBC/SPY EXTREME → Inflation-Signal doppelt bestätigt',
+    ],
+    chains_elevated_negative: [
       'Anleihen beginnen Commodities outzuperformen → Wachstumssorgen nehmen zu',
       'TLT-Position profitiert, aber zyklische Positionen (DBC, XLI) unter Beobachtung',
+    ],
+    chains_elevated_positive: [
+      'Commodities outperformen Bonds → Inflation-Narrativ festigt sich',
+      'Bond-Positionen (TLT) unter Druck → Duration-Risiko beobachten',
     ],
   },
   'TIP/SPY': {
@@ -165,14 +189,21 @@ const PAIR_CONTEXT = {
     backtest: 'In 66.7% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 63 Tagen.',
     lead_days: null,
     affected: 'SPY, TLT (bei Zinsanstieg), alle Fixed-Income-Positionen',
-    chains: [
+    chains_positive: [
       'Steigende Breakevens → Markt glaubt Fed ist "behind the curve"',
       'Bestätigt DBC/SPY Signal: Inflation ist das Thema, nicht Wachstum',
       'GLD profitiert als Inflationsschutz → GLD-Gewicht im Portfolio stabilisiert',
     ],
-    chains_elevated: [
+    chains_negative: [
+      'Fallende Breakevens → Inflation-Ängste lassen nach → Fed weniger unter Druck',
+      'Aktien profitieren von niedrigeren Zinserwartungen',
+    ],
+    chains_elevated_positive: [
       'Inflationserwartungen steigen → Fed-Glaubwürdigkeit unter Druck',
       'GLD und TIP profitieren → defensive Rotation beginnt',
+    ],
+    chains_elevated_negative: [
+      'Breakevens fallen → Deflationssorgen oder Wachstumsoptimismus ohne Inflation',
     ],
   },
   'XLF/SPY': {
@@ -197,14 +228,22 @@ const PAIR_CONTEXT = {
     backtest: 'In 61.5% der Fälle folgte ein SPY-Drawdown von ≥5% innerhalb von 42 Tagen.',
     lead_days: 66,
     affected: 'XLF direkt, SPY und HYG indirekt (Kreditkanal)',
-    chains: [
+    chains_negative: [
       'Banken-Schwäche → Kreditvergabe sinkt → Wirtschaft bremst → SPY folgt mit 4-8 Wochen Verzögerung',
       'Wenn gleichzeitig HYG schwach → Credit Stress bestätigt',
       'Bei gleichzeitig VIX-Bestätigung → systemisches Risiko steigt',
     ],
-    chains_elevated: [
+    chains_positive: [
+      'Banken stark → Kreditvergabe gesund → stützt Wirtschaftswachstum',
+      'Steigende Zinsen helfen Bank-Margen → XLF profitiert',
+      'Gesunder Finanzsektor = keine Kreditkrise in Sicht → bullish für SPY',
+    ],
+    chains_elevated_negative: [
       'Banken beginnen zu schwächeln → Kreditvergabe könnte sich verlangsamen',
       'HYG beobachten — wenn Credit Spreads parallel steigen, bestätigt sich das Signal',
+    ],
+    chains_elevated_positive: [
+      'Banken outperformen → Kreditumfeld verbessert sich → positiv für Gesamtmarkt',
     ],
   },
 };
@@ -231,6 +270,19 @@ function getPairDirectionText(pair, zScore) {
   const ctx = PAIR_CONTEXT[pair];
   if (!ctx) return null;
   return (zScore || 0) >= 0 ? ctx.z_positive : ctx.z_negative;
+}
+
+// Helper: Richtungsabhängige Ketteneffekte
+function getPairChains(pair, zScore) {
+  const ctx = PAIR_CONTEXT[pair];
+  if (!ctx) return [];
+  return (zScore || 0) >= 0 ? (ctx.chains_positive || []) : (ctx.chains_negative || []);
+}
+
+function getPairChainsElevated(pair, zScore) {
+  const ctx = PAIR_CONTEXT[pair];
+  if (!ctx) return [];
+  return (zScore || 0) >= 0 ? (ctx.chains_elevated_positive || []) : (ctx.chains_elevated_negative || []);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -765,15 +817,19 @@ function ThreatsTab({ d }) {
               </ExplainBox>
             </div>
 
-            {/* Ketteneffekte */}
-            {ctx.chains?.length > 0 && (
-              <div className="mt-3">
-                <div className="text-xs text-muted-blue uppercase tracking-wider font-bold mb-1">Ketteneffekte</div>
-                {ctx.chains.map((chain, j) => (
-                  <div key={j} className="text-xs text-muted-blue py-0.5">→ {chain}</div>
-                ))}
-              </div>
-            )}
+            {/* Ketteneffekte (richtungsabhängig basierend auf aktuellem Z-Score der Threat) */}
+            {(() => {
+              const threatZ = t.z_score || (t.pair && d.divergences?.pairs?.find(pp => pp.pair === t.pair)?.z_score) || 0;
+              const chains = getPairChains(t.pair, threatZ);
+              return chains.length > 0 ? (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-blue uppercase tracking-wider font-bold mb-1">Ketteneffekte</div>
+                  {chains.map((chain, j) => (
+                    <div key={j} className="text-xs text-muted-blue py-0.5">→ {chain}</div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
           </GlassCard>
         );
       })}
@@ -1098,23 +1154,29 @@ function RadarTab({ d, w }) {
                 {/* Interpretation vom Agent */}
                 {p.interpretation && <div className="text-xs text-muted-blue mt-1 italic">{p.interpretation}</div>}
 
-                {/* Ketteneffekte — EXTREME: volle Ketten, ELEVATED: vereinfachte Ketten */}
-                {isExtreme && ctx.chains?.length > 0 && (
-                  <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
-                    <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
-                    {ctx.chains.map((c, j) => (
-                      <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
-                    ))}
-                  </div>
-                )}
-                {!isExtreme && isElevatedOrAbove && ctx.chains_elevated?.length > 0 && (
-                  <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
-                    <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Mögliche Ketteneffekte:</div>
-                    {ctx.chains_elevated.map((c, j) => (
-                      <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
-                    ))}
-                  </div>
-                )}
+                {/* Ketteneffekte (richtungsabhängig) — EXTREME: volle Ketten, ELEVATED: vereinfachte */}
+                {isExtreme && (() => {
+                  const chains = getPairChains(p.pair, p.z_score);
+                  return chains.length > 0 ? (
+                    <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
+                      <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Ketteneffekte:</div>
+                      {chains.map((c, j) => (
+                        <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
+                {!isExtreme && isElevatedOrAbove && (() => {
+                  const chains = getPairChainsElevated(p.pair, p.z_score);
+                  return chains.length > 0 ? (
+                    <div className="mt-2 pl-2 border-l-2" style={{ borderLeftColor: `${sigColor}50` }}>
+                      <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Mögliche Ketteneffekte:</div>
+                      {chains.map((c, j) => (
+                        <div key={j} className="text-xs text-muted-blue py-0.5">→ {c}</div>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Momentum */}
                 {p.z_momentum_21d != null && Math.abs(p.z_momentum_21d) > 0.3 && (
