@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  LayoutDashboard, ShieldAlert, Zap, CalendarDays, Radar, Cog, Brain,
+  LayoutDashboard, ShieldAlert, Zap, CalendarDays, Radar, Cog, Brain, BookOpen,
 } from 'lucide-react';
 import GlassCard from '@/components/shared/GlassCard';
 import {
@@ -33,6 +33,7 @@ const WEEKLY_URL = process.env.NEXT_PUBLIC_CC_WEEKLY_URL;
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'weekly',    label: 'Weekly',    icon: BookOpen },
   { id: 'intel',     label: 'Intel',     icon: Brain },
   { id: 'threats',   label: 'Threats',   icon: ShieldAlert },
   { id: 'signals',   label: 'Signals',   icon: Zap },
@@ -771,12 +772,461 @@ export default function CommandCenterHub() {
       {error && <div className="text-caption text-center" style={{ color: COLORS.signalOrange }}>Fehler: {error}</div>}
 
       {tab === 'dashboard' && <DashboardTab d={d} w={weekly} />}
+      {tab === 'weekly' && <WeeklyTab w={weekly} />}
       {tab === 'intel' && <IntelTab d={d} />}
       {tab === 'threats' && <ThreatsTab d={d} />}
       {tab === 'signals' && <SignalsTab d={d} />}
       {tab === 'calendar' && <CalendarTab d={d} />}
       {tab === 'radar' && <RadarTab d={d} w={weekly} />}
       {tab === 'machine' && <MachineTab d={d} w={weekly} />}
+    </div>
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════
+// TAB: WEEKLY — Strategische Wochenanalyse
+// Narrativ, Maschine, Positioning, Slow-Burns, Loops, Silence
+// ═══════════════════════════════════════════════════════
+
+function WeeklyTab({ w }) {
+  if (!w || w.metadata?.etappe === 'C_DATA_LAYER') {
+    return (
+      <GlassCard>
+        <div className="text-center py-10">
+          <div className="text-4xl mb-3">📊</div>
+          <p className="text-lg text-muted-blue">Weekly Intelligence noch nicht verfügbar</p>
+          <p className="text-xs text-muted-blue mt-3 max-w-md mx-auto">
+            Der Weekly Run (3 Analysen mit Web-Recherche) läuft jeden Sonntag nach dem Crypto Weekly Run.
+            Die Ergebnisse erscheinen hier automatisch.
+          </p>
+          <ExplainBox>
+            Der Weekly Run produziert 3 Analysen: (1) Markt-Narrativ und Shifts, (2) Unbepreiste Risiken (Slow-Burns,
+            Feedback Loops, Stille-Signale), (3) Positioning und Maschinen-Zustand. Jede Analyse nutzt Web-Recherche
+            für aktuelle Daten die unsere internen Systeme nicht abdecken.
+          </ExplainBox>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  const narrative = w.narrative || {};
+  const positioning = w.positioning || {};
+  const machine = w.machine_state || {};
+  const slowBurns = w.slow_burns || [];
+  const loops = w.feedback_loops || [];
+  const silence = w.silence_signals || [];
+  const corrBreaks = w.correlation_breaks || [];
+  const missedReleases = w.major_releases_missed || [];
+  const biasCheck = w.bias_check || {};
+  const forecast = w.timeline_forecast_30d || {};
+  const rolling = w.rolling_30d_summary || {};
+
+  const severityColor = (sev) =>
+    sev === 'CRITICAL' ? COLORS.signalRed :
+    sev === 'HIGH' ? COLORS.signalOrange :
+    sev === 'MODERATE' ? COLORS.signalYellow : COLORS.mutedBlue;
+
+  return (
+    <div className="space-y-4">
+
+      {/* ── 1. NARRATIV ── */}
+      {narrative.current_narrative && (
+        <GlassCard>
+          <Section title="Markt-Narrativ" subtitle="Was glaubt der Markt — und wo liegen die Risse?">
+            {/* Aktuelles Narrativ */}
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg text-ice-white font-bold">{narrative.current_narrative.title}</span>
+                <Pill color={
+                  narrative.current_narrative.strength === 'DOMINANT' ? COLORS.signalGreen :
+                  narrative.current_narrative.strength === 'FADING' ? COLORS.signalRed : COLORS.signalYellow
+                }>{narrative.current_narrative.strength}</Pill>
+              </div>
+              <div className="text-sm text-muted-blue">{stripCite(narrative.current_narrative.description)}</div>
+              {narrative.current_narrative.since_when && (
+                <div className="text-xs text-muted-blue mt-1">Aktiv seit: {narrative.current_narrative.since_when}</div>
+              )}
+            </div>
+
+            {/* Shift */}
+            {narrative.narrative_shift?.shifted && (
+              <div className="mb-3 px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalOrange}12`, borderLeft: `3px solid ${COLORS.signalOrange}` }}>
+                <div className="text-sm font-bold" style={{ color: COLORS.signalOrange }}>
+                  ⚠ Narrativ-Shift erkannt
+                </div>
+                <div className="text-xs text-muted-blue mt-1">
+                  Von: <strong className="text-ice-white">{narrative.narrative_shift.from}</strong> →
+                  Nach: <strong className="text-ice-white">{narrative.narrative_shift.to}</strong>
+                </div>
+                {narrative.narrative_shift.trigger_event && (
+                  <div className="text-xs text-muted-blue mt-1">Auslöser: {stripCite(narrative.narrative_shift.trigger_event)}</div>
+                )}
+                <div className="text-xs text-muted-blue mt-1">
+                  Confidence: <Pill color={
+                    narrative.narrative_shift.shift_confidence === 'HIGH' ? COLORS.signalRed :
+                    narrative.narrative_shift.shift_confidence === 'MEDIUM' ? COLORS.signalYellow : COLORS.mutedBlue
+                  }>{narrative.narrative_shift.shift_confidence}</Pill>
+                </div>
+                <ExplainBox>
+                  Ein Narrativ-Shift ist das stärkste Signal an den Märkten. Wenn der Markt von „Soft Landing" auf
+                  „Stagflation" umschaltet, drehen sich alle Positionierungen gleichzeitig. Das ist der Moment
+                  wo Crowded Trades auflösen und Volatilität explodiert.
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Supporting Evidence */}
+            {(narrative.supporting_evidence || []).length > 0 && (
+              <div className="mb-3">
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Stützt das Narrativ:</div>
+                {narrative.supporting_evidence.slice(0, 5).map((ev, i) => (
+                  <div key={i} className="text-xs py-1 border-b border-white/5">
+                    <span className="text-ice-white">✓</span>{' '}
+                    <span className="text-muted-blue">{stripCite(ev.fact)}</span>
+                    {ev.source && <span className="text-muted-blue opacity-60 ml-1">— {ev.source}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Contradicting Evidence */}
+            {(narrative.contradicting_evidence || []).length > 0 && (
+              <div className="mb-3">
+                <div className="text-caption uppercase tracking-wider mb-1" style={{ color: COLORS.signalOrange }}>Widerspricht dem Narrativ:</div>
+                {narrative.contradicting_evidence.slice(0, 5).map((ev, i) => (
+                  <div key={i} className="text-xs py-1 border-b border-white/5">
+                    <span style={{ color: COLORS.signalOrange }}>✗</span>{' '}
+                    <span className="text-muted-blue">{stripCite(ev.fact)}</span>
+                    {ev.why_important && (
+                      <div className="text-xs pl-3 mt-0.5" style={{ color: COLORS.signalOrange }}>
+                        Warum wichtig: {stripCite(ev.why_important)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Positioning relativ zum Narrativ */}
+            {narrative.market_positioning && (
+              <div className="mb-2">
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Markt-Positionierung:</div>
+                {narrative.market_positioning.crowded_trade && (
+                  <div className="text-xs text-muted-blue">
+                    <strong className="text-ice-white">Crowded Trade:</strong> {stripCite(narrative.market_positioning.crowded_trade)}
+                  </div>
+                )}
+                {narrative.market_positioning.contrarian_opportunity && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    <strong className="text-ice-white">Contrarian-Chance:</strong> {stripCite(narrative.market_positioning.contrarian_opportunity)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Narrativ-Risiko */}
+            {narrative.narrative_risk && (
+              <div className="text-xs text-muted-blue mt-2 px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalRed}08`, borderLeft: `2px solid ${COLORS.signalRed}40` }}>
+                <strong className="text-ice-white">Was passiert wenn das Narrativ kippt?</strong>{' '}
+                {stripCite(narrative.narrative_risk)}
+              </div>
+            )}
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 2. POSITIONING ── */}
+      {positioning.crowded_trades && (
+        <GlassCard>
+          <Section title="Positioning" subtitle="Wo ist der Markt überfüllt — und wo entsteht Contrarian-Risiko?">
+            {/* Crowded Trades */}
+            {(positioning.crowded_trades || []).length > 0 && (
+              <div className="mb-3">
+                <div className="text-caption uppercase tracking-wider mb-2" style={{ color: COLORS.signalOrange }}>Crowded Trades:</div>
+                {positioning.crowded_trades.map((ct, i) => (
+                  <div key={i} className="text-sm text-ice-white py-1">🎯 {typeof ct === 'string' ? ct : stripCite(ct.trade || ct)}</div>
+                ))}
+                <ExplainBox>
+                  Ein Crowded Trade ist eine Position die „alle" haben. Wenn der Markt dreht, wollen alle gleichzeitig raus —
+                  das verstärkt die Bewegung. Crowded Trades sind nicht per se falsch, aber sie haben asymmetrisches Risiko:
+                  wenig Upside (schon eingepreist) vs. viel Downside (Liquidation Cascade bei Exit).
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Sentiment */}
+            {positioning.sentiment && (
+              <div className="mb-3 pb-3 border-b border-white/5">
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Sentiment:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {positioning.sentiment.aaii_bull_pct != null && (
+                    <div className="text-xs">
+                      <span className="text-muted-blue">AAII Bulls:</span>
+                      <span className="text-ice-white ml-1 font-mono">{positioning.sentiment.aaii_bull_pct}%</span>
+                      {positioning.sentiment.aaii_signal && (
+                        <Pill color={
+                          positioning.sentiment.aaii_signal === 'BULLISH_EXTREME' ? COLORS.signalRed :
+                          positioning.sentiment.aaii_signal === 'BEARISH_EXTREME' ? COLORS.signalGreen : COLORS.mutedBlue
+                        }>{positioning.sentiment.aaii_signal}</Pill>
+                      )}
+                    </div>
+                  )}
+                  {positioning.sentiment.put_call_ratio != null && (
+                    <div className="text-xs">
+                      <span className="text-muted-blue">Put/Call:</span>
+                      <span className="text-ice-white ml-1 font-mono">{positioning.sentiment.put_call_ratio}</span>
+                      {positioning.sentiment.put_call_signal && (
+                        <Pill color={
+                          positioning.sentiment.put_call_signal === 'COMPLACENT' ? COLORS.signalRed :
+                          positioning.sentiment.put_call_signal === 'FEARFUL' ? COLORS.signalGreen : COLORS.mutedBlue
+                        }>{positioning.sentiment.put_call_signal}</Pill>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ExplainBox>
+                  AAII Sentiment = Umfrage unter Privatanlegern. Extreme Bullishness (über 50%) ist historisch ein Contrarian-Warnsignal.
+                  Put/Call Ratio unter 0.7 = COMPLACENT (wenig Absicherung → Markt ist verwundbar). Über 1.2 = FEARFUL (Contrarian-bullish).
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* CFTC Highlights */}
+            {(positioning.cftc_highlights || []).length > 0 && (
+              <div className="mb-3 pb-3 border-b border-white/5">
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">CFTC Positioning (Futures-Markt):</div>
+                {positioning.cftc_highlights.map((c, i) => (
+                  <div key={i} className="text-xs py-1 border-b border-white/5">
+                    <span className="text-ice-white font-bold">{c.asset}</span>
+                    <span className="text-muted-blue ml-2">{stripCite(c.net_position)}</span>
+                    {c.extreme && <Pill color={COLORS.signalOrange}>EXTREME</Pill>}
+                    {c.contrarian_signal && (
+                      <div className="text-xs text-muted-blue mt-0.5 pl-2">→ {stripCite(c.contrarian_signal)}</div>
+                    )}
+                  </div>
+                ))}
+                <ExplainBox>
+                  CFTC Commitment of Traders zeigt wo Spekulanten (Hedge Funds) netto positioniert sind.
+                  Extreme Positionierung = Contrarian-Signal. Wenn alle long sind und der Markt dreht, beschleunigt
+                  die Liquidation den Downmove.
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Fund Flows */}
+            {(positioning.fund_flows || []).length > 0 && (
+              <div className="mb-2">
+                <div className="text-caption text-muted-blue uppercase tracking-wider mb-1">Fund Flows:</div>
+                {positioning.fund_flows.filter(f => f.notable).map((f, i) => (
+                  <div key={i} className="text-xs text-muted-blue py-1">
+                    <strong className="text-ice-white">{f.category}:</strong> {stripCite(f.flow)}
+                    {f.streak_weeks > 3 && <span className="ml-1">({f.streak_weeks} Wochen in Folge)</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 3. SLOW-BURNS ── */}
+      {slowBurns.length > 0 && (
+        <GlassCard>
+          <Section title="Slow-Burn Risiken" subtitle="Was baut sich leise auf — und wann kippt es?">
+            {slowBurns.map((sb, i) => (
+              <div key={i} className="py-3 border-b border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-ice-white font-bold">{sb.topic}</span>
+                  <div className="flex items-center gap-2">
+                    <Pill color={
+                      sb.trend_direction === 'WORSENING' ? COLORS.signalRed :
+                      sb.trend_direction === 'IMPROVING' ? COLORS.signalGreen : COLORS.signalYellow
+                    }>{sb.trend_direction}</Pill>
+                    <Pill color={severityColor(sb.severity)}>{sb.severity}</Pill>
+                  </div>
+                </div>
+                {sb.current_status && (
+                  <div className="text-xs text-muted-blue">{stripCite(sb.current_status)}</div>
+                )}
+                {sb.tipping_point && (
+                  <div className="text-xs mt-1">
+                    <strong className="text-ice-white">Kipppunkt:</strong>{' '}
+                    <span className="text-muted-blue">{stripCite(sb.tipping_point)}</span>
+                    {sb.time_to_tipping && <span className="text-muted-blue"> — Geschätzt: {sb.time_to_tipping}</span>}
+                  </div>
+                )}
+                {sb.affected_assets && sb.affected_assets.length > 0 && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    <strong className="text-ice-white">Betroffene Assets:</strong> {sb.affected_assets.join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+            <ExplainBox>
+              Slow-Burns sind Risiken die sich über Wochen und Monate aufbauen — zu langsam für Schlagzeilen,
+              zu wichtig um sie zu ignorieren. Der Markt ist effizient bei bekannten Risiken, aber katastrophal bei
+              Slow-Burns die plötzlich kippen. Jeder Slow-Burn wird wöchentlich getrackt: verschlechtert er sich,
+              stabilisiert er sich, oder löst er sich auf?
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 4. FEEDBACK LOOPS ── */}
+      {loops.length > 0 && (
+        <GlassCard>
+          <Section title="Feedback Loops" subtitle="Sich selbst verstärkende Zyklen — die gefährlichsten Dynamiken">
+            {loops.map((l, i) => (
+              <div key={i} className="py-3 border-b border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-ice-white font-bold">Loop {i + 1}</span>
+                  <div className="flex items-center gap-2">
+                    {l.is_accelerating && <Pill color={COLORS.signalRed}>BESCHLEUNIGEND</Pill>}
+                    <Pill color={severityColor(l.severity)}>{l.severity}</Pill>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-blue">{stripCite(l.loop_description)}</div>
+                {l.current_stage && (
+                  <div className="text-xs mt-1">
+                    <strong className="text-ice-white">Aktuelles Stadium:</strong>{' '}
+                    <span className="text-muted-blue">{stripCite(l.current_stage)}</span>
+                  </div>
+                )}
+                {l.break_condition && (
+                  <div className="text-xs mt-1">
+                    <strong className="text-ice-white">Stoppt wenn:</strong>{' '}
+                    <span className="text-muted-blue">{stripCite(l.break_condition)}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            <ExplainBox>
+              Feedback Loops sind sich selbst verstärkende Zyklen: A verursacht B, B verstärkt A.
+              Beispiel: Dollar steigt → EM Stress → Kapitalflucht in Dollar → Dollar steigt weiter.
+              BESCHLEUNIGEND = der Loop wird stärker. Das ist das gefährlichste Signal —
+              die Dynamik nährt sich selbst bis etwas bricht.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 5. STILLE-SIGNALE ── */}
+      {silence.length > 0 && (
+        <GlassCard>
+          <Section title="Stille-Signale" subtitle="Was hätte passieren sollen — aber nicht passiert ist">
+            {silence.map((s, i) => (
+              <div key={i} className="py-3 border-b border-white/5">
+                <div className="text-sm text-ice-white font-bold mb-1">{stripCite(s.expected_event)}</div>
+                {s.why_notable && (
+                  <div className="text-xs text-muted-blue">
+                    <strong className="text-ice-white">Warum bemerkenswert:</strong> {stripCite(s.why_notable)}
+                  </div>
+                )}
+                {s.implication && (
+                  <div className="text-xs mt-1" style={{ color: COLORS.signalYellow }}>
+                    <strong>Implikation:</strong> {stripCite(s.implication)}
+                  </div>
+                )}
+              </div>
+            ))}
+            <ExplainBox>
+              Stille-Signale sind das Gegenteil von Events — sie sind Dinge die NICHT passiert sind, aber hätten passieren
+              sollen. Wenn eine Zentralbank bei Extremwerten nicht interveniert, oder wenn ein Land keinen Stimulus verkündet
+              trotz schwacher Daten — das Ausbleiben einer erwarteten Aktion ist oft aussagekräftiger als die Aktion selbst.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 6. KORRELATIONSBRÜCHE ── */}
+      {corrBreaks.length > 0 && (
+        <GlassCard>
+          <Section title="Korrelationsbrüche" subtitle="Wenn normale Zusammenhänge nicht mehr gelten">
+            {corrBreaks.map((cb, i) => (
+              <div key={i} className="py-3 border-b border-white/5">
+                <div className="text-sm text-ice-white font-bold mb-1">{cb.pair}</div>
+                {cb.normal_correlation && <div className="text-xs text-muted-blue">Normal: {stripCite(cb.normal_correlation)}</div>}
+                {cb.current_behavior && <div className="text-xs text-muted-blue mt-1">Aktuell: {stripCite(cb.current_behavior)}</div>}
+                {cb.last_time_this_happened && (
+                  <div className="text-xs mt-1">
+                    <strong className="text-ice-white">Letztes Mal:</strong>{' '}
+                    <span className="text-muted-blue">{stripCite(cb.last_time_this_happened)}</span>
+                  </div>
+                )}
+                {cb.what_followed && (
+                  <div className="text-xs mt-1" style={{ color: COLORS.signalOrange }}>
+                    <strong>Was damals folgte:</strong> {stripCite(cb.what_followed)}
+                  </div>
+                )}
+              </div>
+            ))}
+            <ExplainBox>
+              Die meisten Portfolio-Modelle basieren auf historischen Korrelationen. Wenn diese brechen
+              (z.B. Aktien und Anleihen fallen gleichzeitig), versagen traditionelle Diversifikation und Hedges.
+              Das sind die Momente wo „unmögliche" Verluste entstehen.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 7. VERPASSTE RELEASES ── */}
+      {missedReleases.length > 0 && (
+        <GlassCard>
+          <Section title="Verpasste Releases" subtitle="Wichtige Veröffentlichungen die nicht im Kalender standen">
+            {missedReleases.map((mr, i) => (
+              <div key={i} className="py-2 border-b border-white/5">
+                <div className="text-sm text-ice-white font-bold">{stripCite(mr.release)}</div>
+                <div className="text-xs text-muted-blue">{mr.by_whom} · {mr.date}</div>
+                {mr.summary && <div className="text-xs text-muted-blue mt-1">{stripCite(mr.summary)}</div>}
+                {mr.portfolio_relevance && (
+                  <div className="text-xs mt-1">
+                    <strong className="text-ice-white">Portfolio-Relevanz:</strong>{' '}
+                    <span className="text-muted-blue">{stripCite(mr.portfolio_relevance)}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* ── 8. 30d FORECAST ── */}
+      {(forecast.forecast_weeks || []).length > 0 && (
+        <GlassCard>
+          <Section title="30-Tage Ausblick" subtitle="Welche Wochen werden heiß?">
+            {forecast.forecast_weeks.map((wk, i) => (
+              <div key={i} className={`py-2 border-b border-white/5 ${wk.is_heavy ? 'pl-2 border-l-2' : ''}`}
+                   style={wk.is_heavy ? { borderLeftColor: COLORS.signalOrange } : {}}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-ice-white">
+                    KW{wk.week_number}: {wk.start?.substring(5)} — {wk.end?.substring(5)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {wk.is_heavy && <Pill color={COLORS.signalOrange}>HEAVY</Pill>}
+                    <span className="text-xs font-mono text-muted-blue">Impact: {wk.total_impact}</span>
+                  </div>
+                </div>
+                {wk.is_heavy && (wk.top_events || []).slice(0, 3).map((ev, j) => (
+                  <div key={j} className="text-xs text-muted-blue ml-2 py-0.5">
+                    • {ev.event} ({ev.date?.substring(5)}) — Impact {ev.impact_score}
+                  </div>
+                ))}
+              </div>
+            ))}
+            <ExplainBox>
+              Heavy Weeks = Wochen mit Impact über 20 oder 3+ verschiedene Zeitlinien (Geldpolitik, Fiskal, OPEX, Employment).
+              In Heavy Weeks ist das Risiko für Überraschungen und Gap-Moves erhöht.
+              Hedging-Kosten (Optionen) steigen typischerweise 3-5 Tage vor Heavy Weeks.
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Weekly Timestamp */}
+      <div className="text-caption text-center text-muted-blue">
+        Weekly Run: {fmtDate(w.metadata?.generated_at)} · {w.metadata?.version || ''} · {w.metadata?.etappe || ''} · LLM Calls: {w.metadata?.llm_calls || 0}
+      </div>
     </div>
   );
 }
@@ -1033,7 +1483,68 @@ function DashboardTab({ d, w }) {
       {/* Daten-Timestamp */}
       <div className="text-caption text-center text-muted-blue">
         Daten vom {fmtDate(d.date)} · {d.version || ''}
+        {w?.metadata?.generated_at && ` · Weekly: ${fmtDate(w.metadata.generated_at)}`}
       </div>
+
+      {/* Weekly Narrative Banner (wenn Weekly-Daten vorhanden) */}
+      {w?.narrative?.current_narrative && (
+        <GlassCard>
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpen size={14} style={{ color: COLORS.baldurBlue }} />
+            <span className="text-label uppercase tracking-wider" style={{ color: COLORS.baldurBlue }}>Markt-Narrativ</span>
+            <Pill color={
+              w.narrative.current_narrative.strength === 'DOMINANT' ? COLORS.signalGreen :
+              w.narrative.current_narrative.strength === 'FADING' ? COLORS.signalRed : COLORS.signalYellow
+            }>{w.narrative.current_narrative.strength}</Pill>
+          </div>
+          <div className="text-base text-ice-white font-bold mb-1">{w.narrative.current_narrative.title}</div>
+          <div className="text-xs text-muted-blue">{stripCite(w.narrative.current_narrative.description)}</div>
+          {w.narrative.narrative_shift?.shifted && (
+            <div className="mt-2 px-3 py-2 rounded" style={{ backgroundColor: `${COLORS.signalOrange}12`, borderLeft: `3px solid ${COLORS.signalOrange}` }}>
+              <span className="text-xs font-bold" style={{ color: COLORS.signalOrange }}>
+                ⚠ Narrativ-Shift: {w.narrative.narrative_shift.from} → {w.narrative.narrative_shift.to}
+              </span>
+              {w.narrative.narrative_shift.trigger_event && (
+                <div className="text-xs text-muted-blue mt-1">Auslöser: {stripCite(w.narrative.narrative_shift.trigger_event)}</div>
+              )}
+            </div>
+          )}
+          {w.narrative.narrative_risk && (
+            <div className="text-xs text-muted-blue mt-2">
+              <strong className="text-ice-white">Narrativ-Risiko:</strong> {stripCite(w.narrative.narrative_risk)}
+            </div>
+          )}
+          <ExplainBox>
+            Das Markt-Narrativ ist die dominierende Überzeugung der Marktteilnehmer. Jeder Narrativ-Shift bewegt die Märkte
+            mehr als jeder einzelne Datenpunkt. Wenn das Narrativ kippt, kippen die Positionierungen — und damit die Preise.
+            Details im § Weekly Tab.
+          </ExplainBox>
+        </GlassCard>
+      )}
+
+      {/* Weekly Machine Summary (wenn Weekly-Daten vorhanden) */}
+      {w?.machine_state?.overall && w.machine_state.overall !== 'UNKNOWN' && (
+        <GlassCard>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-label uppercase tracking-wider text-muted-blue">Maschinen-Zustand</span>
+            <Pill color={
+              w.machine_state.overall === 'HEALTHY' ? COLORS.signalGreen :
+              w.machine_state.overall === 'SLOWING' ? COLORS.signalYellow :
+              w.machine_state.overall === 'STRESSED' ? COLORS.signalOrange : COLORS.signalRed
+            }>{w.machine_state.overall}</Pill>
+          </div>
+          <div className="text-xs text-muted-blue">
+            {w.machine_state.overall === 'HEALTHY' ? 'Alle wirtschaftlichen Zahnräder drehen sauber. Kredit, Liquidität und Fiskal-Impuls unterstützen Risk-Assets.' :
+             w.machine_state.overall === 'SLOWING' ? 'Die Wirtschaftsmaschine verlangsamt sich. Mindestens ein Zahnrad (Kredit, Fiskal oder Dollar-Liquidität) zeigt Schwäche. Defensive Positionierung beobachten.' :
+             w.machine_state.overall === 'STRESSED' ? 'Mehrere Zahnräder unter Stress. Kredit kontrahiert oder Dollar-Liquidität wird knapp. Erhöhtes Risiko für abrupte Marktbewegungen.' :
+             'Wirtschaftsmaschine bricht. Kredit eingefroren, Liquidität im Krisenmodus. Maximale Defensive.'}
+          </div>
+          <ExplainBox>
+            Die Wirtschaft als Maschine mit Zahnrädern: Kreditzyklus, Liquidität, Fiskal-Impuls, Dollar-Liquidität.
+            Wenn alle drehen → HEALTHY. Wenn eines stockt → SLOWING. Mehrere → STRESSED. Details im § Weekly Tab.
+          </ExplainBox>
+        </GlassCard>
+      )}
     </div>
   );
 }
@@ -2056,7 +2567,32 @@ function RadarTab({ d, w }) {
         </Section>
       </GlassCard>
 
-      {/* Weekly Data Placeholder */}
+      {/* Weekly Trends + Bias (wenn Weekly-Daten vorhanden) */}
+      {w?.bias_check?.biases && w.bias_check.biases.length > 0 && (
+        <GlassCard>
+          <Section title="System-Blindspots" subtitle="Wöchentlicher Bias-Check — wo könnten wir falsch liegen?">
+            {w.bias_check.biases.filter(b => b.severity !== 'LOW').map((b, i) => (
+              <div key={i} className="py-2 border-b border-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-ice-white font-bold">{b.bias.replace(/_/g, ' ')}</span>
+                  <Pill color={b.severity === 'HIGH' ? COLORS.signalRed : COLORS.signalYellow}>{b.severity}</Pill>
+                </div>
+                <div className="text-xs text-muted-blue mt-1">{b.description}</div>
+                <div className="text-xs text-muted-blue mt-1">
+                  <strong className="text-ice-white">Betroffenes System:</strong> {b.affected_system}
+                </div>
+              </div>
+            ))}
+            <ExplainBox>
+              Jedes System hat strukturelle Blindspots. Der Bias-Check identifiziert wöchentlich wo unsere Systeme
+              möglicherweise falsch liegen — z.B. wenn V16 bullish ist aber die Liquidität schrumpft, oder wenn alle
+              Systeme übereinstimmen (was auf einen gemeinsamen blinden Fleck hindeuten kann).
+            </ExplainBox>
+          </Section>
+        </GlassCard>
+      )}
+
+      {/* Kein Weekly-Daten Fallback */}
       {!w && (
         <GlassCard>
           <div className="text-center py-6">
@@ -2210,13 +2746,112 @@ function MachineTab({ d, w }) {
         </Section>
       </GlassCard>
 
-      {/* Weekly Machine State Placeholder */}
-      {!w && (
+      {/* Weekly Machine State */}
+      {w?.machine_state ? (
+        <GlassCard>
+          <Section title="Maschinen-Zustand" subtitle="Wirtschaft als Maschine — wöchentliche Tiefenanalyse">
+            {/* Overall */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl font-mono font-bold" style={{
+                color: w.machine_state.overall === 'HEALTHY' ? COLORS.signalGreen :
+                       w.machine_state.overall === 'SLOWING' ? COLORS.signalYellow :
+                       w.machine_state.overall === 'STRESSED' ? COLORS.signalOrange : COLORS.signalRed
+              }}>{w.machine_state.overall || '?'}</span>
+            </div>
+
+            {/* Kredit */}
+            {w.machine_state.credit_cycle && w.machine_state.credit_cycle.phase && (
+              <div className="mb-3 pb-3 border-b border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-ice-white font-bold">Kreditzyklus</span>
+                  <Pill color={
+                    w.machine_state.credit_cycle.phase === 'EXPANSION' ? COLORS.signalGreen :
+                    w.machine_state.credit_cycle.phase === 'EARLY_RECOVERY' ? COLORS.signalGreen :
+                    w.machine_state.credit_cycle.phase === 'LATE_EXPANSION' ? COLORS.signalYellow :
+                    COLORS.signalRed
+                  }>{w.machine_state.credit_cycle.phase}</Pill>
+                </div>
+                {w.machine_state.credit_cycle.trend && (
+                  <div className="text-xs text-muted-blue">{stripCite(w.machine_state.credit_cycle.trend)}</div>
+                )}
+                {w.machine_state.credit_cycle.evidence && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    <strong className="text-ice-white">Evidenz:</strong> {stripCite(w.machine_state.credit_cycle.evidence)}
+                  </div>
+                )}
+                <ExplainBox>
+                  Der Kreditzyklus bestimmt wie leicht Unternehmen und Haushalte Geld leihen können.
+                  EXPANSION = Banken vergeben großzügig Kredite → bullish. CONTRACTION = Banken ziehen Kredite zurück → bearish.
+                  Für unser Portfolio: HYG (High Yield Bonds) ist direkt betroffen — bei Kredit-Kontraktion steigen Default-Raten.
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Fiskal */}
+            {w.machine_state.fiscal_impulse && w.machine_state.fiscal_impulse.direction && (
+              <div className="mb-3 pb-3 border-b border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-ice-white font-bold">Fiskal-Impuls</span>
+                  <Pill color={
+                    w.machine_state.fiscal_impulse.direction === 'ACCELERATING' ? COLORS.signalGreen :
+                    w.machine_state.fiscal_impulse.direction === 'NEUTRAL' ? COLORS.signalYellow :
+                    COLORS.signalRed
+                  }>{w.machine_state.fiscal_impulse.direction}</Pill>
+                </div>
+                {w.machine_state.fiscal_impulse.evidence && (
+                  <div className="text-xs text-muted-blue">
+                    <strong className="text-ice-white">Evidenz:</strong> {stripCite(w.machine_state.fiscal_impulse.evidence)}
+                  </div>
+                )}
+                <ExplainBox>
+                  Fiskal-Impuls = beschleunigt oder bremst die Regierung die Wirtschaft durch Ausgaben?
+                  ACCELERATING = steigende Defizite, mehr Spending → kurzfristig bullish für Wachstum, aber kann Inflation treiben.
+                  DECELERATING = Ausgabenkürzungen oder Steuererhöhungen → Gegenwind für Wachstum.
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Dollar-Liquidität */}
+            {w.machine_state.dollar_liquidity && w.machine_state.dollar_liquidity.status && (
+              <div className="mb-3 pb-3 border-b border-white/5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-ice-white font-bold">Globale Dollar-Liquidität</span>
+                  <Pill color={
+                    w.machine_state.dollar_liquidity.status === 'ABUNDANT' ? COLORS.signalGreen :
+                    w.machine_state.dollar_liquidity.status === 'TIGHT' ? COLORS.signalOrange :
+                    w.machine_state.dollar_liquidity.status === 'CRISIS' ? COLORS.signalRed : COLORS.signalYellow
+                  }>{w.machine_state.dollar_liquidity.status}</Pill>
+                </div>
+                {w.machine_state.dollar_liquidity.dxy_trend && (
+                  <div className="text-xs text-muted-blue">{stripCite(w.machine_state.dollar_liquidity.dxy_trend)}</div>
+                )}
+                {w.machine_state.dollar_liquidity.evidence && (
+                  <div className="text-xs text-muted-blue mt-1">
+                    <strong className="text-ice-white">Evidenz:</strong> {stripCite(w.machine_state.dollar_liquidity.evidence)}
+                  </div>
+                )}
+                <ExplainBox>
+                  Dollar-Liquidität bestimmt die globalen Finanzierungsbedingungen. Der Dollar ist die Weltwährung —
+                  wenn Dollar knapp wird (TIGHT), leiden Emerging Markets, Commodities und risikoreiche Assets.
+                  ABUNDANT = viel Dollar im System → Risk-On. CRISIS = Dollar-Knappheit → globaler Stress.
+                </ExplainBox>
+              </div>
+            )}
+
+            {/* Main Concern */}
+            {w.machine_state.main_concern && (
+              <div className="text-xs text-muted-blue mt-2">
+                <strong className="text-ice-white">Hauptsorge:</strong> {stripCite(w.machine_state.main_concern)}
+              </div>
+            )}
+          </Section>
+        </GlassCard>
+      ) : (
         <GlassCard>
           <div className="text-center py-6">
             <p className="text-xs text-muted-blue">
               Maschinen-Zustand (Kreditzyklus, Fiskal-Impuls, Dollar-Liquidität, Positioning)
-              erscheint nach dem ersten Weekly Run (Etappe C).
+              erscheint nach dem ersten Weekly Run (Sonntag).
             </p>
           </div>
         </GlassCard>
