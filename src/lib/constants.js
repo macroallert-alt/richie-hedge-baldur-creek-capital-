@@ -281,6 +281,7 @@ export function getMaterialityLabel(deltaPp) {
 // ===== CIRCLE DEFINITIONS (Spec §5.1, Rotation Circle Spec §2.6) =====
 export const CIRCLES = [
   { id: 'dashboard', name: 'Home', icon: 'LayoutDashboard', route: '/dashboard' },
+  { id: 'command-center', name: 'Command Center', icon: 'Radar', route: '/command-center' },
   { id: 'cio', name: 'CIO', icon: 'FileText', route: '/cio' },
   { id: 'briefing', name: 'Briefing', icon: 'Newspaper', route: '/briefing' },
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
@@ -548,4 +549,102 @@ export const CRYPTO_ALERT_SEVERITY_COLORS = {
   HIGH: COLORS.signalRed,
   MEDIUM: COLORS.signalOrange,
   LOW: COLORS.signalYellow,
+};
+
+// =====================================================================
+// COMMAND CENTER (Circle 18 — System Command Center)
+// =====================================================================
+
+// ===== ALERT LEVEL → COLOR =====
+export const CC_ALERT_LEVEL_COLORS = {
+  CRITICAL: COLORS.signalRed,
+  HIGH: COLORS.signalOrange,
+  MODERATE: COLORS.signalYellow,
+  ELEVATED: COLORS.signalYellow,
+  LOW: COLORS.signalGreen,
+};
+
+// ===== DIVERGENCE SIGNAL → COLOR =====
+export const CC_DIVERGENCE_SIGNAL_COLORS = {
+  EXTREME: COLORS.signalRed,
+  EXTREME_UNCONFIRMED: COLORS.signalOrange,
+  ELEVATED: COLORS.signalYellow,
+  MODERATE: COLORS.mutedBlue,
+  NORMAL: COLORS.signalGreen,
+  UNAVAILABLE: COLORS.fadedBlue,
+};
+
+// ===== LIQUIDITY DIRECTION → COLOR =====
+export const CC_LIQUIDITY_COLORS = {
+  EXPANDING: COLORS.signalGreen,
+  BOTTOMING: COLORS.signalGreen,
+  FLAT: COLORS.signalYellow,
+  DECELERATING: COLORS.signalOrange,
+  CONTRACTING: COLORS.signalRed,
+};
+
+// ===== MULTI-SIGNAL LEVEL → COLOR =====
+export const CC_MULTI_SIGNAL_COLORS = {
+  CRITICAL: COLORS.signalRed,
+  WARNING: COLORS.signalOrange,
+  NORMAL: COLORS.signalGreen,
+};
+
+// ===== LIQ-KOMBI SIGNAL → COLOR =====
+export const CC_LIQ_KOMBI_COLORS = {
+  CRITICAL: COLORS.signalRed,
+  WARNING: COLORS.signalOrange,
+  NORMAL: COLORS.signalGreen,
+  UNAVAILABLE: COLORS.fadedBlue,
+};
+
+// ===== CONVERGENCE LEVEL → COLOR =====
+export const CC_CONVERGENCE_COLORS = {
+  CONVERGENCE_WARNING: COLORS.signalRed,
+  CONVERGENCE_WATCH: COLORS.signalYellow,
+  NORMAL: COLORS.signalGreen,
+};
+
+// ===== REGRET RECOMMENDATION → COLOR =====
+export const CC_REGRET_COLORS = {
+  'HANDELN EMPFOHLEN': COLORS.signalRed,
+  'HEDGING ERWÄGEN': COLORS.signalOrange,
+  'BEOBACHTEN': COLORS.signalYellow,
+  'ERHÖHTE WACHSAMKEIT': COLORS.signalYellow,
+};
+
+// ===== MARKET REACTION → COLOR =====
+export const CC_REACTION_COLORS = {
+  ABSORBED: COLORS.signalGreen,
+  REJECTED: COLORS.signalRed,
+  AS_EXPECTED: COLORS.mutedBlue,
+};
+
+// ===== SURPRISE DIRECTION → COLOR =====
+export const CC_SURPRISE_COLORS = {
+  HOT: COLORS.signalRed,
+  COLD: COLORS.signalGreen,
+  STRONG: COLORS.signalGreen,
+  WEAK: COLORS.signalRed,
+  HAWKISH: COLORS.signalRed,
+  DOVISH: COLORS.signalGreen,
+  INLINE: COLORS.mutedBlue,
+  ABOVE: COLORS.signalYellow,
+  BELOW: COLORS.signalYellow,
+};
+
+// ===== CU/AU SIGNAL → COLOR =====
+export const CC_CU_AU_COLORS = {
+  BEARISH: COLORS.signalRed,
+  BULLISH: COLORS.signalGreen,
+  NEUTRAL: COLORS.mutedBlue,
+  UNAVAILABLE: COLORS.fadedBlue,
+};
+
+// ===== VIX SIGNAL → COLOR =====
+export const CC_VIX_COLORS = {
+  CONFIRMATION: COLORS.signalRed,
+  WATCH: COLORS.signalOrange,
+  NORMAL: COLORS.signalGreen,
+  UNAVAILABLE: COLORS.fadedBlue,
 };
