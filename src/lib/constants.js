@@ -281,7 +281,7 @@ export function getMaterialityLabel(deltaPp) {
 // ===== CIRCLE DEFINITIONS (Spec §5.1, Rotation Circle Spec §2.6) =====
 export const CIRCLES = [
   { id: 'dashboard', name: 'Home', icon: 'LayoutDashboard', route: '/dashboard' },
-  { id: 'command-center', name: 'Command Center', icon: 'Radar', route: '/command-center' },
+  { id: 'command-center', name: 'CC', icon: 'Radar', route: '/command-center' },
   { id: 'cio', name: 'CIO', icon: 'FileText', route: '/cio' },
   { id: 'briefing', name: 'Briefing', icon: 'Newspaper', route: '/briefing' },
   { id: 'risk', name: 'Risk', icon: 'Shield', route: '/risk' },
