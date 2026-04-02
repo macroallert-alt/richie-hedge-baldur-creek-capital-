@@ -1,21 +1,15 @@
 // src/lib/dashboard-fetch.js
-// Dummy-App: Fetches from /mock/dashboard.json (local)
-// Production: Fetches from GitHub Raw URL via NEXT_PUBLIC_DASHBOARD_URL
-
-const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || '/mock/dashboard.json';
+// Fetches dashboard.json via /api/dashboard (server-side proxy with cache).
+// Prevents 429 rate limiting from raw.githubusercontent.com.
 
 /**
- * Fetches dashboard.json with cache-busting.
+ * Fetches dashboard.json via server-side proxy.
  */
 export async function fetchDashboard() {
-  const cacheBuster = `?t=${Date.now()}`;
-  const url = `${DASHBOARD_URL}${cacheBuster}`;
-
-  const response = await fetch(url, {
+  const response = await fetch('/api/dashboard', {
     headers: {
       'Accept': 'application/json',
     },
-    cache: 'no-store',
   });
 
   if (!response.ok) {
